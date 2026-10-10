@@ -25,9 +25,9 @@ struct SessionSummaryView: View {
                 Section(group.exercise?.name ?? "Упражнение") {
                     ForEach(group.sets) { set in
                         HStack {
-                            Text("\(set.setIndex + 1).")
+                            Text(set.isWarmup ? "З" : "\(set.setIndex + 1).")
                                 .foregroundStyle(.secondary)
-                            Text("\(set.weight.short) кг × \(set.reps)")
+                            Text("\(set.weight.short) кг × \(set.reps)\(set.rir >= 0 ? " · RIR \(set.rir)" : "")")
                             Spacer()
                             Text("1RM ~\(set.estimatedOneRepMax.short)")
                                 .font(.caption)

@@ -101,6 +101,8 @@ final class TemplateExercise {
     var restSeconds: Int
     var note: String
     var setTargets: [SetTarget] = []
+    /// Суперсерия: това упражнение се прави заедно със следващото.
+    var supersetNext: Bool = false
     var exercise: Exercise?
     var template: WorkoutTemplate?
 
@@ -182,6 +184,10 @@ struct ExerciseGroup: Identifiable {
     let exercise: Exercise?
     var sets: [SetEntry]
     var id: Int { order }
+
+    /// Свързано в суперсерия със следващото упражнение.
+    var isSuperset: Bool { sets.contains { $0.supersetNext } }
+    var firstWorkSet: SetEntry? { sets.first { !$0.isWarmup } ?? sets.first }
 }
 
 @Model
@@ -199,6 +205,12 @@ final class SetEntry {
     var exerciseNote: String = ""
     /// Планирана тежест от шаблона; показва се като напомняне, докато не въведеш реална.
     var plannedWeight: Double = 0
+    /// Загряваща серия: не влиза в обема, рекордите и „последния път“.
+    var isWarmup: Bool = false
+    /// Повторения в резерв (RIR), -1 = не е въведено.
+    var rir: Int = -1
+    /// Суперсерия със следващото упражнение.
+    var supersetNext: Bool = false
     var exercise: Exercise?
     var session: WorkoutSession?
 
@@ -221,5 +233,7 @@ final class SetEntry {
     }
 
     var volume: Double { weight * Double(reps) }
+    /// Завършена работна серия (без загрявките).
+    var isWorkSet: Bool { isDone && !isWarmup }
     var estimatedOneRepMax: Double { WorkoutMath.epley(weight: weight, reps: reps) }
 }

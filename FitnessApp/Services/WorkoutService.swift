@@ -29,6 +29,7 @@ enum WorkoutService {
                     exerciseNote: index == 0 ? item.note : "",
                     plannedWeight: target.plannedWeight ?? 0
                 )
+                set.supersetNext = item.supersetNext
                 set.session = session
                 context.insert(set)
             }
@@ -42,7 +43,7 @@ enum WorkoutService {
         let sessions = (try? context.fetch(descriptor)) ?? []
         for session in sessions where session.isFinished && session.date < date {
             let sets = session.sortedSets.filter {
-                $0.isDone && $0.exercise?.persistentModelID == exercise.persistentModelID
+                $0.isWorkSet && $0.exercise?.persistentModelID == exercise.persistentModelID
             }
             if !sets.isEmpty { return sets }
         }
@@ -56,9 +57,33 @@ enum WorkoutService {
         return sessions.compactMap { session in
             guard session.isFinished else { return nil }
             let sets = session.sortedSets.filter {
-                $0.isDone && $0.exercise?.persistentModelID == exercise.persistentModelID
+                $0.isWorkSet && $0.exercise?.persistentModelID == exercise.persistentModelID
             }
             return sets.isEmpty ? nil : ExerciseHistoryEntry(session: session, sets: sets)
+        }
+    }
+
+    /// Най-добрата тежест и 1RM за упражнението от тренировки преди дадена дата.
+    static func records(for exercise: Exercise, before date: Date, in context: ModelContext) -> (weight: Double, oneRM: Double) {
+        let sets = history(for: exercise, in: context)
+            .filter { $0.session.date < date }
+            .flatMap(\.sets)
+            .filter { $0.reps > 0 }
+        return (sets.map(\.weight).max() ?? 0, sets.map(\.estimatedOneRepMax).max() ?? 0)
+    }
+
+    /// Загряващи серии 40/60/80 % преди работните. Старите загрявки се махат.
+    static func addWarmups(to group: ExerciseGroup, baseWeight: Double, session: WorkoutSession, in context: ModelContext) {
+        for set in group.sets where set.isWarmup { context.delete(set) }
+        let steps: [(percent: Double, reps: Int)] = [(0.4, 8), (0.6, 5), (0.8, 3)]
+        for (index, step) in steps.enumerated() {
+            let set = SetEntry(exercise: group.exercise, exerciseOrder: group.order, setIndex: index - steps.count,
+                               weight: WorkoutMath.warmupWeight(baseWeight, percent: step.percent), reps: step.reps,
+                               restSeconds: 60)
+            set.isWarmup = true
+            set.supersetNext = group.isSuperset
+            set.session = session
+            context.insert(set)
         }
     }
 
@@ -85,11 +110,12 @@ enum WorkoutService {
                 let item = TemplateExercise(exercise: exercise, order: oldItem.order, targetSets: oldItem.targetSets,
                                             repMin: oldItem.repMin, repMax: oldItem.repMax,
                                             restSeconds: oldItem.restSeconds, note: oldItem.note)
+                item.supersetNext = oldItem.supersetNext
                 item.template = template
                 context.insert(item)
 
                 let done = oldSessions.flatMap(\.sets).filter {
-                    $0.isDone && $0.exercise?.persistentModelID == exercise.persistentModelID
+                    $0.isWorkSet && $0.exercise?.persistentModelID == exercise.persistentModelID
                 }
                 let last = lastSets(for: exercise, before: .now, in: context)
                 item.targets = oldItem.targets.enumerated().map { index, target in

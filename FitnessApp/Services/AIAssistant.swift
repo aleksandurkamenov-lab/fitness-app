@@ -299,14 +299,15 @@ enum AIAssistant {
         let sessions = (try? context.fetch(FetchDescriptor<WorkoutSession>(
             predicate: #Predicate<WorkoutSession> { $0.date >= fourWeeks },
             sortBy: [SortDescriptor(\.date)]))) ?? []
-        if !sessions.isEmpty { lines.append("Тренировки (кг×повторения на завършените серии):") }
+        if !sessions.isEmpty { lines.append("Тренировки (кг×повторения на завършените работни серии, RIR = повторения в резерв):") }
         for session in sessions {
-            let done = session.sortedSets.filter { $0.isDone }
+            let done = session.sortedSets.filter { $0.isWorkSet }
             guard !done.isEmpty else { continue }
             var byExercise: [(name: String, sets: [String])] = []
             for set in done {
                 let name = set.exercise?.name ?? "?"
-                let text = "\(short(set.weight))×\(set.reps)"
+                let rir = set.rir >= 0 ? " RIR\(set.rir)" : ""
+                let text = "\(short(set.weight))×\(set.reps)\(rir)"
                 if let index = byExercise.firstIndex(where: { $0.name == name }) {
                     byExercise[index].sets.append(text)
                 } else {

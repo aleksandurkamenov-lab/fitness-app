@@ -199,10 +199,23 @@ struct ExerciseDetailView: View {
                 }
             }
 
-            if let best = history.flatMap(\.sets).max(by: { $0.estimatedOneRepMax < $1.estimatedOneRepMax }) {
-                Section("Най-добър резултат") {
-                    LabeledContent("\(best.weight.short) кг × \(best.reps)",
-                                   value: "1RM ~\(best.estimatedOneRepMax.short) кг")
+            let allSets = history.flatMap(\.sets).filter { $0.reps > 0 }
+            if let best = allSets.max(by: { $0.estimatedOneRepMax < $1.estimatedOneRepMax }) {
+                Section("Рекорди") {
+                    LabeledContent("Приблизителен 1RM", value: "~\(best.estimatedOneRepMax.short) кг (\(best.weight.short)×\(best.reps))")
+                    if let heaviest = allSets.max(by: { ($0.weight, $0.reps) < ($1.weight, $1.reps) }) {
+                        LabeledContent("Най-тежко", value: "\(heaviest.weight.short) кг × \(heaviest.reps)")
+                    }
+                    if let most = allSets.max(by: { ($0.reps, $0.weight) < ($1.reps, $1.weight) }) {
+                        LabeledContent("Най-много повторения", value: "\(most.reps) × \(most.weight.short) кг")
+                    }
+                    if let biggest = allSets.max(by: { $0.volume < $1.volume }) {
+                        LabeledContent("Най-голям обем в серия", value: "\(biggest.volume.short) кг")
+                    }
+                    if let session = history.max(by: { WorkoutMath.totalVolume($0.sets) < WorkoutMath.totalVolume($1.sets) }) {
+                        LabeledContent("Най-голям обем в тренировка",
+                                       value: "\(WorkoutMath.totalVolume(session.sets).short) кг, \(session.session.date.formatted(date: .abbreviated, time: .omitted))")
+                    }
                 }
             }
 
