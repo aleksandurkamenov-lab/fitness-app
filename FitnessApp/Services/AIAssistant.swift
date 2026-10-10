@@ -1,0 +1,304 @@
+import Foundation
+import SwiftData
+
+/// Сглобява контекста от данните в приложението, говори с Claude и изпълнява записванията.
+enum AIAssistant {
+    static var tools: [[String: Any]] {
+        [
+            [
+                "name": "log_food",
+                "description": "Записва изядена храна в дневника. Викай го по веднъж за всяка храна.",
+                "input_schema": [
+                    "type": "object",
+                    "properties": [
+                        "name": ["type": "string", "description": "Име на храната на български"],
+                        "grams": ["type": "number", "description": "Изядени грамове"],
+                        "kcal": ["type": "number", "description": "Калории за изядените грамове"],
+                        "protein": ["type": "number", "description": "Протеин в грамове за изядените грамове"],
+                        "carbs": ["type": "number", "description": "Въглехидрати в грамове"],
+                        "fat": ["type": "number", "description": "Мазнини в грамове"],
+                        "meal": ["type": "string", "enum": ["breakfast", "lunch", "dinner", "snack"]],
+                        "date": ["type": "string", "description": "Дата YYYY-MM-DD, ако не е днес"],
+                    ],
+                    "required": ["name", "grams", "kcal", "protein", "carbs", "fat", "meal"],
+                ],
+            ],
+            [
+                "name": "log_weight",
+                "description": "Записва телесно тегло в кг.",
+                "input_schema": [
+                    "type": "object",
+                    "properties": [
+                        "kg": ["type": "number"],
+                        "date": ["type": "string", "description": "Дата YYYY-MM-DD, ако не е днес"],
+                    ],
+                    "required": ["kg"],
+                ],
+            ],
+        ]
+    }
+
+    /// Изпраща разговора и изпълнява действията, докато Claude не върне текст.
+    static func run(history: [AIMessage], model: String, context: ModelContext,
+                    healthDays: [Date: NutritionDay]) async throws -> (reply: String, actions: [String]) {
+        let system = systemPrompt(context: context, healthDays: healthDays)
+        var messages = apiMessages(history)
+        var actions: [String] = []
+        for _ in 0..<5 {
+            let result = try await ClaudeService.send(model: model, system: system, messages: messages, tools: tools)
+            guard result.stopReason == "tool_use" else {
+                let text = result.content
+                    .compactMap { block -> String? in
+                        (block["type"] as? String) == "text" ? block["text"] as? String : nil
+                    }
+                    .joined(separator: "\n")
+                if text.isEmpty && actions.isEmpty { throw ClaudeError(message: "Няма отговор, опитай пак.") }
+                return (text, actions)
+            }
+            messages.append(["role": "assistant", "content": result.content])
+            var results: [[String: Any]] = []
+            for block in result.content where (block["type"] as? String) == "tool_use" {
+                let id = (block["id"] as? String) ?? ""
+                let name = (block["name"] as? String) ?? ""
+                let input = (block["input"] as? [String: Any]) ?? [:]
+                let outcome = execute(name: name, input: input, context: context)
+                actions.append(outcome)
+                // Записва се веднага, за да го има в историята и при грешка в следващата заявка.
+                context.insert(AIMessage(role: "action", text: outcome))
+                try? context.save()
+                results.append(["type": "tool_result", "tool_use_id": id, "content": outcome])
+            }
+            messages.append(["role": "user", "content": results])
+        }
+        return ("", actions)
+    }
+
+    /// Последните съобщения като редуващи се user/assistant, започващи с user.
+    private static func apiMessages(_ history: [AIMessage]) -> [[String: Any]] {
+        var turns: [(role: String, text: String)] = []
+        for message in history.suffix(20) {
+            let role = message.role == "user" ? "user" : "assistant"
+            let text = message.role == "action" ? "[" + message.text + "]" : message.text
+            if let last = turns.last, last.role == role {
+                turns[turns.count - 1].text += "\n" + text
+            } else {
+                turns.append((role: role, text: text))
+            }
+        }
+        while let first = turns.first, first.role != "user" { turns.removeFirst() }
+        return turns.map { ["role": $0.role, "content": $0.text] }
+    }
+
+    // MARK: - Действия
+
+    static func execute(name: String, input: [String: Any], context: ModelContext) -> String {
+        switch name {
+        case "log_food":
+            let food = (input["name"] as? String) ?? "Храна"
+            let grams = number(input["grams"]) ?? 100
+            let kcal = number(input["kcal"]) ?? 0
+            let protein = number(input["protein"]) ?? 0
+            let carbs = number(input["carbs"]) ?? 0
+            let fat = number(input["fat"]) ?? 0
+            let meal = Meal(rawValue: (input["meal"] as? String) ?? "") ?? mealByHour()
+            context.insert(FoodEntry(date: date(input["date"]), meal: meal, name: food, grams: grams,
+                                     kcal: kcal, protein: protein, carbs: carbs, fat: fat))
+            let saved = (try? context.fetch(FetchDescriptor<FoodItem>())) ?? []
+            if let item = saved.first(where: { $0.name.lowercased() == food.lowercased() }) {
+                item.lastUsed = .now
+            } else if grams > 0 {
+                let factor = 100 / grams
+                let item = FoodItem(name: food, kcalPer100: kcal * factor, proteinPer100: protein * factor,
+                                    carbsPer100: carbs * factor, fatPer100: fat * factor, servingG: grams)
+                item.lastUsed = .now
+                context.insert(item)
+            }
+            try? context.save()
+            return "Записано: \(food) \(short(grams)) г, \(Int(kcal.rounded())) ккал (\(meal.title))"
+        case "log_weight":
+            guard let kg = number(input["kg"]), kg > 20, kg < 400 else { return "Невалидно тегло, нищо не е записано" }
+            context.insert(WeightEntry(date: date(input["date"]), kg: kg))
+            try? context.save()
+            return "Записано тегло: \(short(kg)) кг"
+        default:
+            return "Непознато действие"
+        }
+    }
+
+    private static func number(_ value: Any?) -> Double? {
+        if let n = value as? NSNumber { return n.doubleValue }
+        if let s = value as? String { return Double(s.replacingOccurrences(of: ",", with: ".")) }
+        return nil
+    }
+
+    /// Дата от "YYYY-MM-DD": днес е сега, друг ден е по обяд.
+    private static func date(_ value: Any?) -> Date {
+        guard let text = value as? String else { return .now }
+        let parts = text.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return .now }
+        var components = DateComponents()
+        components.year = parts[0]
+        components.month = parts[1]
+        components.day = parts[2]
+        components.hour = 12
+        let calendar = Calendar.current
+        guard let day = calendar.date(from: components) else { return .now }
+        return calendar.isDateInToday(day) ? .now : day
+    }
+
+    private static func mealByHour() -> Meal {
+        let hour = Calendar.current.component(.hour, from: .now)
+        if hour < 11 { return .breakfast }
+        if hour < 16 { return .lunch }
+        if hour < 21 { return .dinner }
+        return .snack
+    }
+
+    // MARK: - Контекст
+
+    private static func key(_ date: Date) -> String {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    private static func short(_ value: Double) -> String {
+        value == value.rounded() ? "\(Int(value))" : String(format: "%.1f", value)
+    }
+
+    static func systemPrompt(context: ModelContext, healthDays: [Date: NutritionDay]) -> String {
+        let calendar = Calendar.current
+        let now = Date.now
+        let today = calendar.startOfDay(for: now)
+        var lines: [String] = []
+        lines.append("Ти си личен треньор и хранителен помощник във фитнес приложението на потребителя. Отговаряй на български, кратко и конкретно (английски термини са ок). Числата за здраве и хранене са ориентировъчни, не са медицински съвет; казвай го, когато даваш такива препоръки.")
+        lines.append("Като треньор следиш съня, възстановяването (WHOOP), тренировките и прогреса по упражненията, теглото спрямо целта и оставащите макроси за деня. Свързвай ги: при ниско възстановяване или лош сън предлагай по-леко натоварване; при застой в упражнение предлагай промяна; при отклонение на теглото от целевото темпо предлагай корекция на калориите. За оставащите макроси давай конкретни храни и ястия с грамове, по възможност от запазените храни.")
+        lines.append("Когато потребителят каже какво е ял, запиши всяка храна с log_food. Ако храната я има в запазените храни, сметни от нейните стойности на 100 г, иначе оцени разумно. Когато каже теглото си, ползвай log_weight. Ако само пита, не записвай нищо.")
+        lines.append("Днес е \(key(today)), \(now.formatted(.dateTime.weekday(.wide))), часът е \(now.formatted(date: .omitted, time: .shortened)).")
+
+        var dailyTargets: BodyMath.Targets?
+        let profiles = (try? context.fetch(FetchDescriptor<UserProfile>())) ?? []
+        let weights = (try? context.fetch(FetchDescriptor<WeightEntry>(sortBy: [SortDescriptor(\.date)]))) ?? []
+        if let profile = profiles.first {
+            let rate = profile.goal == .lose ? profile.lossRateKg : profile.gainRateKg
+            let pace = profile.goal == .maintain ? "" : " с " + short(rate) + " кг седмично"
+            lines.append("Профил: \(profile.sex.title), \(profile.age) г., \(Int(profile.heightCm)) см, цел: \(profile.goal.title)\(pace), коефициент на активност \(profile.activityFactor).")
+            if let kg = weights.last?.kg, var targets = BodyMath.targets(profile: profile, kg: kg) {
+                let custom = profile.customProteinG > 0 || profile.customFatG > 0 || profile.customCarbsG > 0
+                if profile.customProteinG > 0 { targets.protein = profile.customProteinG }
+                if profile.customFatG > 0 { targets.fat = profile.customFatG }
+                if profile.customCarbsG > 0 { targets.carbs = profile.customCarbsG }
+                if custom { targets.kcal = targets.protein * 4 + targets.carbs * 4 + targets.fat * 9 }
+                dailyTargets = targets
+                lines.append("Дневна цел: \(Int(targets.kcal)) ккал, протеин \(Int(targets.protein)) г, въглехидрати \(Int(targets.carbs)) г, мазнини \(Int(targets.fat)) г.")
+                if profile.variableCalories {
+                    lines.append("Променлив прием е включен: в тренировъчен ден целта е +\(Int(profile.trainingDayBoostPercent)) %, в почивен е по-ниска; разликата е във въглехидратите. Тренировъчни дни седмично: \(profile.trainingDaysPerWeek).")
+                }
+            }
+        }
+
+        let monthAgo = calendar.date(byAdding: .day, value: -30, to: today) ?? today
+        let recentWeights = weights.filter { $0.date >= monthAgo }
+        if !recentWeights.isEmpty {
+            lines.append("Тегло за последните 30 дни: " + recentWeights.map { "\(key($0.date)) \(short($0.kg)) кг" }.joined(separator: ", "))
+        }
+
+        // Хранене: записаното в приложението плюс това от Apple Health.
+        let twoWeeks = calendar.date(byAdding: .day, value: -13, to: today) ?? today
+        let foods = (try? context.fetch(FetchDescriptor<FoodEntry>(
+            predicate: #Predicate<FoodEntry> { $0.date >= twoWeeks },
+            sortBy: [SortDescriptor(\.date)]))) ?? []
+        var totals: [Date: NutritionDay] = [:]
+        for food in foods {
+            let day = calendar.startOfDay(for: food.date)
+            var total = totals[day] ?? NutritionDay()
+            total.kcal += food.kcal
+            total.protein += food.protein
+            total.carbs += food.carbs
+            total.fat += food.fat
+            totals[day] = total
+        }
+        for (day, health) in healthDays where day >= twoWeeks {
+            var total = totals[day] ?? NutritionDay()
+            total.kcal += health.kcal
+            total.protein += health.protein
+            total.carbs += health.carbs
+            total.fat += health.fat
+            totals[day] = total
+        }
+        if !totals.isEmpty {
+            lines.append("Хранене по дни (ккал / П / В / М в г):")
+            for day in totals.keys.sorted() {
+                if let t = totals[day] {
+                    lines.append("\(key(day)): \(Int(t.kcal)) / \(Int(t.protein)) / \(Int(t.carbs)) / \(Int(t.fat))")
+                }
+            }
+        }
+        if let targets = dailyTargets {
+            let eaten = totals[today] ?? NutritionDay()
+            lines.append("Остава за днес: \(Int(targets.kcal - eaten.kcal)) ккал, протеин \(Int(targets.protein - eaten.protein)) г, въглехидрати \(Int(targets.carbs - eaten.carbs)) г, мазнини \(Int(targets.fat - eaten.fat)) г (отрицателно значи над целта).")
+        }
+        let todayFoods = foods.filter { calendar.isDate($0.date, inSameDayAs: today) }
+        if !todayFoods.isEmpty {
+            lines.append("Днес записано: " + todayFoods.map {
+                "\($0.meal.title): \($0.name) \(short($0.grams)) г (\(Int($0.kcal)) ккал, П \(Int($0.protein)))"
+            }.joined(separator: "; "))
+        }
+
+        // Тренировки за последните 4 седмици.
+        let fourWeeks = calendar.date(byAdding: .day, value: -28, to: today) ?? today
+        let sessions = (try? context.fetch(FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate<WorkoutSession> { $0.date >= fourWeeks },
+            sortBy: [SortDescriptor(\.date)]))) ?? []
+        if !sessions.isEmpty { lines.append("Тренировки (кг×повторения на завършените серии):") }
+        for session in sessions {
+            let done = session.sortedSets.filter { $0.isDone }
+            guard !done.isEmpty else { continue }
+            var byExercise: [(name: String, sets: [String])] = []
+            for set in done {
+                let name = set.exercise?.name ?? "?"
+                let text = "\(short(set.weight))×\(set.reps)"
+                if let index = byExercise.firstIndex(where: { $0.name == name }) {
+                    byExercise[index].sets.append(text)
+                } else {
+                    byExercise.append((name: name, sets: [text]))
+                }
+            }
+            lines.append("\(key(session.date)) \(session.title): " + byExercise.map {
+                "\($0.name) \($0.sets.joined(separator: ", "))"
+            }.joined(separator: "; "))
+        }
+
+        // WHOOP и Health за последните 7 дни.
+        let weekAgo = calendar.date(byAdding: .day, value: -6, to: today) ?? today
+        let metrics = (try? context.fetch(FetchDescriptor<DailyMetric>(
+            predicate: #Predicate<DailyMetric> { $0.day >= weekAgo }))) ?? []
+        var chosen: [Date: [MetricKind: DailyMetric]] = [:]
+        for metric in metrics {
+            guard let kind = metric.kind else { continue }
+            let day = calendar.startOfDay(for: metric.day)
+            let preferred = kind.preferHealth ? MetricSource.health.rawValue : MetricSource.whoop.rawValue
+            if let existing = chosen[day]?[kind], existing.sourceRaw == preferred { continue }
+            chosen[day, default: [:]][kind] = metric
+        }
+        if !chosen.isEmpty { lines.append("Възстановяване и активност:") }
+        for day in chosen.keys.sorted() {
+            let parts = MetricKind.allCases.compactMap { kind -> String? in
+                guard let metric = chosen[day]?[kind] else { return nil }
+                let value = String(format: "%.\(kind.digits)f", metric.value)
+                return kind.unit.isEmpty ? "\(kind.title) \(value)" : "\(kind.title) \(value) \(kind.unit)"
+            }
+            lines.append("\(key(day)): " + parts.joined(separator: ", "))
+        }
+
+        var savedDescriptor = FetchDescriptor<FoodItem>(sortBy: [SortDescriptor(\.lastUsed, order: .reverse)])
+        savedDescriptor.fetchLimit = 40
+        let saved = (try? context.fetch(savedDescriptor)) ?? []
+        if !saved.isEmpty {
+            lines.append("Запазени храни (на 100 г: ккал / П / В / М):")
+            for item in saved {
+                lines.append("\(item.name): \(Int(item.kcalPer100)) / \(short(item.proteinPer100)) / \(short(item.carbsPer100)) / \(short(item.fatPer100))")
+            }
+        }
+        return lines.joined(separator: "\n")
+    }
+}

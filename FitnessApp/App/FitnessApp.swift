@@ -21,6 +21,7 @@ struct FitnessApp: App {
             FoodItem.self,
             FoodEntry.self,
             ProgressPhoto.self,
+            AIMessage.self,
         ])
     }
 }
