@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct WorkoutsView: View {
     @Environment(\.modelContext) private var context
@@ -7,6 +8,7 @@ struct WorkoutsView: View {
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
     @State private var showingNewMeso = false
     @State private var importError: String?
+    @State private var pickingExcel = false
     @State private var activeSession: WorkoutSession?
 
     private var unfinished: WorkoutSession? { sessions.first { !$0.isFinished } }
@@ -64,7 +66,7 @@ struct WorkoutsView: View {
 
                 Section {
                 } footer: {
-                    Text("Версия v31")
+                    Text("Версия v32")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -86,13 +88,31 @@ struct WorkoutsView: View {
                             Label("Нов празен мезоцикъл", systemImage: "plus")
                         }
                         Button {
+                            pickingExcel = true
+                        } label: {
+                            Label("Внеси от Excel файл…", systemImage: "doc.badge.plus")
+                        }
+                        Button {
                             importMeso()
                         } label: {
-                            Label("Импортирай Meso 22 (от Excel)", systemImage: "square.and.arrow.down")
+                            Label("Импортирай Meso 22 (вграден)", systemImage: "square.and.arrow.down")
                         }
                     } label: {
                         Label("Нов мезоцикъл", systemImage: "plus")
                     }
+                }
+            }
+            .fileImporter(isPresented: $pickingExcel,
+                          allowedContentTypes: [UTType(filenameExtension: "xlsx") ?? .data]) { result in
+                switch result {
+                case .success(let url):
+                    do {
+                        try XLSXImporter.importFile(at: url, in: context)
+                    } catch {
+                        importError = error.localizedDescription
+                    }
+                case .failure(let error):
+                    importError = error.localizedDescription
                 }
             }
             .sheet(isPresented: $showingNewMeso) {
