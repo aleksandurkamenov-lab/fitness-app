@@ -64,11 +64,12 @@ struct WorkoutsView: View {
 
                 Section {
                 } footer: {
-                    Text("Версия v10")
+                    Text("Версия v11")
                         .frame(maxWidth: .infinity)
                 }
             }
             .navigationTitle("Тренировки")
+            .profileButton()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     NavigationLink {

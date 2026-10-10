@@ -10,6 +10,7 @@ struct PlaceholderView: View {
         NavigationStack {
             ContentUnavailableView(title, systemImage: systemImage, description: Text(description))
                 .navigationTitle(title)
+                .profileButton()
         }
     }
 }

@@ -22,6 +22,8 @@ struct ProfileView: View {
 private struct ProfileForm: View {
     @Bindable var profile: UserProfile
 
+    private let rates: [Double] = [0.1, 0.25, 0.5, 0.75, 1.0]
+
     private let activities: [(String, Double)] = [
         ("Почти без движение", 1.2),
         ("Лека (1–3 тренировки)", 1.375),
@@ -53,13 +55,24 @@ private struct ProfileForm: View {
                 Picker("Цел", selection: $profile.goal) {
                     ForEach(GoalKind.allCases) { Text($0.title).tag($0) }
                 }
-                if profile.goal != .maintain {
-                    Picker("Темпо на седмица", selection: $profile.weeklyRateKg) {
-                        Text("0,1 кг").tag(0.1)
-                        Text("0,5 кг").tag(0.5)
-                        Text("1 кг").tag(1.0)
+                if profile.goal == .lose {
+                    Picker("Темпо на сваляне", selection: $profile.lossRateKg) {
+                        ForEach(rates, id: \.self) { Text("\($0.formatted(.number.precision(.fractionLength(0...2)))) кг седмично").tag($0) }
+                    }
+                } else if profile.goal == .gain {
+                    Picker("Темпо на качване", selection: $profile.gainRateKg) {
+                        ForEach(rates, id: \.self) { Text("\($0.formatted(.number.precision(.fractionLength(0...2)))) кг седмично").tag($0) }
                     }
                 }
+            }
+
+            Section("Макроси (г на кг тегло)") {
+                Stepper("Белтък при дефицит: \(profile.proteinLoseGPerKg.short)",
+                        value: $profile.proteinLoseGPerKg, in: 1.0...3.5, step: 0.1)
+                Stepper("Белтък при бълк и поддръжка: \(profile.proteinOtherGPerKg.short)",
+                        value: $profile.proteinOtherGPerKg, in: 1.0...3.5, step: 0.1)
+                Stepper("Мазнини минимум: \(profile.fatMinGPerKg.short)",
+                        value: $profile.fatMinGPerKg, in: 0.4...2.0, step: 0.1)
             }
 
             Section {
@@ -135,4 +148,23 @@ struct CalculatorsView: View {
         .navigationTitle("Калкулатори")
         .navigationBarTitleDisplayMode(.inline)
     }
+}
+
+/// Иконка за профила горе вдясно, за всеки таб.
+struct ProfileToolbarModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content.toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    ProfileView()
+                } label: {
+                    Image(systemName: "person.crop.circle")
+                }
+            }
+        }
+    }
+}
+
+extension View {
+    func profileButton() -> some View { modifier(ProfileToolbarModifier()) }
 }

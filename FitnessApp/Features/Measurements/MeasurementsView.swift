@@ -72,15 +72,7 @@ struct MeasurementsView: View {
                 }
             }
             .navigationTitle("Мерки")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        ProfileView()
-                    } label: {
-                        Label("Профил", systemImage: "person.crop.circle")
-                    }
-                }
-            }
+            .profileButton()
             .sheet(isPresented: $showingAddWeight) {
                 AddWeightSheet(initial: weights.last?.kg)
             }

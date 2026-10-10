@@ -50,15 +50,16 @@ enum BodyMath {
         guard kg > 0 else { return nil }
         let bmr = bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age)
         let maintenance = tdee(bmr: bmr, activity: profile.activityFactor)
-        let daily = profile.weeklyRateKg * 7700 / 7
+        let rate = profile.goal == .lose ? profile.lossRateKg : profile.gainRateKg
+        let daily = rate * 7700 / 7
         let kcal: Double
         switch profile.goal {
         case .lose: kcal = maintenance - daily
         case .maintain: kcal = maintenance
         case .gain: kcal = maintenance + daily
         }
-        let protein = (profile.goal == .lose ? 2.0 : 1.8) * kg
-        let fat = max(0.8 * kg, 0.25 * kcal / 9)
+        let protein = (profile.goal == .lose ? profile.proteinLoseGPerKg : profile.proteinOtherGPerKg) * kg
+        let fat = max(profile.fatMinGPerKg * kg, 0.25 * kcal / 9)
         let carbs = max(0, (kcal - protein * 4 - fat * 9) / 4)
         return Targets(kcal: kcal, protein: protein, fat: fat, carbs: carbs)
     }

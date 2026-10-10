@@ -44,6 +44,14 @@ final class UserProfile {
     var goalRaw: String = GoalKind.maintain.rawValue
     /// Желано темпо в кг на седмица (0.1 / 0.5 / 1).
     var weeklyRateKg: Double = 0.5
+    /// Темпо на сваляне и на качване се пазят отделно (кг на седмица).
+    var lossRateKg: Double = 0.5
+    var gainRateKg: Double = 0.5
+    /// Белтък в г на кг тегло: при дефицит и при бълк/поддръжка.
+    var proteinLoseGPerKg: Double = 2.0
+    var proteinOtherGPerKg: Double = 1.8
+    /// Минимум мазнини в г на кг тегло.
+    var fatMinGPerKg: Double = 0.8
 
     init() {}
 
