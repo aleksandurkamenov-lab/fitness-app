@@ -74,12 +74,21 @@ enum BodyMath {
     /// 7-дневна пълзяща средна на теглото.
     static func trend(_ entries: [WeightEntry]) -> [TrendPoint] {
         let sorted = entries.sorted { $0.date < $1.date }
-        return sorted.map { entry in
+        var result: [TrendPoint] = []
+        result.reserveCapacity(sorted.count)
+        var start = 0
+        var sum = 0.0
+        for (index, entry) in sorted.enumerated() {
+            sum += entry.kg
             let from = entry.date.addingTimeInterval(-6 * 86_400)
-            let window = sorted.filter { $0.date >= from && $0.date <= entry.date }
-            let avg = window.reduce(0) { $0 + $1.kg } / Double(max(window.count, 1))
-            return TrendPoint(date: entry.date, kg: entry.kg, trend: avg)
+            while start < index && sorted[start].date < from {
+                sum -= sorted[start].kg
+                start += 1
+            }
+            let count = Double(max(index - start + 1, 1))
+            result.append(TrendPoint(date: entry.date, kg: entry.kg, trend: sum / count))
         }
+        return result
     }
 
     // MARK: Прогноза
