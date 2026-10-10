@@ -8,26 +8,12 @@ struct TrendsView: View {
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
     @State private var rangeDays = 30
 
-    private struct DayValue: Identifiable {
-        let day: Date
-        let value: Double
-        var id: Date { day }
-    }
-
     private var from: Date {
         Calendar.current.date(byAdding: .day, value: -rangeDays, to: Calendar.current.startOfDay(for: .now)) ?? .distantPast
     }
 
-    /// Една стойност на ден: от предпочитания източник, иначе от другия.
     private func series(_ kind: MetricKind) -> [DayValue] {
-        let preferred: MetricSource = kind.preferHealth ? .health : .whoop
-        var byDay: [Date: (value: Double, preferred: Bool)] = [:]
-        for metric in metrics where metric.kindRaw == kind.rawValue && metric.day >= from {
-            let isPreferred = metric.sourceRaw == preferred.rawValue
-            if let current = byDay[metric.day], current.preferred, !isPreferred { continue }
-            byDay[metric.day] = (metric.value, isPreferred)
-        }
-        return byDay.map { DayValue(day: $0.key, value: $0.value.value) }.sorted { $0.day < $1.day }
+        MetricSeries.series(kind, in: metrics, from: from)
     }
 
     private var weightPoints: [BodyMath.TrendPoint] {

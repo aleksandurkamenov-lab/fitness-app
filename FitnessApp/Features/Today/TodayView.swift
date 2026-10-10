@@ -112,12 +112,18 @@ struct TodayView: View {
         let strain = w?.strain ?? ownStrain
 
         HStack(spacing: 12) {
-            RingView(title: "Сън", valueText: sleep.map { "\(Int($0))%" } ?? "–",
-                     progress: (sleep ?? 0) / 100, color: .indigo)
-            RingView(title: "Възстановяване", valueText: recovery.map { "\(Int($0))%" } ?? "–",
-                     progress: (recovery ?? 0) / 100, color: recoveryColor(recovery))
-            RingView(title: "Натоварване", valueText: strain.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "–",
-                     progress: (strain ?? 0) / 21, color: .blue)
+            link(.metric(.sleepPerformance)) {
+                RingView(title: "Сън", valueText: sleep.map { "\(Int($0))%" } ?? "–",
+                         progress: (sleep ?? 0) / 100, color: .indigo)
+            }
+            link(.metric(.recovery)) {
+                RingView(title: "Възстановяване", valueText: recovery.map { "\(Int($0))%" } ?? "–",
+                         progress: (recovery ?? 0) / 100, color: recoveryColor(recovery))
+            }
+            link(.metric(.strain)) {
+                RingView(title: "Натоварване", valueText: strain.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "–",
+                         progress: (strain ?? 0) / 21, color: .blue)
+            }
         }
         .padding()
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
@@ -176,6 +182,16 @@ struct TodayView: View {
         return h
     }
 
+    /// Натискане върху показател отваря подробностите му (7 / 30 / 90 дни).
+    private func link<Label: View>(_ target: TrendTarget, @ViewBuilder label: () -> Label) -> some View {
+        NavigationLink {
+            MetricDetailView(target: target)
+        } label: {
+            label()
+        }
+        .buttonStyle(.plain)
+    }
+
     private func recoveryColor(_ value: Double?) -> Color {
         guard let value else { return .gray }
         return value < 34 ? .red : (value < 67 ? .yellow : .green)
@@ -187,19 +203,29 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Монитор на здравето").font(.headline)
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                MetricTile(title: "Пулс в покой", value: s.rhr, unit: "уд./мин", digits: 0,
-                           baseline: s.rhrBaseline, missing: "няма данни")
-                MetricTile(title: "HRV", value: s.hrv, unit: "мс", digits: 0,
-                           baseline: s.hrvBaseline,
-                           missing: "свържи WHOOP (Профил → Устройства)")
-                MetricTile(title: "Дишане", value: s.respiratory, unit: "вд./мин", digits: 1,
-                           baseline: s.respiratoryBaseline, missing: "няма данни")
-                MetricTile(title: "SpO₂", value: s.oxygen, unit: "%", digits: 0,
-                           baseline: s.oxygenBaseline,
-                           missing: "няма данни")
+                link(.metric(.rhr)) {
+                    MetricTile(title: "Пулс в покой", value: s.rhr, unit: "уд./мин", digits: 0,
+                               baseline: s.rhrBaseline, missing: "няма данни")
+                }
+                link(.metric(.hrv)) {
+                    MetricTile(title: "HRV", value: s.hrv, unit: "мс", digits: 0,
+                               baseline: s.hrvBaseline,
+                               missing: "свържи WHOOP (Профил → Устройства)")
+                }
+                link(.metric(.respiratory)) {
+                    MetricTile(title: "Дишане", value: s.respiratory, unit: "вд./мин", digits: 1,
+                               baseline: s.respiratoryBaseline, missing: "няма данни")
+                }
+                link(.metric(.spo2)) {
+                    MetricTile(title: "SpO₂", value: s.oxygen, unit: "%", digits: 0,
+                               baseline: s.oxygenBaseline,
+                               missing: "няма данни")
+                }
                 if let delta = s.skinTempDelta {
-                    MetricTile(title: "Температура на кожата", value: delta, unit: "°C от нормата", digits: 1,
-                               baseline: nil, missing: "", signed: true)
+                    link(.metric(.skinTemp)) {
+                        MetricTile(title: "Температура на кожата", value: delta, unit: "°C от нормата", digits: 1,
+                                   baseline: nil, missing: "", signed: true)
+                    }
                 }
             }
         }
@@ -212,16 +238,31 @@ struct TodayView: View {
     private func dashboard(_ s: HealthSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Таблото ми").font(.headline)
-            DashboardRow(title: "Крачки", icon: "figure.walk", value: s.steps, average: s.avgSteps, unit: "")
-            DashboardRow(title: "Активни калории", icon: "flame", value: s.activeKcal, average: s.avgActiveKcal, unit: "ккал")
+            link(.metric(.steps)) {
+                DashboardRow(title: "Крачки", icon: "figure.walk", value: s.steps, average: s.avgSteps, unit: "")
+            }
+            link(.metric(.activeKcal)) {
+                DashboardRow(title: "Активни калории", icon: "flame", value: s.activeKcal, average: s.avgActiveKcal, unit: "ккал")
+            }
+            link(.metric(.hrv)) {
+                DashboardRow(title: "HRV", icon: "waveform.path.ecg", value: s.hrv, average: s.hrvBaseline?.mean, unit: "мс")
+            }
+            link(.metric(.rhr)) {
+                DashboardRow(title: "Пулс в покой", icon: "heart", value: s.rhr, average: s.rhrBaseline?.mean, unit: "уд./мин")
+            }
+            link(.metric(.sleepHours)) {
+                DashboardRow(title: "Сън", icon: "moon.zzz", value: s.asleepHours, average: nil, unit: "ч", digits: 1)
+            }
             if let weight = weights.last?.kg {
                 let previous = weights.dropLast().last?.kg
-                DashboardRow(title: "Тегло", icon: "scalemass", value: weight, average: previous, unit: "кг", digits: 1)
+                link(.weight) {
+                    DashboardRow(title: "Тегло", icon: "scalemass", value: weight, average: previous, unit: "кг", digits: 1)
+                }
             }
             if let vo2 = s.vo2Max {
                 DashboardRow(title: "VO₂ max", icon: "lungs", value: vo2, average: nil, unit: "", digits: 0)
             }
-            Text("Сивото число е средното за последните 7 дни (за теглото: предишното измерване).")
+            Text("Сивото число е средното (за теглото: предишното измерване). Натисни показател за 7 / 30 / 90 дни.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }

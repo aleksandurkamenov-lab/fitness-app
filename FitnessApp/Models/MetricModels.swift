@@ -76,3 +76,35 @@ struct MetricPoint {
     let value: Double
     let source: MetricSource
 }
+
+struct DayValue: Identifiable {
+    let day: Date
+    let value: Double
+    var id: Date { day }
+}
+
+enum TrendTarget: Hashable {
+    case metric(MetricKind)
+    case weight
+
+    var title: String {
+        switch self {
+        case .metric(let kind): kind.title
+        case .weight: "Тегло"
+        }
+    }
+}
+
+enum MetricSeries {
+    /// Една стойност на ден от предпочитания източник (иначе от другия) в интервала [from, to).
+    static func series(_ kind: MetricKind, in metrics: [DailyMetric], from: Date, to: Date = .distantFuture) -> [DayValue] {
+        let preferred: MetricSource = kind.preferHealth ? .health : .whoop
+        var byDay: [Date: (value: Double, preferred: Bool)] = [:]
+        for metric in metrics where metric.kindRaw == kind.rawValue && metric.day >= from && metric.day < to {
+            let isPreferred = metric.sourceRaw == preferred.rawValue
+            if let current = byDay[metric.day], current.preferred, !isPreferred { continue }
+            byDay[metric.day] = (metric.value, isPreferred)
+        }
+        return byDay.map { DayValue(day: $0.key, value: $0.value.value) }.sorted { $0.day < $1.day }
+    }
+}
