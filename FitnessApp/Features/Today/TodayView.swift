@@ -4,6 +4,7 @@ import SwiftData
 /// Днес: сън, възстановяване и натоварване от Apple Health, в духа на WHOOP.
 struct TodayView: View {
     @State private var health = HealthService()
+    @State private var whoop = WhoopService.shared
     @Query private var profiles: [UserProfile]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
@@ -16,9 +17,9 @@ struct TodayView: View {
                 VStack(spacing: 16) {
                     if !health.isAvailable {
                         notice("Apple Health не е достъпно на това устройство.")
-                    } else if !health.wasRequested {
+                    } else if !health.wasRequested && !whoop.isConnected {
                         connectCard
-                    } else if let snapshot = health.snapshot {
+                    } else if let snapshot = health.snapshot ?? (whoop.snapshot != nil ? HealthSnapshot() : nil) {
                         content(snapshot)
                     } else {
                         ProgressView("Зареждам от Apple Health…")
@@ -33,9 +34,13 @@ struct TodayView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Днес")
             .profileButton()
-            .refreshable { await health.load(age: age) }
+            .refreshable {
+                await health.load(age: age)
+                await whoop.load()
+            }
             .task {
                 if health.wasRequested { await health.load(age: age) }
+                if whoop.isConnected { await whoop.load() }
             }
         }
     }
@@ -77,15 +82,20 @@ struct TodayView: View {
     // MARK: Съдържание
 
     @ViewBuilder
-    private func content(_ s: HealthSnapshot) -> some View {
-        let sleep = s.asleepHours.map { RecoveryMath.sleepScore(asleepHours: $0, inBedHours: s.inBedHours) }
-        let recovery = RecoveryMath.recovery(.init(
+    private func content(_ healthSnapshot: HealthSnapshot) -> some View {
+        let w = whoop.snapshot
+        let s = merged(healthSnapshot, with: w)
+        let ownSleep = s.asleepHours.map { RecoveryMath.sleepScore(asleepHours: $0, inBedHours: s.inBedHours) }
+        let sleep = w?.sleepPerformance ?? ownSleep
+        let ownRecovery = RecoveryMath.recovery(.init(
             hrv: s.hrv, hrvBaseline: s.hrvBaseline,
             rhr: s.rhr, rhrBaseline: s.rhrBaseline,
             respiratory: s.respiratory, respiratoryBaseline: s.respiratoryBaseline,
-            sleepScore: sleep))
-        let strain: Double? = s.heartRates.isEmpty ? nil
+            sleepScore: ownSleep))
+        let recovery = w?.recoveryScore ?? ownRecovery
+        let ownStrain: Double? = s.heartRates.isEmpty ? nil
             : RecoveryMath.strain(heartRates: s.heartRates, restingHR: s.rhr ?? 60, age: age)
+        let strain = w?.strain ?? ownStrain
 
         HStack(spacing: 12) {
             RingView(title: "Сън", valueText: sleep.map { "\(Int($0))%" } ?? "–",
@@ -106,7 +116,36 @@ struct TodayView: View {
         dashboard(s)
         myDay(s)
 
-        notice("Оценките са наши, ориентировъчни изчисления от данните в Apple Health. Не са оценките на WHOOP или Polar и не са медицински съвет." + (s.sleepSource.map { " Сънят е от: \($0)." } ?? ""))
+        if w != nil {
+            notice("Сън, възстановяване, натоварване, HRV и пулс в покой са от WHOOP. Крачките и тренировките са от Apple Health. Не е медицински съвет.")
+        } else {
+            notice("Оценките са наши, ориентировъчни изчисления от данните в Apple Health. Не са оценките на WHOOP или Polar и не са медицински съвет." + (s.sleepSource.map { " Сънят е от: \($0)." } ?? ""))
+        }
+    }
+
+    /// Данните на WHOOP имат предимство пред Apple Health за сън, пулс и HRV.
+    private func merged(_ health: HealthSnapshot, with w: WhoopSnapshot?) -> HealthSnapshot {
+        guard let w else { return health }
+        var h = health
+        h.hrv = w.hrv ?? h.hrv
+        h.rhr = w.rhr ?? h.rhr
+        h.respiratory = w.respiratory ?? h.respiratory
+        h.oxygen = w.spo2 ?? h.oxygen
+        h.skinTempDelta = w.skinTempDelta ?? h.skinTempDelta
+        h.hrvBaseline = w.hrvBaseline ?? h.hrvBaseline
+        h.rhrBaseline = w.rhrBaseline ?? h.rhrBaseline
+        h.respiratoryBaseline = w.respiratoryBaseline ?? h.respiratoryBaseline
+        h.oxygenBaseline = w.spo2Baseline ?? h.oxygenBaseline
+        h.asleepHours = w.asleepHours ?? h.asleepHours
+        h.inBedHours = w.inBedHours ?? h.inBedHours
+        h.sleepStart = w.sleepStart ?? h.sleepStart
+        h.sleepEnd = w.sleepEnd ?? h.sleepEnd
+        h.sleepSource = "WHOOP"
+        if let kcal = w.cycleKcal, h.activeKcal == nil { h.activeKcal = kcal }
+        // Тренировки от WHOOP, без повторения с тези от Health със същото начало.
+        let known = Set(h.workouts.map { Int($0.start.timeIntervalSince1970 / 300) })
+        h.workouts += w.workouts.filter { !known.contains(Int($0.start.timeIntervalSince1970 / 300)) }
+        return h
     }
 
     private func recoveryColor(_ value: Double?) -> Color {
@@ -124,7 +163,7 @@ struct TodayView: View {
                            baseline: s.rhrBaseline, missing: "няма данни")
                 MetricTile(title: "HRV", value: s.hrv, unit: "мс", digits: 0,
                            baseline: s.hrvBaseline,
-                           missing: "не се записва в Health от WHOOP и Polar")
+                           missing: "свържи WHOOP (Профил → Устройства)")
                 MetricTile(title: "Дишане", value: s.respiratory, unit: "вд./мин", digits: 1,
                            baseline: s.respiratoryBaseline, missing: "няма данни")
                 MetricTile(title: "SpO₂", value: s.oxygen, unit: "%", digits: 0,

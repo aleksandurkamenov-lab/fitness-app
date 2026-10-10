@@ -77,6 +77,9 @@ private struct ProfileForm: View {
             }
 
             Section("Устройства") {
+                NavigationLink("WHOOP") {
+                    WhoopConnectView()
+                }
                 NavigationLink("Polar Loop") {
                     PolarConnectView()
                 }
