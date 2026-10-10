@@ -17,6 +17,16 @@ struct MeasurementsView: View {
         return trend.filter { $0.date >= from }
     }
 
+    /// Последната стойност; за мускулните зони отпуснато / стегнато.
+    private func summary(for kind: MeasurementKind) -> String {
+        func text(_ flexed: Bool?) -> String? {
+            measurements.last { $0.kind == kind && (flexed == nil || $0.isFlexed == flexed) }
+                .map { "\($0.cm.short)" }
+        }
+        guard kind.supportsFlex else { return text(nil).map { "\($0) см" } ?? "–" }
+        return "\(text(false) ?? "–") / \(text(true) ?? "–") см"
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -56,11 +66,10 @@ struct MeasurementsView: View {
 
                 Section("Обиколки") {
                     ForEach(MeasurementKind.allCases) { kind in
-                        let last = measurements.last { $0.kind == kind }
                         NavigationLink {
                             MeasurementDetailView(kind: kind)
                         } label: {
-                            LabeledContent(kind.title, value: last.map { "\($0.cm.short) см" } ?? "–")
+                            LabeledContent(kind.title, value: summary(for: kind))
                         }
                     }
                 }
@@ -166,18 +175,33 @@ struct MeasurementDetailView: View {
     @Query(sort: \MeasurementEntry.date, order: .reverse) private var all: [MeasurementEntry]
     @State private var date = Date.now
     @State private var cm: Double?
+    @State private var flexed = false
 
     private var entries: [MeasurementEntry] { all.filter { $0.kind == kind } }
+
+    private func label(_ entry: MeasurementEntry) -> String {
+        guard kind.supportsFlex else { return "см" }
+        return entry.isFlexed ? "Стегнато" : "Отпуснато"
+    }
 
     var body: some View {
         List {
             Section("Нов запис") {
                 DatePicker("Дата", selection: $date, in: ...Date.now, displayedComponents: .date)
-                TextField(entries.first.map { $0.cm.short } ?? "см", value: $cm, format: .number)
+                if kind.supportsFlex {
+                    Picker("Състояние", selection: $flexed) {
+                        Text("Отпуснато").tag(false)
+                        Text("Стегнато").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                }
+                TextField(entries.first { $0.isFlexed == flexed }.map { $0.cm.short } ?? "см",
+                          value: $cm, format: .number)
                     .keyboardType(.decimalPad)
                 Button("Запази") {
                     if let cm, cm > 0 {
-                        context.insert(MeasurementEntry(date: date, kind: kind, cm: cm))
+                        context.insert(MeasurementEntry(date: date, kind: kind, cm: cm,
+                                                        isFlexed: kind.supportsFlex && flexed))
                         self.cm = nil
                     }
                 }
@@ -188,17 +212,21 @@ struct MeasurementDetailView: View {
                 Section {
                     Chart(entries.reversed()) { entry in
                         LineMark(x: .value("Дата", entry.date), y: .value("см", entry.cm))
+                            .foregroundStyle(by: .value("Състояние", label(entry)))
                         PointMark(x: .value("Дата", entry.date), y: .value("см", entry.cm))
+                            .foregroundStyle(by: .value("Състояние", label(entry)))
                     }
                     .chartYScale(domain: .automatic(includesZero: false))
-                    .frame(height: 180)
+                    .frame(height: 200)
                 }
             }
 
             Section("История") {
                 ForEach(entries) { entry in
-                    LabeledContent(entry.date.formatted(date: .abbreviated, time: .omitted),
-                                   value: "\(entry.cm.short) см")
+                    LabeledContent(
+                        "\(entry.date.formatted(date: .abbreviated, time: .omitted))" +
+                            (kind.supportsFlex ? " · \(label(entry).lowercased())" : ""),
+                        value: "\(entry.cm.short) см")
                 }
                 .onDelete { offsets in
                     let items = entries
@@ -207,7 +235,7 @@ struct MeasurementDetailView: View {
             }
         }
         .navigationTitle(kind.title)
-        .keyboardDoneButton()
         .navigationBarTitleDisplayMode(.inline)
+        .keyboardDoneButton()
     }
 }

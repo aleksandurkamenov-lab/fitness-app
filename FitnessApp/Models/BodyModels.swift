@@ -20,16 +20,26 @@ enum GoalKind: String, CaseIterable, Identifiable, Codable {
 }
 
 enum MeasurementKind: String, CaseIterable, Identifiable, Codable {
-    case waist, neck, chest, arm, thigh, hips
+    case waist, abdomen, neck, chest, arm, thigh, calf, hips
     var id: String { rawValue }
     var title: String {
         switch self {
         case .waist: "Талия (под пъпа)"
+        case .abdomen: "Корем"
         case .neck: "Врат"
         case .chest: "Гърди"
         case .arm: "Ръка"
         case .thigh: "Бедро"
+        case .calf: "Прасец"
         case .hips: "Ханш"
+        }
+    }
+
+    /// За тези мускулни зони се мери и отпуснато, и стегнато.
+    var supportsFlex: Bool {
+        switch self {
+        case .arm, .thigh, .calf, .abdomen: true
+        default: false
         }
     }
 }
@@ -89,11 +99,14 @@ final class MeasurementEntry {
     var date: Date = Date.now
     var kindRaw: String = MeasurementKind.waist.rawValue
     var cm: Double = 0
+    /// true = стегнато, false = отпуснато.
+    var isFlexed: Bool = false
 
-    init(date: Date = .now, kind: MeasurementKind, cm: Double) {
+    init(date: Date = .now, kind: MeasurementKind, cm: Double, isFlexed: Bool = false) {
         self.date = date
         self.kindRaw = kind.rawValue
         self.cm = cm
+        self.isFlexed = isFlexed
     }
 
     var kind: MeasurementKind { MeasurementKind(rawValue: kindRaw) ?? .waist }
