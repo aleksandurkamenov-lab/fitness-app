@@ -19,6 +19,7 @@
 4. Сравни `md5sum` на Mac (`$HOME/mnt/fitness app/FitnessApp/...`) със същите файлове: стари копия чупеха билда.
 5. Xcode: Stop (350,120), 3 s, Run (324,120), ~45 s; увеличи [380,100,1000,140] и виж "Running FitnessApp on Kamenov" (не симулатор). При Build Failed отвори списъка с грешки (1318,120).
 6. `computer_release_lock`. Потребителят може да въвежда Mac парола и да отключва телефона.
+Преди пускане: `bash tools/precheck.sh` и агентът `.claude/agents/pre-release-reviewer.md` върху променените файлове.
 Xcode е "click" ниво: без писане. Линукс средата няма swift: кодът не се компилира тук, затова внимавай със синтаксиса.
 
 ## Код
