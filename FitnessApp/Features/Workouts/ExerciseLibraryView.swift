@@ -185,7 +185,7 @@ struct ExerciseDetailView: View {
 
             if points.count >= 2 {
                 Section("Приблизителен 1RM (кг)") {
-                    Chart(points) { point in
+                    Chart(Array(points.enumerated()), id: \.offset) { _, point in
                         LineMark(x: .value("Дата", point.date), y: .value("1RM", point.oneRM))
                         PointMark(x: .value("Дата", point.date), y: .value("1RM", point.oneRM))
                     }
