@@ -1,0 +1,783 @@
+{
+  "name": "Meso 22 Upper/Lower",
+  "weeks": 4,
+  "workouts": [
+    {
+      "name": "Upper Chest Focus",
+      "exercises": [
+        {
+          "name": "Barbell Overhead Press (Seated като на видеото в Whatsup)",
+          "muscle": "shoulders",
+          "note": "70кг ми бяха ок можех 6-8, но гледам да не се насилвам",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": 85.0,
+              "bestReps": 4.5
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": 80.0,
+              "bestReps": 5.0
+            }
+          ]
+        },
+        {
+          "name": "Lat Pulldown (close grip handle)",
+          "muscle": "back",
+          "note": "Едностранно",
+          "sets": [
+            {
+              "repMin": 5,
+              "repMax": 8,
+              "bestWeight": 100.0,
+              "bestReps": 10.0
+            },
+            {
+              "repMin": 8,
+              "repMax": 10,
+              "bestWeight": 95.0,
+              "bestReps": 9.0
+            }
+          ]
+        },
+        {
+          "name": "Pec Dec Machine",
+          "muscle": "chest",
+          "note": "Скипнах понеже имах болки",
+          "sets": [
+            {
+              "repMin": 8,
+              "repMax": 12,
+              "bestWeight": 72.0,
+              "bestReps": 12.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 8,
+              "bestWeight": 72.0,
+              "bestReps": 12.0
+            }
+          ]
+        },
+        {
+          "name": "D handle Cable Lateral Raises",
+          "muscle": "shoulders",
+          "note": "Опитай да вдигаш товара смикро тежест",
+          "sets": [
+            {
+              "repMin": 9,
+              "repMax": 12,
+              "bestWeight": 9.0,
+              "bestReps": 12.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 9,
+              "bestWeight": 11.3,
+              "bestReps": 8.0
+            }
+          ]
+        },
+        {
+          "name": "Biceps Seated DB curls",
+          "muscle": "biceps",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 9,
+              "repMax": 12,
+              "bestWeight": 20.0,
+              "bestReps": 9.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 9,
+              "bestWeight": 20.0,
+              "bestReps": 5.0
+            }
+          ]
+        },
+        {
+          "name": "Triceps Rope Extension",
+          "muscle": "triceps",
+          "note": "Гледай да си хитваш реп рейнджа не прави повече репс",
+          "sets": [
+            {
+              "repMin": 9,
+              "repMax": 12,
+              "bestWeight": 25.0,
+              "bestReps": 12.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 9,
+              "bestWeight": 27.0,
+              "bestReps": 9.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Lower Hamm Focus",
+      "exercises": [
+        {
+          "name": "Reverce Pec Dec",
+          "muscle": "shoulders",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 9,
+              "repMax": 12,
+              "bestWeight": 54.0,
+              "bestReps": 8.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 9,
+              "bestWeight": 57.0,
+              "bestReps": 7.0
+            }
+          ]
+        },
+        {
+          "name": "RDL",
+          "muscle": "hamstrings",
+          "note": "Ако можем да минем на майн и бак офф най - добре",
+          "sets": [
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": 167.5,
+              "bestReps": 8.0
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": 160.0,
+              "bestReps": 9.0
+            }
+          ]
+        },
+        {
+          "name": "Leg Press",
+          "muscle": "quads",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 8,
+              "repMax": 12,
+              "bestWeight": 105.0,
+              "bestReps": 10.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 8,
+              "bestWeight": 100.0,
+              "bestReps": 10.0
+            }
+          ]
+        },
+        {
+          "name": "Seated Leg Curl",
+          "muscle": "hamstrings",
+          "note": "Unilateral",
+          "sets": [
+            {
+              "repMin": 9,
+              "repMax": 12,
+              "bestWeight": 38.0,
+              "bestReps": 13.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 9,
+              "bestWeight": 42.0,
+              "bestReps": 10.0
+            }
+          ]
+        },
+        {
+          "name": "Barbell Trap shrugs",
+          "muscle": "back",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": 100.0,
+              "bestReps": 10.0
+            },
+            {
+              "repMin": 10,
+              "repMax": 12,
+              "bestWeight": 100.0,
+              "bestReps": 10.0
+            }
+          ]
+        },
+        {
+          "name": "Standing Calves Press (unilateral)",
+          "muscle": "calves",
+          "note": "Тука също спазвай диапазона на повторения",
+          "sets": [
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": 110.0,
+              "bestReps": 15.0
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": 110.0,
+              "bestReps": 12.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Upper Back Focus",
+      "exercises": [
+        {
+          "name": "Wide Grip Lat Pulldown",
+          "muscle": "back",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": 109.0,
+              "bestReps": 6.0
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": 100.0,
+              "bestReps": 8.0
+            }
+          ]
+        },
+        {
+          "name": "Barbell Bench Press",
+          "muscle": "chest",
+          "note": "Карам го леко след втората плазма",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": 105.0,
+              "bestReps": 4.0
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": 100.0,
+              "bestReps": 5.0
+            }
+          ]
+        },
+        {
+          "name": "Pendulum Row",
+          "muscle": "back",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": 90.0,
+              "bestReps": 10.0
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": 90.0,
+              "bestReps": 10.0
+            }
+          ]
+        },
+        {
+          "name": "Lateral Shoulder Machine",
+          "muscle": "shoulders",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 9,
+              "repMax": 12,
+              "bestWeight": 47.0,
+              "bestReps": 15.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 9,
+              "bestWeight": 51.0,
+              "bestReps": 7.0
+            }
+          ]
+        },
+        {
+          "name": "Bayesain Curl",
+          "muscle": "biceps",
+          "note": "С дъмбели понеже ме боли рамото на кабела",
+          "sets": [
+            {
+              "repMin": 9,
+              "repMax": 12,
+              "bestWeight": 15.8,
+              "bestReps": 8.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 9,
+              "bestWeight": 17.5,
+              "bestReps": 4.0
+            }
+          ]
+        },
+        {
+          "name": "Triceps Unilateral Extension",
+          "muscle": "triceps",
+          "note": "с къф · Намалявам товара понеже ме боли рамото и гледам да не го натискам",
+          "sets": [
+            {
+              "repMin": 9,
+              "repMax": 12,
+              "bestWeight": 13.6,
+              "bestReps": 12.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 9,
+              "bestWeight": 13.6,
+              "bestReps": 8.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Lower Quad Focus",
+      "exercises": [
+        {
+          "name": "Face Pulls",
+          "muscle": "shoulders",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 8,
+              "repMax": 12,
+              "bestWeight": 39.0,
+              "bestReps": 12.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 8,
+              "bestWeight": 39.0,
+              "bestReps": 9.0
+            }
+          ]
+        },
+        {
+          "name": "Hack Squat",
+          "muscle": "quads",
+          "note": "Смит машина",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": 155.0,
+              "bestReps": 5.0
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": 130.0,
+              "bestReps": 8.0
+            }
+          ]
+        },
+        {
+          "name": "Unilateral Leg Curls",
+          "muscle": "hamstrings",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            }
+          ]
+        },
+        {
+          "name": "Leg Extension",
+          "muscle": "quads",
+          "note": "Unilateral",
+          "sets": [
+            {
+              "repMin": 9,
+              "repMax": 12,
+              "bestWeight": 41.0,
+              "bestReps": 12.0
+            },
+            {
+              "repMin": 5,
+              "repMax": 9,
+              "bestWeight": 38.0,
+              "bestReps": 10.0
+            }
+          ]
+        },
+        {
+          "name": "Adductor machine",
+          "muscle": "quads",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 12,
+              "repMax": 15,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 12,
+              "repMax": 15,
+              "bestWeight": null,
+              "bestReps": null
+            }
+          ]
+        },
+        {
+          "name": "Leg Press Calves press",
+          "muscle": "calves",
+          "note": "Фокус върху стреча в дълбока позиция",
+          "sets": [
+            {
+              "repMin": 12,
+              "repMax": 15,
+              "bestWeight": 32.0,
+              "bestReps": 12.0
+            },
+            {
+              "repMin": 12,
+              "repMax": 15,
+              "bestWeight": 34.0,
+              "bestReps": 11.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Push A",
+      "exercises": [
+        {
+          "name": "Smith Machine or Shoulder Press",
+          "muscle": "shoulders",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            }
+          ]
+        },
+        {
+          "name": "Chest Press Machine",
+          "muscle": "chest",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            }
+          ]
+        },
+        {
+          "name": "Incline Cable Fly",
+          "muscle": "chest",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            }
+          ]
+        },
+        {
+          "name": "Close Grip Chest Press ( Дето Josh прави )",
+          "muscle": "chest",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            }
+          ]
+        },
+        {
+          "name": "Chest supported lateral shoulder",
+          "muscle": "shoulders",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            }
+          ]
+        },
+        {
+          "name": "Hoffman Triceps Extension",
+          "muscle": "triceps",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            }
+          ]
+        },
+        {
+          "name": "X Rope Extension",
+          "muscle": "triceps",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            }
+          ]
+        },
+        {
+          "name": "Calves Press Machine ( donkey )",
+          "muscle": "calves",
+          "note": "",
+          "sets": [
+            {
+              "repMin": 4,
+              "repMax": 6,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            },
+            {
+              "repMin": 7,
+              "repMax": 10,
+              "bestWeight": null,
+              "bestReps": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
