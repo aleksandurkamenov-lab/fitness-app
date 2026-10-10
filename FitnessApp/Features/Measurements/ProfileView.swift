@@ -76,6 +76,12 @@ private struct ProfileForm: View {
                         value: $profile.fatMinGPerKg, in: 0.4...2.0, step: 0.1)
             }
 
+            Section("Устройства") {
+                NavigationLink("Polar Loop") {
+                    PolarConnectView()
+                }
+            }
+
             Section {
             } footer: {
                 Text("Калкулаторите са ориентировъчни и не са медицински съвет.")
