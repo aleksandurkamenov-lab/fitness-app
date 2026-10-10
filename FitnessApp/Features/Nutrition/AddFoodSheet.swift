@@ -19,6 +19,10 @@ struct AddFoodSheet: View {
     @State private var fat = ""
     @State private var grams = "100"
     @State private var saveToLibrary = true
+    @State private var onlineQuery = ""
+    @State private var onlineResults: [OnlineFood] = []
+    @State private var isSearching = false
+    @State private var searchMessage: String?
 
     private func number(_ text: String) -> Double {
         Double(text.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)) ?? 0
@@ -43,14 +47,17 @@ struct AddFoodSheet: View {
                 Picker("Вид", selection: $mode) {
                     Text("Запазени").tag(0)
                     Text("Нова храна").tag(1)
+                    Text("База").tag(2)
                 }
                 .pickerStyle(.segmented)
                 .listRowBackground(Color.clear)
 
                 if mode == 0 {
                     savedSection
-                } else {
+                } else if mode == 1 {
                     newSection
+                } else {
+                    onlineSection
                 }
             }
             .navigationTitle(meal.title)
@@ -104,6 +111,8 @@ struct AddFoodSheet: View {
                         .keyboardType(.decimalPad)
                     Text("г").foregroundStyle(.secondary)
                 }
+                preview(grams: number(pickedGrams), kcal: picked.kcalPer100, protein: picked.proteinPer100,
+                        carbs: picked.carbsPer100, fat: picked.fatPer100)
                 Button("Добави \(picked.name)") {
                     let amount = number(pickedGrams)
                     guard amount > 0 else { return }
@@ -134,6 +143,8 @@ struct AddFoodSheet: View {
         Section("Колко изяде") {
             field("Количество", $grams, "г")
             Toggle("Запази в списъка", isOn: $saveToLibrary)
+            preview(grams: number(grams), kcal: number(kcal), protein: number(protein),
+                    carbs: number(carbs), fat: number(fat))
         }
         Section {
             Button("Добави") {
@@ -150,6 +161,67 @@ struct AddFoodSheet: View {
                 dismiss()
             }
             .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+        }
+    }
+
+    /// Изчислени стойности за въведеното количество.
+    private func preview(grams: Double, kcal: Double, protein: Double, carbs: Double, fat: Double) -> some View {
+        let factor = grams / 100
+        return Text("= \((kcal * factor).short) ккал · Б \((protein * factor).short) · В \((carbs * factor).short) · М \((fat * factor).short)")
+            .font(.subheadline.weight(.semibold))
+    }
+
+    @ViewBuilder private var onlineSection: some View {
+        Section {
+            TextField("Име на храна или продукт", text: $onlineQuery)
+                .submitLabel(.search)
+                .onSubmit { runSearch() }
+            Button("Търси") { runSearch() }
+                .disabled(onlineQuery.trimmingCharacters(in: .whitespaces).isEmpty || isSearching)
+            if isSearching { ProgressView() }
+            if let searchMessage {
+                Text(searchMessage).font(.footnote).foregroundStyle(.secondary)
+            }
+        } footer: {
+            Text("Данни от Open Food Facts (нужен е интернет). Избраната храна се запазва в твоя списък и после я намираш в \"Запазени\".")
+        }
+        Section {
+            ForEach(onlineResults) { food in
+                Button {
+                    let item = FoodItem(name: food.name, kcalPer100: food.kcal, proteinPer100: food.protein,
+                                        carbsPer100: food.carbs, fatPer100: food.fat)
+                    item.lastUsed = .now
+                    context.insert(item)
+                    picked = item
+                    pickedGrams = "100"
+                    mode = 0
+                } label: {
+                    VStack(alignment: .leading) {
+                        Text(food.name).foregroundStyle(.primary)
+                        Text("на 100 г: \(food.kcal.short) ккал · Б \(food.protein.short) · В \(food.carbs.short) · М \(food.fat.short)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private func runSearch() {
+        let query = onlineQuery.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty, !isSearching else { return }
+        isSearching = true
+        searchMessage = nil
+        Task {
+            do {
+                let results = try await FoodSearch.search(query)
+                onlineResults = results
+                searchMessage = results.isEmpty ? "Няма резултати." : nil
+            } catch {
+                onlineResults = []
+                searchMessage = "Не успях да търся: \(error.localizedDescription)"
+            }
+            isSearching = false
         }
     }
 

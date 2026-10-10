@@ -8,6 +8,7 @@ struct NutritionView: View {
     @Environment(\.modelContext) private var context
     @State private var day = Calendar.current.startOfDay(for: .now)
     @State private var addingMeal: Meal?
+    @State private var editing: FoodEntry?
 
     private var calendar: Calendar { Calendar.current }
 
@@ -79,15 +80,19 @@ struct NutritionView: View {
                     let items = today.filter { $0.meal == meal }
                     Section {
                         ForEach(items) { entry in
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack {
-                                    Text(entry.name)
-                                    Spacer()
-                                    Text("\(entry.kcal.short) ккал").foregroundStyle(.secondary)
+                            Button {
+                                editing = entry
+                            } label: {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack {
+                                        Text(entry.name).foregroundStyle(.primary)
+                                        Spacer()
+                                        Text("\(entry.kcal.short) ккал").foregroundStyle(.secondary)
+                                    }
+                                    Text("\(entry.grams.short) г · Б \(entry.protein.short) · В \(entry.carbs.short) · М \(entry.fat.short)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
                                 }
-                                Text("\(entry.grams.short) г · Б \(entry.protein.short) · В \(entry.carbs.short) · М \(entry.fat.short)")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
                             }
                         }
                         .onDelete { offsets in
@@ -123,6 +128,9 @@ struct NutritionView: View {
             .sheet(item: $addingMeal) { meal in
                 AddFoodSheet(meal: meal, day: day)
             }
+            .sheet(item: $editing) { entry in
+                EditEntrySheet(entry: entry)
+            }
         }
     }
 }
@@ -153,3 +161,58 @@ private struct MacroBar: View {
     }
 }
 
+
+/// Промяна на количеството: калориите и макросите се преизчисляват автоматично.
+private struct EditEntrySheet: View {
+    let entry: FoodEntry
+    @Environment(\.dismiss) private var dismiss
+    @State private var gramsText = ""
+
+    private var grams: Double {
+        Double(gramsText.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)) ?? 0
+    }
+
+    private var factor: Double { entry.grams > 0 ? grams / entry.grams : 0 }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(entry.name) {
+                    HStack {
+                        Text("Количество")
+                        Spacer()
+                        TextField("0", text: $gramsText)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 100)
+                        Text("г").foregroundStyle(.secondary)
+                    }
+                    Text("= \((entry.kcal * factor).short) ккал · Б \((entry.protein * factor).short) · В \((entry.carbs * factor).short) · М \((entry.fat * factor).short)")
+                        .font(.subheadline.weight(.semibold))
+                }
+                Section {
+                    Button("Запази") {
+                        guard grams > 0, entry.grams > 0 else { return }
+                        let scale = grams / entry.grams
+                        entry.kcal *= scale
+                        entry.protein *= scale
+                        entry.carbs *= scale
+                        entry.fat *= scale
+                        entry.grams = grams
+                        dismiss()
+                    }
+                    .disabled(grams <= 0)
+                }
+            }
+            .navigationTitle("Количество")
+            .navigationBarTitleDisplayMode(.inline)
+            .keyboardDoneButton()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Затвори") { dismiss() }
+                }
+            }
+            .onAppear { gramsText = entry.grams.short }
+        }
+    }
+}
