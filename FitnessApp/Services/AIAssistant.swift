@@ -200,14 +200,28 @@ enum AIAssistant {
         value == value.rounded() ? "\(Int(value))" : String(format: "%.1f", value)
     }
 
-    static func systemPrompt(context: ModelContext, healthDays: [Date: NutritionDay]) -> String {
+    /// Текст за Claude приложението (без API ключ): данните, списък на снимките и задачата.
+    static func exportText(task: String, context: ModelContext, healthDays: [Date: NutritionDay],
+                           photoLabels: [String]) -> String {
+        var text = systemPrompt(context: context, healthDays: healthDays, forExport: true)
+        if !photoLabels.isEmpty {
+            text += "\nПрикачени снимки по ред: " + photoLabels.joined(separator: "; ")
+        }
+        return text + "\n\nЗадача: " + task
+    }
+
+    static func systemPrompt(context: ModelContext, healthDays: [Date: NutritionDay], forExport: Bool = false) -> String {
         let calendar = Calendar.current
         let now = Date.now
         let today = calendar.startOfDay(for: now)
         var lines: [String] = []
         lines.append("Ти си личен треньор и хранителен помощник във фитнес приложението на потребителя. Отговаряй на български, кратко и конкретно (английски термини са ок). Числата за здраве и хранене са ориентировъчни, не са медицински съвет; казвай го, когато даваш такива препоръки.")
         lines.append("Като треньор следиш съня, възстановяването (WHOOP), тренировките и прогреса по упражненията, теглото спрямо целта и оставащите макроси за деня. Свързвай ги: при ниско възстановяване или лош сън предлагай по-леко натоварване; при застой в упражнение предлагай промяна; при отклонение на теглото от целевото темпо предлагай корекция на калориите. За оставащите макроси давай конкретни храни и ястия с грамове, по възможност от запазените храни.")
-        lines.append("Когато потребителят каже какво е ял, запиши всяка храна с log_food. Ако храната я има в запазените храни, сметни от нейните стойности на 100 г, иначе оцени разумно. Когато каже теглото си, ползвай log_weight. Ако само пита, не записвай нищо.")
+        if forExport {
+            lines.append("Данните по-долу са от моето фитнес приложение.")
+        } else {
+            lines.append("Когато потребителят каже какво е ял, запиши всяка храна с log_food. Ако храната я има в запазените храни, сметни от нейните стойности на 100 г, иначе оцени разумно. Когато каже теглото си, ползвай log_weight. Ако само пита, не записвай нищо.")
+        }
         lines.append("Когато потребителят поиска седмичен анализ: прегледай теглото и тренда, мерките, снимките (сравни всяка поза с предишната, ако са прикачени), тренировките, обема по мускулни групи и прогреса по упражненията, храненето спрямо целите, съня и възстановяването. Сравни тази седмица с предишните. Завърши с 3 конкретни препоръки за следващата седмица.")
         lines.append("Днес е \(key(today)), \(now.formatted(.dateTime.weekday(.wide))), часът е \(now.formatted(date: .omitted, time: .shortened)).")
 
