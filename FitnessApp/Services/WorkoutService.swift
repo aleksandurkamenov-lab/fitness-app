@@ -62,6 +62,61 @@ enum WorkoutService {
         }
     }
 
+    /// Следващ мезоцикъл от предишния: същите тренировки и упражнения.
+    /// Най-добрите резултати от стария стават "най-добро до сега", а последните килограми се попълват като планирани.
+    @discardableResult
+    static func continueMesocycle(_ old: Mesocycle, in context: ModelContext) -> Mesocycle {
+        let meso = Mesocycle(name: nextName(after: old.name), weekCount: old.weekCount)
+        context.insert(meso)
+        let oldTemplates = Set(old.templates.map(\.persistentModelID))
+        let allSessions = (try? context.fetch(FetchDescriptor<WorkoutSession>())) ?? []
+        let oldSessions = allSessions.filter { session in
+            guard session.isFinished, let id = session.template?.persistentModelID else { return false }
+            return oldTemplates.contains(id)
+        }
+
+        for oldTemplate in old.sortedTemplates {
+            let template = WorkoutTemplate(name: oldTemplate.name, order: oldTemplate.order)
+            template.mesocycle = meso
+            context.insert(template)
+
+            for oldItem in oldTemplate.sortedItems {
+                guard let exercise = oldItem.exercise else { continue }
+                let item = TemplateExercise(exercise: exercise, order: oldItem.order, targetSets: oldItem.targetSets,
+                                            repMin: oldItem.repMin, repMax: oldItem.repMax,
+                                            restSeconds: oldItem.restSeconds, note: oldItem.note)
+                item.template = template
+                context.insert(item)
+
+                let done = oldSessions.flatMap(\.sets).filter {
+                    $0.isDone && $0.exercise?.persistentModelID == exercise.persistentModelID
+                }
+                let last = lastSets(for: exercise, before: .now, in: context)
+                item.targets = oldItem.targets.enumerated().map { index, target in
+                    var next = target
+                    let sameSet = done.filter { $0.setIndex == index }
+                    let pool = sameSet.isEmpty ? done : sameSet
+                    if let best = pool.max(by: { $0.estimatedOneRepMax < $1.estimatedOneRepMax }) {
+                        next.bestWeight = best.weight
+                        next.bestReps = Double(best.reps)
+                    }
+                    if index < last.count, last[index].weight > 0 {
+                        next.plannedWeight = last[index].weight
+                    }
+                    return next
+                }
+            }
+        }
+        return meso
+    }
+
+    /// "Meso 22" -> "Meso 23"; без число накрая -> "… 2".
+    private static func nextName(after name: String) -> String {
+        let digits = String(name.reversed().prefix { $0.isNumber }.reversed())
+        guard let number = Int(digits), !digits.isEmpty else { return name + " 2" }
+        return String(name.dropLast(digits.count)) + String(number + 1)
+    }
+
     /// Нов мезоцикъл с 4 празни тренировки Upper/Lower/Upper/Lower.
     @discardableResult
     static func createMesocycle(name: String, weeks: Int, in context: ModelContext) -> Mesocycle {

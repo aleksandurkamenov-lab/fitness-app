@@ -76,6 +76,22 @@ private struct ProfileForm: View {
                         value: $profile.fatMinGPerKg, in: 0.4...2.0, step: 0.1)
             }
 
+            Section {
+                Toggle("Променлив прием", isOn: $profile.variableCalories)
+                if profile.variableCalories {
+                    Stepper("Тренировъчни дни: \(profile.trainingDaysPerWeek) / седм.",
+                            value: $profile.trainingDaysPerWeek, in: 1...6)
+                    Stepper("Тренировъчен ден: +\(Int(profile.trainingDayBoostPercent))%",
+                            value: $profile.trainingDayBoostPercent, in: 5...30, step: 5)
+                }
+            } header: {
+                Text("Калориен прием")
+            } footer: {
+                Text(profile.variableCalories
+                     ? "Тренировъчните дни получават повече калории от въглехидрати, почивните по-малко. Седмичната сума остава същата."
+                     : "Еднакви цели всеки ден (линеен прием).")
+            }
+
             Section("Устройства") {
                 NavigationLink("WHOOP") {
                     WhoopConnectView()
