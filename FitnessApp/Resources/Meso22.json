@@ -1,0 +1,21 @@
+{
+  "name": "Примерен мезоцикъл",
+  "weeks": 4,
+  "workouts": [
+    {
+      "name": "Горна част",
+      "exercises": [
+        {"name": "Bench Press", "muscle": "chest", "note": "", "sets": [{"repMin": 5, "repMax": 8}, {"repMin": 8, "repMax": 10}]},
+        {"name": "Lat Pulldown", "muscle": "back", "note": "", "sets": [{"repMin": 8, "repMax": 12}, {"repMin": 8, "repMax": 12}]},
+        {"name": "Overhead Press", "muscle": "shoulders", "note": "", "sets": [{"repMin": 6, "repMax": 10}, {"repMin": 8, "repMax": 12}]}
+      ]
+    },
+    {
+      "name": "Долна част",
+      "exercises": [
+        {"name": "Squat", "muscle": "quads", "note": "", "sets": [{"repMin": 5, "repMax": 8}, {"repMin": 8, "repMax": 10}]},
+        {"name": "Romanian Deadlift", "muscle": "hamstrings", "note": "", "sets": [{"repMin": 6, "repMax": 10}, {"repMin": 8, "repMax": 12}]}
+      ]
+    }
+  ]
+}
