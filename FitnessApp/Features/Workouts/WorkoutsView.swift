@@ -64,7 +64,7 @@ struct WorkoutsView: View {
 
                 Section {
                 } footer: {
-                    Text("Версия v36")
+                    Text("Версия v37")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -131,7 +131,7 @@ struct SessionRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             ForEach(session.exerciseGroups) { group in
-                let done = group.sets.filter(\.isDone)
+                let done = group.sets.filter(\.isWorkSet)
                 if !done.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
                         Text(group.exercise?.name ?? "Упражнение")

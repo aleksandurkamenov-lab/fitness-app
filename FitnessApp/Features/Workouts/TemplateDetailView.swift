@@ -112,8 +112,7 @@ private struct TemplateExerciseRow: View {
                             .keyboardType(.numberPad)
                             .textFieldStyle(.roundedBorder)
                             .multilineTextAlignment(.center)
-                        TextField("кг", value: weightBinding(index), format: .number)
-                            .keyboardType(.decimalPad)
+                        DecimalField(placeholder: "кг", value: weightBinding(index))
                             .textFieldStyle(.roundedBorder)
                             .multilineTextAlignment(.center)
                     }
@@ -181,12 +180,12 @@ private struct TemplateExerciseRow: View {
         )
     }
 
-    private func weightBinding(_ index: Int) -> Binding<Double?> {
+    private func weightBinding(_ index: Int) -> Binding<Double> {
         Binding(
-            get: { item.targets[index].plannedWeight },
+            get: { item.targets[index].plannedWeight ?? 0 },
             set: { newValue in
                 var targets = item.targets
-                targets[index].plannedWeight = newValue
+                targets[index].plannedWeight = newValue > 0 ? newValue : nil
                 item.targets = targets
             }
         )
