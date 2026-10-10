@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 /// Чат с Claude: въпроси, съвети като личен треньор и бързо записване на храна и тегло.
 struct AIChatView: View {
@@ -7,6 +8,7 @@ struct AIChatView: View {
     @Query(sort: \AIMessage.date) private var messages: [AIMessage]
     @AppStorage("aiModel") private var model = AIModel.haiku.rawValue
     @State private var input = ""
+    @State private var shareItems: ShareItems?
     @State private var busy = false
     @State private var errorText: String?
     @State private var showingSettings = false
@@ -35,7 +37,11 @@ struct AIChatView: View {
             LazyVStack(alignment: .leading, spacing: 10) {
                 if messages.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Питай каквото искаш или пиши какво си ял, например „200 г ориз и 150 г пилешко на обяд“, и аз ще го запиша.")
+                        if ClaudeService.apiKey.isEmpty {
+                            Text("Без API ключ бутоните и съобщенията отварят Claude приложението с твоите данни (влиза в Pro плана). Избери Claude от менюто за споделяне. Текстът се копира и в клипборда, ако трябва да го поставиш.")
+                        } else {
+                            Text("Питай каквото искаш или пиши какво си ял, например „200 г ориз и 150 г пилешко на обяд“, и аз ще го запиша.")
+                        }
                         Text("Виждам теглото, храненето, тренировките, съня и възстановяването ти. Съветите са ориентировъчни, не са медицински съвет.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -129,12 +135,14 @@ struct AIChatView: View {
                 }
             }
         }
+        .sheet(item: $shareItems) { share in
+            ActivityView(items: share.items)
+        }
         .sheet(isPresented: $showingSettings) {
             AISettingsView(model: $model)
         }
         .task {
             healthDays = await health.nutrition(days: 14)
-            if ClaudeService.apiKey.isEmpty { showingSettings = true }
         }
     }
 
@@ -142,6 +150,10 @@ struct AIChatView: View {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !busy else { return }
         input = ""
+        if ClaudeService.apiKey.isEmpty {
+            shareToClaudeApp(trimmed, withPhotos: withPhotos)
+            return
+        }
         errorText = nil
         context.insert(AIMessage(role: "user", text: trimmed))
         try? context.save()
@@ -163,6 +175,37 @@ struct AIChatView: View {
             busy = false
         }
     }
+}
+
+extension AIChatView {
+    /// Без API ключ: данните (и снимките) отиват в Claude приложението през менюто за споделяне.
+    private func shareToClaudeApp(_ task: String, withPhotos: Bool) {
+        let photos = withPhotos ? AIAssistant.weeklyPhotos(context: context) : []
+        let text = AIAssistant.exportText(task: task, context: context, healthDays: healthDays,
+                                          photoLabels: photos.map(\.label))
+        UIPasteboard.general.string = text
+        var items: [Any] = [text]
+        for photo in photos {
+            if let image = UIImage(data: photo.data) { items.append(image) }
+        }
+        shareItems = ShareItems(items: items)
+        if withPhotos { lastWeeklyAnalysis = Date.now.timeIntervalSince1970 }
+    }
+}
+
+struct ShareItems: Identifiable {
+    let id = UUID()
+    let items: [Any]
+}
+
+struct ActivityView: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
 private struct MessageBubble: View {
