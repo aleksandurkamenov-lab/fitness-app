@@ -37,6 +37,20 @@ struct TrendsView: View {
                     }
                 }
 
+                NavigationLink {
+                    StrengthProgressView()
+                } label: {
+                    HStack {
+                        Label("Силов прогрес", systemImage: "dumbbell")
+                            .font(.headline)
+                        Spacer()
+                        Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                    }
+                    .padding()
+                    .background(.background, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+
                 ForEach(MetricKind.allCases) { kind in
                     let data = series(kind)
                     if data.count >= 2, let last = data.last {
