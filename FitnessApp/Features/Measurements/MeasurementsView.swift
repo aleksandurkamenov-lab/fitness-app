@@ -7,6 +7,9 @@ struct MeasurementsView: View {
     @Query(sort: \MeasurementEntry.date) private var measurements: [MeasurementEntry]
     @State private var showingAddWeight = false
     @State private var rangeDays = 30
+    @Environment(\.modelContext) private var context
+    @State private var health = HealthService()
+    @State private var importedCount: Int?
 
     private var trend: [BodyMath.TrendPoint] { BodyMath.trend(weights) }
 
@@ -66,6 +69,18 @@ struct MeasurementsView: View {
                         showingAddWeight = true
                     } label: {
                         Label("Добави тегло", systemImage: "plus")
+                    }
+                    Button {
+                        Task {
+                            importedCount = HistorySync.importWeights(await health.weightHistory(), in: context)
+                        }
+                    } label: {
+                        Label("Внеси теглото от Apple Health", systemImage: "heart.text.square")
+                    }
+                    if let importedCount {
+                        Text(importedCount > 0 ? "Внесени записи: \(importedCount)" : "Няма нови записи в Apple Health.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                     NavigationLink("История на теглото") {
                         WeightHistoryView()

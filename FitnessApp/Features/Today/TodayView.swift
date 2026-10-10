@@ -3,6 +3,7 @@ import SwiftData
 
 /// Днес: сън, възстановяване и натоварване от Apple Health, в духа на WHOOP.
 struct TodayView: View {
+    @Environment(\.modelContext) private var context
     @State private var health = HealthService()
     @State private var whoop = WhoopService.shared
     @Query private var profiles: [UserProfile]
@@ -37,12 +38,25 @@ struct TodayView: View {
             .refreshable {
                 await health.load(age: age)
                 await whoop.load()
+                await syncHistory()
             }
             .task {
                 if health.wasRequested { await health.load(age: age) }
                 if whoop.isConnected { await whoop.load() }
+                await syncHistory()
             }
         }
+    }
+
+    /// Записва историята на показателите и внася старото тегло от Health.
+    private func syncHistory() async {
+        var points: [MetricPoint] = []
+        if health.wasRequested {
+            points += await health.history(days: 90)
+            HistorySync.importWeights(await health.weightHistory(), in: context)
+        }
+        if whoop.isConnected { points += await whoop.history() }
+        HistorySync.store(points, in: context)
     }
 
     // MARK: Връзка
@@ -107,6 +121,20 @@ struct TodayView: View {
         }
         .padding()
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
+
+        NavigationLink {
+            TrendsView()
+        } label: {
+            HStack {
+                Label("Тенденции и графики", systemImage: "chart.xyaxis.line")
+                    .font(.headline)
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(.background, in: RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
 
         if recovery == nil {
             notice("Възстановяването се смята, когато има поне 7 дни пулс в покой, дишане или HRV в Apple Health плюс сън. Дотогава показваме само сън и натоварване.")

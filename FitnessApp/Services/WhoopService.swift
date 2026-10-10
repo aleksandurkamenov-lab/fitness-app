@@ -5,6 +5,7 @@ import Observation
 
 private struct WhoopPage<T: Decodable>: Decodable {
     let records: [T]
+    let next_token: String?
 }
 
 private struct WhoopRecovery: Decodable {
@@ -335,5 +336,59 @@ final class WhoopService {
             statusText = "Свързано с WHOOP."
         }
         snapshot = result
+    }
+
+    // MARK: История
+
+    /// Всички страници на колекция (до `pages` по 25 записа).
+    private func allRecords<T: Decodable>(_ path: String, pages: Int, as type: T.Type) async -> [T] {
+        var result: [T] = []
+        var token: String?
+        for _ in 0..<pages {
+            var query = ["limit": "25"]
+            if let token { query["nextToken"] = token }
+            guard let page = await get(path, query: query, as: WhoopPage<T>.self) else { break }
+            result += page.records
+            guard let next = page.next_token, !next.isEmpty else { break }
+            token = next
+        }
+        return result
+    }
+
+    /// Дневна история от WHOOP за около 100 дни.
+    func history() async -> [MetricPoint] {
+        guard isConnected else { return [] }
+        var points: [MetricPoint] = []
+        func add(_ kind: MetricKind, _ date: Date?, _ value: Double?) {
+            guard let date, let value else { return }
+            points.append(MetricPoint(kind: kind, day: HistorySync.dayStart(date), value: value, source: .whoop))
+        }
+
+        for record in await allRecords("/v2/recovery", pages: 4, as: WhoopRecovery.self)
+        where record.score_state == "SCORED" {
+            let day = Self.date(record.created_at)
+            add(.recovery, day, record.score?.recovery_score)
+            add(.hrv, day, record.score?.hrv_rmssd_milli)
+            add(.rhr, day, record.score?.resting_heart_rate)
+            add(.spo2, day, record.score?.spo2_percentage)
+            add(.skinTemp, day, record.score?.skin_temp_celsius)
+        }
+        for record in await allRecords("/v2/activity/sleep", pages: 4, as: WhoopSleep.self)
+        where record.score_state == "SCORED" && (record.nap ?? false) == false {
+            let day = Self.date(record.end)
+            add(.sleepPerformance, day, record.score?.sleep_performance_percentage)
+            add(.respiratory, day, record.score?.respiratory_rate)
+            if let stage = record.score?.stage_summary {
+                let asleep = (stage.total_light_sleep_time_milli ?? 0)
+                    + (stage.total_slow_wave_sleep_time_milli ?? 0)
+                    + (stage.total_rem_sleep_time_milli ?? 0)
+                if asleep > 0 { add(.sleepHours, day, asleep / 3_600_000) }
+            }
+        }
+        for record in await allRecords("/v2/cycle", pages: 4, as: WhoopCycle.self)
+        where record.score_state == "SCORED" {
+            add(.strain, Self.date(record.start), record.score?.strain)
+        }
+        return points
     }
 }

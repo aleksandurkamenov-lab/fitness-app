@@ -17,6 +17,7 @@ struct FitnessApp: App {
             UserProfile.self,
             WeightEntry.self,
             MeasurementEntry.self,
+            DailyMetric.self,
         ])
     }
 }

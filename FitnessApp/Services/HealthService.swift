@@ -62,6 +62,8 @@ final class HealthService {
             HKQuantityType(.heartRate),
             HKQuantityType(.vo2Max),
             HKQuantityType(.appleSleepingWristTemperature),
+            HKQuantityType(.bodyMass),
+            HKQuantityType(.bodyFatPercentage),
         ]
         types.insert(HKObjectType.workoutType())
         return types
@@ -86,6 +88,12 @@ final class HealthService {
         isLoading = true
         defer { isLoading = false }
         errorText = nil
+
+        // Ако сме добавили нови типове данни, Apple ще покаже само липсващите разрешения.
+        if let status = try? await store.statusForAuthorizationRequest(toShare: [], read: readTypes),
+           status == .shouldRequest {
+            try? await store.requestAuthorization(toShare: [], read: readTypes)
+        }
 
         let calendar = Calendar.current
         let now = Date.now
@@ -273,5 +281,104 @@ final class HealthService {
         let grouped = Dictionary(grouping: past) { calendar.startOfDay(for: $0.date) }
         let dailyMeans = grouped.values.map { $0.map(\.value).reduce(0, +) / Double($0.count) }
         return RecoveryMath.Baseline(values: dailyMeans)
+    }
+
+    // MARK: История
+
+    struct WeightSample {
+        let id: String
+        let date: Date
+        let kg: Double
+    }
+
+    /// Всички измервания на теглото от Apple Health (за внос).
+    func weightHistory() async -> [WeightSample] {
+        guard isAvailable else { return [] }
+        let predicate = HKQuery.predicateForSamples(withStart: .distantPast, end: .now, options: [])
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.quantitySample(type: HKQuantityType(.bodyMass), predicate: predicate)],
+            sortDescriptors: [SortDescriptor(\.startDate)]
+        )
+        let samples = (try? await descriptor.result(for: store)) ?? []
+        return samples.map {
+            WeightSample(id: $0.uuid.uuidString, date: $0.startDate,
+                         kg: $0.quantity.doubleValue(for: .gramUnit(with: .kilo)))
+        }
+    }
+
+    /// Дневна история на показателите за последните дни.
+    func history(days: Int) async -> [MetricPoint] {
+        guard isAvailable else { return [] }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        guard let from = calendar.date(byAdding: .day, value: -days, to: today) else { return [] }
+        var points: [MetricPoint] = []
+
+        func dailyMeans(_ samples: [Sample], scale: Double = 1) -> [Date: Double] {
+            Dictionary(grouping: samples) { calendar.startOfDay(for: $0.date) }
+                .mapValues { $0.map(\.value).reduce(0, +) / Double($0.count) * scale }
+        }
+        func add(_ kind: MetricKind, _ values: [Date: Double]) {
+            for (day, value) in values {
+                points.append(MetricPoint(kind: kind, day: day, value: value, source: .health))
+            }
+        }
+
+        add(.hrv, dailyMeans(await quantitySamples(.heartRateVariabilitySDNN, unit: .secondUnit(with: .milli), from: from, to: .now)))
+        add(.rhr, dailyMeans(await quantitySamples(.restingHeartRate, unit: HKUnit.count().unitDivided(by: .minute()), from: from, to: .now)))
+        add(.respiratory, dailyMeans(await quantitySamples(.respiratoryRate, unit: HKUnit.count().unitDivided(by: .minute()), from: from, to: .now)))
+        add(.spo2, dailyMeans(await quantitySamples(.oxygenSaturation, unit: .percent(), from: from, to: .now), scale: 100))
+        add(.skinTemp, dailyMeans(await quantitySamples(.appleSleepingWristTemperature, unit: .degreeCelsius(), from: from, to: .now)))
+
+        add(.steps, await dailyTotals(.stepCount, unit: .count(), from: from))
+        add(.activeKcal, await dailyTotals(.activeEnergyBurned, unit: .kilocalorie(), from: from))
+        add(.sleepHours, await sleepHoursByDay(from: from))
+        return points
+    }
+
+    private func dailyTotals(_ identifier: HKQuantityTypeIdentifier, unit: HKUnit, from: Date) async -> [Date: Double] {
+        let calendar = Calendar.current
+        let predicate = HKQuery.predicateForSamples(withStart: from, end: .now, options: .strictStartDate)
+        let descriptor = HKStatisticsCollectionQueryDescriptor(
+            predicate: .quantitySample(type: HKQuantityType(identifier), predicate: predicate),
+            options: .cumulativeSum,
+            anchorDate: calendar.startOfDay(for: from),
+            intervalComponents: DateComponents(day: 1)
+        )
+        guard let collection = try? await descriptor.result(for: store) else { return [:] }
+        var result: [Date: Double] = [:]
+        collection.enumerateStatistics(from: from, to: .now) { statistics, _ in
+            if let value = statistics.sumQuantity()?.doubleValue(for: unit), value > 0 {
+                result[calendar.startOfDay(for: statistics.startDate)] = value
+            }
+        }
+        return result
+    }
+
+    /// Часове сън за всеки ден (по деня на събуждане), от източника с най-много сън.
+    private func sleepHoursByDay(from: Date) async -> [Date: Double] {
+        let calendar = Calendar.current
+        let predicate = HKQuery.predicateForSamples(withStart: from, end: .now, options: [])
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.categorySample(type: HKCategoryType(.sleepAnalysis), predicate: predicate)],
+            sortDescriptors: [SortDescriptor(\.startDate)]
+        )
+        let samples = (try? await descriptor.result(for: store)) ?? []
+        let asleepValues: Set<Int> = [
+            HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
+            HKCategoryValueSleepAnalysis.asleepCore.rawValue,
+            HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
+            HKCategoryValueSleepAnalysis.asleepREM.rawValue,
+        ]
+        let asleep = samples.filter { asleepValues.contains($0.value) }
+        var result: [Date: Double] = [:]
+        for (day, items) in Dictionary(grouping: asleep, by: { calendar.startOfDay(for: $0.endDate) }) {
+            let bySource = Dictionary(grouping: items) { $0.sourceRevision.source.name }
+            let best = bySource.values.map { group in
+                group.reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) } / 3600
+            }.max() ?? 0
+            if best > 0 { result[day] = best }
+        }
+        return result
     }
 }

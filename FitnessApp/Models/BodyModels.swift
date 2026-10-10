@@ -101,11 +101,14 @@ final class WeightEntry {
     var kg: Double = 0
     /// % мазнини, ако идва от кантар (по избор).
     var bodyFatPercent: Double?
+    /// Идентификатор на записа в Apple Health (празен за ръчни записи).
+    var healthId: String = ""
 
-    init(date: Date = .now, kg: Double, bodyFatPercent: Double? = nil) {
+    init(date: Date = .now, kg: Double, bodyFatPercent: Double? = nil, healthId: String = "") {
         self.date = date
         self.kg = kg
         self.bodyFatPercent = bodyFatPercent
+        self.healthId = healthId
     }
 }
 
