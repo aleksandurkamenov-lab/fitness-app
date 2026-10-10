@@ -118,11 +118,23 @@ struct SessionRow: View {
     let session: WorkoutSession
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(session.title).font(.headline)
             Text("\(session.date.formatted(date: .abbreviated, time: .shortened)) · седмица \(session.week)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            ForEach(session.exerciseGroups) { group in
+                let done = group.sets.filter(\.isDone)
+                if !done.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(group.exercise?.name ?? "Упражнение")
+                            .font(.caption.weight(.semibold))
+                        Text(done.map { "\($0.weight.short) кг × \($0.reps)" }.joined(separator: "  ·  "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
             Text("Обем \(WorkoutMath.totalVolume(session.sets).short) кг · \(WorkoutMath.totalReps(session.sets)) повт.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
