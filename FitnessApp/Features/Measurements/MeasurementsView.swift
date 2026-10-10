@@ -17,14 +17,22 @@ struct MeasurementsView: View {
         return trend.filter { $0.date >= from }
     }
 
-    /// Последната стойност; за мускулните зони отпуснато / стегнато.
+    /// Последната стойност; за мускулните зони отпуснато / стегнато, по страни.
     private func summary(for kind: MeasurementKind) -> String {
-        func text(_ flexed: Bool?) -> String? {
-            measurements.last { $0.kind == kind && (flexed == nil || $0.isFlexed == flexed) }
-                .map { "\($0.cm.short)" }
+        func value(side: String?, flexed: Bool?) -> String {
+            measurements.last {
+                $0.kind == kind
+                    && (side == nil || $0.sideRaw == side)
+                    && (flexed == nil || $0.isFlexed == flexed)
+            }.map { $0.cm.short } ?? "–"
         }
-        guard kind.supportsFlex else { return text(nil).map { "\($0) см" } ?? "–" }
-        return "\(text(false) ?? "–") / \(text(true) ?? "–") см"
+        func pair(_ side: String?) -> String {
+            kind.supportsFlex
+                ? "\(value(side: side, flexed: false))/\(value(side: side, flexed: true))"
+                : value(side: side, flexed: nil)
+        }
+        if kind.supportsSides { return "Л \(pair("left")) · Д \(pair("right")) см" }
+        return "\(pair(nil)) см"
     }
 
     var body: some View {
@@ -176,18 +184,34 @@ struct MeasurementDetailView: View {
     @State private var date = Date.now
     @State private var cm: Double?
     @State private var flexed = false
+    @State private var side = "left"
 
     private var entries: [MeasurementEntry] { all.filter { $0.kind == kind } }
 
     private func label(_ entry: MeasurementEntry) -> String {
-        guard kind.supportsFlex else { return "см" }
-        return entry.isFlexed ? "Стегнато" : "Отпуснато"
+        var parts: [String] = []
+        if kind.supportsSides { parts.append(entry.sideRaw == "right" ? "Дясно" : "Ляво") }
+        if kind.supportsFlex { parts.append(entry.isFlexed ? "стегнато" : "отпуснато") }
+        return parts.isEmpty ? "см" : parts.joined(separator: " ")
+    }
+
+    private var hint: String {
+        entries.first {
+            (!kind.supportsFlex || $0.isFlexed == flexed) && (!kind.supportsSides || $0.sideRaw == side)
+        }.map { $0.cm.short } ?? "см"
     }
 
     var body: some View {
         List {
             Section("Нов запис") {
                 DatePicker("Дата", selection: $date, in: ...Date.now, displayedComponents: .date)
+                if kind.supportsSides {
+                    Picker("Страна", selection: $side) {
+                        Text("Ляво").tag("left")
+                        Text("Дясно").tag("right")
+                    }
+                    .pickerStyle(.segmented)
+                }
                 if kind.supportsFlex {
                     Picker("Състояние", selection: $flexed) {
                         Text("Отпуснато").tag(false)
@@ -195,13 +219,13 @@ struct MeasurementDetailView: View {
                     }
                     .pickerStyle(.segmented)
                 }
-                TextField(entries.first { $0.isFlexed == flexed }.map { $0.cm.short } ?? "см",
-                          value: $cm, format: .number)
+                TextField(hint, value: $cm, format: .number)
                     .keyboardType(.decimalPad)
                 Button("Запази") {
                     if let cm, cm > 0 {
                         context.insert(MeasurementEntry(date: date, kind: kind, cm: cm,
-                                                        isFlexed: kind.supportsFlex && flexed))
+                                                        isFlexed: kind.supportsFlex && flexed,
+                                                        side: kind.supportsSides ? side : ""))
                         self.cm = nil
                     }
                 }
@@ -212,9 +236,9 @@ struct MeasurementDetailView: View {
                 Section {
                     Chart(entries.reversed()) { entry in
                         LineMark(x: .value("Дата", entry.date), y: .value("см", entry.cm))
-                            .foregroundStyle(by: .value("Състояние", label(entry)))
+                            .foregroundStyle(by: .value("Серия", label(entry)))
                         PointMark(x: .value("Дата", entry.date), y: .value("см", entry.cm))
-                            .foregroundStyle(by: .value("Състояние", label(entry)))
+                            .foregroundStyle(by: .value("Серия", label(entry)))
                     }
                     .chartYScale(domain: .automatic(includesZero: false))
                     .frame(height: 200)
@@ -225,7 +249,7 @@ struct MeasurementDetailView: View {
                 ForEach(entries) { entry in
                     LabeledContent(
                         "\(entry.date.formatted(date: .abbreviated, time: .omitted))" +
-                            (kind.supportsFlex ? " · \(label(entry).lowercased())" : ""),
+                            (label(entry) == "см" ? "" : " · \(label(entry).lowercased())"),
                         value: "\(entry.cm.short) см")
                 }
                 .onDelete { offsets in

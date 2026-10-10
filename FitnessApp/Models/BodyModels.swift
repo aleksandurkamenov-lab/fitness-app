@@ -35,6 +35,14 @@ enum MeasurementKind: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    /// Мерят се отделно за лява и дясна страна.
+    var supportsSides: Bool {
+        switch self {
+        case .arm, .thigh, .calf: true
+        default: false
+        }
+    }
+
     /// За тези мускулни зони се мери и отпуснато, и стегнато.
     var supportsFlex: Bool {
         switch self {
@@ -101,12 +109,15 @@ final class MeasurementEntry {
     var cm: Double = 0
     /// true = стегнато, false = отпуснато.
     var isFlexed: Bool = false
+    /// "left", "right" или празно, когато не е важно.
+    var sideRaw: String = ""
 
-    init(date: Date = .now, kind: MeasurementKind, cm: Double, isFlexed: Bool = false) {
+    init(date: Date = .now, kind: MeasurementKind, cm: Double, isFlexed: Bool = false, side: String = "") {
         self.date = date
         self.kindRaw = kind.rawValue
         self.cm = cm
         self.isFlexed = isFlexed
+        self.sideRaw = side
     }
 
     var kind: MeasurementKind { MeasurementKind(rawValue: kindRaw) ?? .waist }
