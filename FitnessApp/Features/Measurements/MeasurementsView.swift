@@ -116,7 +116,7 @@ struct WeightChart: View {
     let points: [BodyMath.TrendPoint]
 
     var body: some View {
-        Chart(points) { point in
+        Chart(Array(points.enumerated()), id: \.offset) { _, point in
             PointMark(x: .value("Дата", point.date), y: .value("кг", point.kg))
                 .foregroundStyle(.secondary)
             LineMark(x: .value("Дата", point.date), y: .value("Тренд", point.trend))
