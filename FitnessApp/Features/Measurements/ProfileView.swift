@@ -140,7 +140,7 @@ private struct MacroEditor: View {
         .keyboardDoneButton()
 
         let forecast = BodyMath.forecast(profile: profile, kg: kg, intake: kcal, sessions: sessions)
-        Section("Прогноза по твоите макроси") {
+        Section {
             row("Средни крачки на ден", Binding<Double?>(
                 get: { profile.avgDailySteps },
                 set: { profile.avgDailySteps = max($0 ?? 0, 0) }
@@ -159,6 +159,8 @@ private struct MacroEditor: View {
             if let actual = BodyMath.actualWeeklyChange(weights) {
                 LabeledContent("Реален тренд (21 дни)", value: "\(actual > 0 ? "+" : "")\(actual.formatted(.number.precision(.fractionLength(0...2)))) кг/седм.")
             }
+        } header: {
+            Text("Прогноза по твоите макроси")
         } footer: {
             Text("Ориентировъчно, грешката е 10–15%. Тренировките се смятат от записаните сесии, крачките и кардиото са ръчни, докато не ги вземем от Apple Health. Сънят още не влиза в сметката: той показва възстановяване, не изгаря калории. Реалният тренд от теглото е по-точен от прогнозата.")
         }
