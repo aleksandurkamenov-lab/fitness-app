@@ -267,6 +267,13 @@ struct ProfileToolbarModifier: ViewModifier {
         content.toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink {
+                    AIChatView()
+                } label: {
+                    Image(systemName: "sparkles")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
                     ProfileView()
                 } label: {
                     Image(systemName: "person.crop.circle")
