@@ -32,6 +32,14 @@ struct TemplateDetailView: View {
                 }
             }
 
+            if template.items.contains(where: { !$0.note.isEmpty }) {
+                Section {
+                    Button("Изтрий всички бележки от таблицата", role: .destructive) {
+                        for item in template.items { item.note = "" }
+                    }
+                }
+            }
+
             Section {
                 Button {
                     showingStartOptions = true
@@ -83,14 +91,34 @@ private struct TemplateExerciseRow: View {
 
     var body: some View {
         DisclosureGroup(isExpanded: $expanded) {
+            HStack(spacing: 8) {
+                Text("Серия").frame(width: 44, alignment: .leading)
+                Text("Повт. от").frame(maxWidth: .infinity)
+                Text("до").frame(maxWidth: .infinity)
+                Text("Кг").frame(maxWidth: .infinity)
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
             ForEach(Array(item.targets.enumerated()), id: \.offset) { index, target in
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Серия \(index + 1)").font(.subheadline.weight(.semibold))
-                    RepStepperRow(title: "Повторения от", value: minBinding(index), range: 1...50)
-                    RepStepperRow(title: "Повторения до", value: maxBinding(index), range: target.repMin...60)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text("\(index + 1)").font(.headline).frame(width: 44, alignment: .leading)
+                        TextField("от", value: minBinding(index), format: .number)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(.roundedBorder)
+                            .multilineTextAlignment(.center)
+                        TextField("до", value: maxBinding(index), format: .number)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(.roundedBorder)
+                            .multilineTextAlignment(.center)
+                        TextField("кг", value: weightBinding(index), format: .number)
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(.roundedBorder)
+                            .multilineTextAlignment(.center)
+                    }
                     if let best = target.bestText {
                         Text("Най-добър до сега: \(best)")
-                            .font(.caption)
+                            .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -101,6 +129,7 @@ private struct TemplateExerciseRow: View {
                     targets.append(targets.last ?? SetTarget(repMin: 8, repMax: 12))
                     targets[targets.count - 1].bestWeight = nil
                     targets[targets.count - 1].bestReps = nil
+                    targets[targets.count - 1].plannedWeight = targets.count > 1 ? targets[targets.count - 2].plannedWeight : nil
                     item.targets = targets
                 }
                 Spacer()
@@ -113,7 +142,11 @@ private struct TemplateExerciseRow: View {
             }
             .buttonStyle(.borderless)
             RepStepperRow(title: "Почивка (сек)", value: $item.restSeconds, range: 30...600, step: 15)
-            TextField("Бележка", text: $item.note, axis: .vertical)
+            TextField("Моя бележка (по избор)", text: $item.note, axis: .vertical)
+            if !item.note.isEmpty {
+                Button("Изтрий бележката", role: .destructive) { item.note = "" }
+                    .buttonStyle(.borderless)
+            }
         } label: {
             VStack(alignment: .leading) {
                 Text(item.exercise?.name ?? "Изтрито упражнение")
@@ -137,6 +170,17 @@ private struct TemplateExerciseRow: View {
                 var targets = item.targets
                 targets[index].repMin = newValue
                 if targets[index].repMax < newValue { targets[index].repMax = newValue }
+                item.targets = targets
+            }
+        )
+    }
+
+    private func weightBinding(_ index: Int) -> Binding<Double?> {
+        Binding(
+            get: { item.targets[index].plannedWeight },
+            set: { newValue in
+                var targets = item.targets
+                targets[index].plannedWeight = newValue
                 item.targets = targets
             }
         )

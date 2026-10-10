@@ -19,7 +19,7 @@ enum WorkoutService {
                     exercise: exercise,
                     exerciseOrder: item.order,
                     setIndex: index,
-                    weight: old?.weight ?? 0,
+                    weight: old?.weight ?? target.plannedWeight ?? 0,
                     reps: old?.reps ?? 0,
                     targetRepMin: target.repMin,
                     targetRepMax: target.repMax,

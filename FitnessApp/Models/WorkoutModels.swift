@@ -78,6 +78,8 @@ struct SetTarget: Codable, Hashable {
     var repMax: Int
     var bestWeight: Double?
     var bestReps: Double?
+    /// Работна тежест, която потребителят е планирал за серията (по избор).
+    var plannedWeight: Double?
 
     var rangeText: String {
         repMin == repMax ? "\(repMin)" : "\(repMin)–\(repMax)"

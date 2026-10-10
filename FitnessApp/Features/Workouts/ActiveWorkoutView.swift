@@ -16,6 +16,7 @@ struct ActiveWorkoutView: View {
             List {
                 ForEach(session.exerciseGroups) { group in
                     Section {
+                        SetTableHeader()
                         ForEach(group.sets) { set in
                             SetRow(set: set, previous: previousSet(for: group, index: set.setIndex)) {
                                 if set.isDone { timer.start(seconds: set.restSeconds) }
@@ -144,18 +145,41 @@ struct ActiveWorkoutView: View {
 private struct GroupHeader: View {
     let group: ExerciseGroup
 
+    private var noteBinding: Binding<String> {
+        Binding(
+            get: { group.sets.first?.exerciseNote ?? "" },
+            set: { group.sets.first?.exerciseNote = $0 }
+        )
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(group.exercise?.name ?? "Упражнение")
                 .font(.headline)
                 .foregroundStyle(.primary)
                 .textCase(nil)
-            if let note = group.sets.first?.exerciseNote, !note.isEmpty {
-                Text(note)
-                    .font(.caption)
-                    .textCase(nil)
-            }
+            TextField("Бележка", text: noteBinding, axis: .vertical)
+                .font(.caption)
+                .textCase(nil)
         }
+    }
+}
+
+/// Заглавен ред на таблицата със сериите.
+private struct SetTableHeader: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("№").frame(width: 22)
+            Text("Цел").frame(width: 48)
+            Text("Миналия път").frame(maxWidth: .infinity)
+            Text("Кг").frame(width: 62)
+            Text("Повт.").frame(width: 52)
+            Spacer().frame(width: 30)
+        }
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
     }
 }
 
@@ -164,58 +188,56 @@ private struct SetRow: View {
     let previous: SetEntry?
     let onToggle: () -> Void
 
-    private var hints: String {
-        var parts: [String] = []
-        if set.targetRepMax > 0 {
-            let range = set.targetRepMin == set.targetRepMax
-                ? "\(set.targetRepMin)" : "\(set.targetRepMin)–\(set.targetRepMax)"
-            parts.append("цел \(range)")
-        }
-        if let previous {
-            parts.append("миналия път \(previous.weight.short)×\(previous.reps)")
-        }
-        if set.bestWeight > 0 {
-            parts.append("най-добър \(set.bestWeight.short)×\(set.bestReps.short)")
-        }
-        return parts.joined(separator: " · ")
+    private var target: String {
+        guard set.targetRepMax > 0 else { return "–" }
+        return set.targetRepMin == set.targetRepMax
+            ? "\(set.targetRepMin)" : "\(set.targetRepMin)–\(set.targetRepMax)"
+    }
+
+    private var previousText: String {
+        guard let previous else { return "–" }
+        return "\(previous.weight.short) × \(previous.reps)"
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text("\(set.setIndex + 1)")
-                .font(.subheadline.weight(.semibold))
-                .frame(width: 20)
-
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 8) {
-                    TextField("кг", value: $set.weight, format: .number)
-                        .keyboardType(.decimalPad)
-                        .frame(width: 64)
-                        .textFieldStyle(.roundedBorder)
-                    Text("×").foregroundStyle(.secondary)
-                    TextField("повт.", value: $set.reps, format: .number)
-                        .keyboardType(.numberPad)
-                        .frame(width: 52)
-                        .textFieldStyle(.roundedBorder)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Text("\(set.setIndex + 1)")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(width: 22)
+                Text(target)
+                    .font(.subheadline)
+                    .frame(width: 48)
+                Text(previousText)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                TextField("кг", value: $set.weight, format: .number)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 62)
+                TextField("повт.", value: $set.reps, format: .number)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 52)
+                Button {
+                    set.isDone.toggle()
+                    onToggle()
+                } label: {
+                    Image(systemName: set.isDone ? "checkmark.circle.fill" : "circle")
+                        .font(.title2)
+                        .foregroundStyle(set.isDone ? Color.green : Color.secondary)
                 }
-                if !hints.isEmpty {
-                    Text(hints)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
+                .buttonStyle(.plain)
+                .frame(width: 30)
             }
-
-            Spacer()
-
-            Button {
-                set.isDone.toggle()
-                onToggle()
-            } label: {
-                Image(systemName: set.isDone ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
-                    .foregroundStyle(set.isDone ? Color.green : Color.secondary)
+            if set.bestWeight > 0 {
+                Text("Най-добър до сега: \(set.bestWeight.short) × \(set.bestReps.short)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(.plain)
         }
         .padding(.vertical, 2)
     }
