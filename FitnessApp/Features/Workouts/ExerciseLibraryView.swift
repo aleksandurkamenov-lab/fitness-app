@@ -232,3 +232,30 @@ struct ExerciseDetailView: View {
         }
     }
 }
+
+/// Молив до името на упражнението: отваря прозорче за ново име.
+struct RenameExerciseButton: View {
+    @Bindable var exercise: Exercise
+    @State private var showing = false
+    @State private var draft = ""
+
+    var body: some View {
+        Button {
+            draft = exercise.name
+            showing = true
+        } label: {
+            Image(systemName: "pencil.circle.fill")
+                .font(.title3)
+                .foregroundStyle(Color.accentColor)
+        }
+        .buttonStyle(.borderless)
+        .alert("Ново име на упражнението", isPresented: $showing) {
+            TextField("Име", text: $draft)
+            Button("Запази") {
+                let name = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !name.isEmpty { exercise.name = name }
+            }
+            Button("Отказ", role: .cancel) {}
+        }
+    }
+}

@@ -151,10 +151,15 @@ private struct GroupHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(group.exercise?.name ?? "Упражнение")
-                .font(.headline)
-                .foregroundStyle(.primary)
-                .textCase(nil)
+            HStack(spacing: 8) {
+                Text(group.exercise?.name ?? "Упражнение")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .textCase(nil)
+                if let exercise = group.exercise {
+                    RenameExerciseButton(exercise: exercise)
+                }
+            }
             TextField("Бележка", text: noteBinding, axis: .vertical)
                 .font(.caption)
                 .textCase(nil)
