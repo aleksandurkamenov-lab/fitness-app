@@ -39,6 +39,8 @@ struct MeasurementsView: View {
     }
 
     var body: some View {
+        let trend = self.trend
+        let visible = self.visible
         NavigationStack {
             List {
                 Section("Тегло") {
@@ -113,7 +115,18 @@ struct MeasurementsView: View {
 }
 
 struct WeightChart: View {
-    let points: [BodyMath.TrendPoint]
+    let allPoints: [BodyMath.TrendPoint]
+
+    init(points: [BodyMath.TrendPoint]) { allPoints = points }
+
+    /// Най-много ~150 точки в графиката, за да не се претоварва.
+    private var points: [BodyMath.TrendPoint] {
+        guard allPoints.count > 150 else { return allPoints }
+        let step = Int((Double(allPoints.count) / 150).rounded(.up))
+        var result = allPoints.enumerated().filter { $0.offset % step == 0 }.map(\.element)
+        if let last = allPoints.last, result.last?.date != last.date { result.append(last) }
+        return result
+    }
 
     var body: some View {
         Chart(Array(points.enumerated()), id: \.offset) { _, point in
