@@ -61,6 +61,12 @@ struct WorkoutsView: View {
                         }
                     }
                 }
+
+                Section {
+                } footer: {
+                    Text("Версия v8")
+                        .frame(maxWidth: .infinity)
+                }
             }
             .navigationTitle("Тренировки")
             .toolbar {
