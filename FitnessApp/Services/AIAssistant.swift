@@ -40,9 +40,25 @@ enum AIAssistant {
 
     /// Изпраща разговора и изпълнява действията, докато Claude не върне текст.
     static func run(history: [AIMessage], model: String, context: ModelContext,
-                    healthDays: [Date: NutritionDay]) async throws -> (reply: String, actions: [String]) {
+                    healthDays: [Date: NutritionDay],
+                    images: [(label: String, data: Data)] = []) async throws -> (reply: String, actions: [String]) {
         let system = systemPrompt(context: context, healthDays: healthDays)
         var messages = apiMessages(history)
+        // Снимките се прикачват към последното съобщение на потребителя.
+        if !images.isEmpty, let last = messages.last, (last["role"] as? String) == "user",
+           let text = last["content"] as? String {
+            var blocks: [[String: Any]] = []
+            for image in images {
+                blocks.append(["type": "text", "text": image.label])
+                blocks.append(["type": "image", "source": [
+                    "type": "base64",
+                    "media_type": "image/jpeg",
+                    "data": image.data.base64EncodedString(),
+                ]])
+            }
+            blocks.append(["type": "text", "text": text])
+            messages[messages.count - 1] = ["role": "user", "content": blocks]
+        }
         var actions: [String] = []
         for _ in 0..<5 {
             let result = try await ClaudeService.send(model: model, system: system, messages: messages, tools: tools)
@@ -87,6 +103,25 @@ enum AIAssistant {
         }
         while let first = turns.first, first.role != "user" { turns.removeFirst() }
         return turns.map { ["role": $0.role, "content": $0.text] }
+    }
+
+    /// За всяка поза: последната снимка и предишната поне 6 дни по-стара, смалени до 800 px.
+    static func weeklyPhotos(context: ModelContext) -> [(label: String, data: Data)] {
+        let photos = (try? context.fetch(FetchDescriptor<ProgressPhoto>(
+            sortBy: [SortDescriptor(\.date, order: .reverse)]))) ?? []
+        var result: [(label: String, data: Data)] = []
+        for pose in PhotoPose.allCases {
+            let posePhotos = photos.filter { $0.pose == pose }
+            guard let latest = posePhotos.first else { continue }
+            let cutoff = latest.date.addingTimeInterval(-6 * 86_400)
+            var picked = [latest]
+            if let previous = posePhotos.first(where: { $0.date <= cutoff }) { picked.insert(previous, at: 0) }
+            for photo in picked {
+                guard let data = PhotoImport.downscaled(photo.imageData, maxPixels: 800) else { continue }
+                result.append((label: "Снимка \(pose.title), \(key(photo.date)):", data: data))
+            }
+        }
+        return result
     }
 
     // MARK: - Действия
@@ -173,6 +208,7 @@ enum AIAssistant {
         lines.append("Ти си личен треньор и хранителен помощник във фитнес приложението на потребителя. Отговаряй на български, кратко и конкретно (английски термини са ок). Числата за здраве и хранене са ориентировъчни, не са медицински съвет; казвай го, когато даваш такива препоръки.")
         lines.append("Като треньор следиш съня, възстановяването (WHOOP), тренировките и прогреса по упражненията, теглото спрямо целта и оставащите макроси за деня. Свързвай ги: при ниско възстановяване или лош сън предлагай по-леко натоварване; при застой в упражнение предлагай промяна; при отклонение на теглото от целевото темпо предлагай корекция на калориите. За оставащите макроси давай конкретни храни и ястия с грамове, по възможност от запазените храни.")
         lines.append("Когато потребителят каже какво е ял, запиши всяка храна с log_food. Ако храната я има в запазените храни, сметни от нейните стойности на 100 г, иначе оцени разумно. Когато каже теглото си, ползвай log_weight. Ако само пита, не записвай нищо.")
+        lines.append("Когато потребителят поиска седмичен анализ: прегледай теглото и тренда, мерките, снимките (сравни всяка поза с предишната, ако са прикачени), тренировките, обема по мускулни групи и прогреса по упражненията, храненето спрямо целите, съня и възстановяването. Сравни тази седмица с предишните. Завърши с 3 конкретни препоръки за следващата седмица.")
         lines.append("Днес е \(key(today)), \(now.formatted(.dateTime.weekday(.wide))), часът е \(now.formatted(date: .omitted, time: .shortened)).")
 
         var dailyTargets: BodyMath.Targets?
@@ -266,6 +302,54 @@ enum AIAssistant {
             lines.append("\(key(session.date)) \(session.title): " + byExercise.map {
                 "\($0.name) \($0.sets.joined(separator: ", "))"
             }.joined(separator: "; "))
+        }
+
+        // Мерки за последните 8 седмици.
+        let eightWeeks = calendar.date(byAdding: .day, value: -56, to: today) ?? today
+        let measurements = (try? context.fetch(FetchDescriptor<MeasurementEntry>(
+            predicate: #Predicate<MeasurementEntry> { $0.date >= eightWeeks },
+            sortBy: [SortDescriptor(\.date)]))) ?? []
+        if !measurements.isEmpty {
+            lines.append("Мерки в см (последни 8 седмици):")
+            var byDay: [(day: Date, parts: [String])] = []
+            for entry in measurements {
+                let day = calendar.startOfDay(for: entry.date)
+                var title = MeasurementKind(rawValue: entry.kindRaw)?.title ?? entry.kindRaw
+                if entry.sideRaw == "left" { title += " ляво" }
+                if entry.sideRaw == "right" { title += " дясно" }
+                if entry.isFlexed { title += " стегнато" }
+                let text = "\(title) \(short(entry.cm))"
+                if let index = byDay.firstIndex(where: { $0.day == day }) {
+                    byDay[index].parts.append(text)
+                } else {
+                    byDay.append((day: day, parts: [text]))
+                }
+            }
+            for item in byDay { lines.append("\(key(item.day)): " + item.parts.joined(separator: ", ")) }
+        }
+
+        // Седмичен обем за последните 6 седмици.
+        var weekCalendar = Calendar.current
+        weekCalendar.firstWeekday = 2
+        let thisWeek = weekCalendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        let sixWeeks = weekCalendar.date(byAdding: .day, value: -35, to: thisWeek) ?? thisWeek
+        let volumeSessions = (try? context.fetch(FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate<WorkoutSession> { $0.date >= sixWeeks }))) ?? []
+        var weeks: [Date: [SetEntry]] = [:]
+        for session in volumeSessions {
+            let week = weekCalendar.dateInterval(of: .weekOfYear, for: session.date)?.start ?? calendar.startOfDay(for: session.date)
+            weeks[week, default: []].append(contentsOf: session.sets)
+        }
+        if !weeks.isEmpty {
+            lines.append("Седмичен обем (седмица от понеделник: тонаж кг; серии по мускулни групи, второстепенните броят 0.5):")
+            for week in weeks.keys.sorted() {
+                let sets = weeks[week] ?? []
+                let groups = WorkoutMath.weeklySets(sets)
+                    .sorted { $0.value > $1.value }
+                    .map { "\($0.key.title) \(short($0.value))" }
+                    .joined(separator: ", ")
+                lines.append("\(key(week)): \(Int(WorkoutMath.totalVolume(sets))) кг; \(groups)")
+            }
         }
 
         // WHOOP и Health за последните 7 дни.

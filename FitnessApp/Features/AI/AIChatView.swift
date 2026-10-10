@@ -14,6 +14,14 @@ struct AIChatView: View {
     @State private var healthDays: [Date: NutritionDay] = [:]
     @FocusState private var focused: Bool
 
+    @AppStorage("lastWeeklyAnalysis") private var lastWeeklyAnalysis = 0.0
+
+    private let weeklyPrompt = "Седмичен анализ (снимки, кг, мерки, тренировки, обем)"
+
+    private var weeklyDue: Bool {
+        Date.now.timeIntervalSince1970 - lastWeeklyAnalysis > 7 * 86_400
+    }
+
     private let quickPrompts = [
         "Съвет за днес",
         "Какво да хапна за оставащите макроси?",
@@ -55,9 +63,24 @@ struct AIChatView: View {
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
+                if weeklyDue && !busy {
+                    Button {
+                        send(weeklyPrompt, withPhotos: true)
+                    } label: {
+                        Label("Време е за седмичния анализ", systemImage: "chart.line.uptrend.xyaxis")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding(.horizontal)
+                }
                 if input.isEmpty && !busy {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
+                            if !weeklyDue {
+                                Button("Седмичен анализ") { send(weeklyPrompt, withPhotos: true) }
+                                    .buttonStyle(.bordered)
+                                    .font(.footnote)
+                            }
                             ForEach(quickPrompts, id: \.self) { prompt in
                                 Button(prompt) { send(prompt) }
                                     .buttonStyle(.bordered)
@@ -115,7 +138,7 @@ struct AIChatView: View {
         }
     }
 
-    private func send(_ text: String) {
+    private func send(_ text: String, withPhotos: Bool = false) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !busy else { return }
         input = ""
@@ -126,8 +149,10 @@ struct AIChatView: View {
         Task {
             do {
                 let history = (try? context.fetch(FetchDescriptor<AIMessage>(sortBy: [SortDescriptor(\.date)]))) ?? []
+                let images = withPhotos ? AIAssistant.weeklyPhotos(context: context) : []
                 let result = try await AIAssistant.run(history: history, model: model, context: context,
-                                                       healthDays: healthDays)
+                                                       healthDays: healthDays, images: images)
+                if withPhotos { lastWeeklyAnalysis = Date.now.timeIntervalSince1970 }
                 if !result.reply.isEmpty {
                     context.insert(AIMessage(role: "assistant", text: result.reply))
                 }

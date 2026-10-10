@@ -13,6 +13,12 @@ enum PhotoImport {
         return (jpeg, thumb, date)
     }
 
+    /// Смалена версия за изпращане към AI.
+    static func downscaled(_ data: Data, maxPixels: Int) -> Data? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        return scaled(source, maxPixels: maxPixels, quality: 0.7)
+    }
+
     private static func scaled(_ source: CGImageSource, maxPixels: Int, quality: CGFloat) -> Data? {
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
