@@ -77,6 +77,11 @@ final class UserProfile {
     /// Средни крачки на ден и кардио минути на седмица (ръчно, докато не идват от Health).
     var avgDailySteps: Double = 8000
     var weeklyCardioMinutes: Double = 0
+    /// Променлив прием: повече калории (от въглехидрати) в тренировъчни дни, по-малко в почивни; седмичната сума е същата.
+    var variableCalories: Bool = false
+    var trainingDaysPerWeek: Int = 4
+    /// С колко % над средното са тренировъчните дни.
+    var trainingDayBoostPercent: Double = 10
 
     init() {}
 

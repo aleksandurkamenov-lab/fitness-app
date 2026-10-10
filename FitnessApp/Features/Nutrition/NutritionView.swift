@@ -5,6 +5,8 @@ struct NutritionView: View {
     @Query(sort: \FoodEntry.date) private var entries: [FoodEntry]
     @Query private var profiles: [UserProfile]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
+    @Query private var sessions: [WorkoutSession]
+    @AppStorage("trainingDayOverrides") private var overridesText = ""
     @Environment(\.modelContext) private var context
     @State private var day = Calendar.current.startOfDay(for: .now)
     @State private var addingMeal: Meal?
@@ -28,7 +30,43 @@ struct NutritionView: View {
         if profile.customFatG > 0 { result.fat = profile.customFatG }
         if profile.customCarbsG > 0 { result.carbs = profile.customCarbsG }
         if custom { result.kcal = result.protein * 4 + result.carbs * 4 + result.fat * 9 }
+        guard profile.variableCalories else { return result }
+        // Променлив прием: разликата идва от въглехидратите, седмичната сума е същата.
+        let trainingDays = Double(min(max(profile.trainingDaysPerWeek, 1), 6))
+        let boost = profile.trainingDayBoostPercent / 100
+        let factor = isTrainingDay ? 1 + boost : 1 - boost * trainingDays / (7 - trainingDays)
+        let delta = result.kcal * (factor - 1)
+        result.kcal += delta
+        result.carbs = max(0, result.carbs + delta / 4)
         return result
+    }
+
+    private var variableOn: Bool { profiles.first?.variableCalories ?? false }
+
+    private var dayKey: String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: day)
+        return "\(parts.year ?? 0)-\(parts.month ?? 0)-\(parts.day ?? 0)"
+    }
+
+    /// Ръчно зададени тренировъчни/почивни дни ("2026-10-11=1;2026-10-12=0").
+    private var overrides: [String: Bool] {
+        Dictionary(overridesText.split(separator: ";").compactMap { pair -> (String, Bool)? in
+            let parts = pair.split(separator: "=")
+            guard parts.count == 2 else { return nil }
+            return (String(parts[0]), parts[1] == "1")
+        }, uniquingKeysWith: { _, last in last })
+    }
+
+    /// Тренировъчен ден: има тренировка в приложението за деня, освен ако не е сменено ръчно.
+    private var isTrainingDay: Bool {
+        if let manual = overrides[dayKey] { return manual }
+        return sessions.contains { calendar.isDate($0.date, inSameDayAs: day) }
+    }
+
+    private func setTrainingDay(_ value: Bool) {
+        var all = overrides
+        all[dayKey] = value
+        overridesText = all.map { "\($0.key)=\($0.value ? 1 : 0)" }.joined(separator: ";")
     }
 
     private var dayTitle: String {
@@ -64,6 +102,14 @@ struct NutritionView: View {
                         Button { shiftDay(1) } label: { Image(systemName: "chevron.right") }
                             .buttonStyle(.borderless)
                             .disabled(calendar.isDateInToday(day))
+                    }
+                }
+
+                if variableOn {
+                    Section {
+                        Toggle("Тренировъчен ден", isOn: Binding(get: { isTrainingDay }, set: { setTrainingDay($0) }))
+                    } footer: {
+                        Text("Разпознава се сам по записана тренировка; можеш да го смениш.")
                     }
                 }
 

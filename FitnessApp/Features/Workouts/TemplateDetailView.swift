@@ -47,6 +47,12 @@ struct TemplateDetailView: View {
                         .font(.headline)
                 }
                 .disabled(template.items.isEmpty)
+                Button {
+                    start(copyPrevious: true)
+                } label: {
+                    Label("Започни с кг и повт. от последния път", systemImage: "doc.on.doc")
+                }
+                .disabled(template.items.isEmpty)
             }
         }
         .navigationTitle(template.name)

@@ -20,6 +20,7 @@ struct FitnessApp: App {
             DailyMetric.self,
             FoodItem.self,
             FoodEntry.self,
+            ProgressPhoto.self,
         ])
     }
 }

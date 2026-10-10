@@ -5,6 +5,7 @@ struct MesocycleDetailView: View {
     @Environment(\.modelContext) private var context
     @Bindable var mesocycle: Mesocycle
     @Binding var activeSession: WorkoutSession?
+    @State private var createdName: String?
 
     var body: some View {
         List {
@@ -42,8 +43,27 @@ struct MesocycleDetailView: View {
                     Label("Добави тренировка", systemImage: "plus")
                 }
             }
+
+            Section {
+                Button {
+                    createdName = WorkoutService.continueMesocycle(mesocycle, in: context).name
+                } label: {
+                    Label("Следващ мезоцикъл от този", systemImage: "arrow.forward.circle")
+                }
+                .disabled(createdName != nil)
+            } footer: {
+                Text("Копира тренировките и упражненията. Най-добрите ти резултати от този мезоцикъл стават „най-добро до сега“, а последните килограми се попълват като план за първата тренировка.")
+            }
         }
         .navigationTitle(mesocycle.name)
         .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) {
+            if let created = createdName {
+                Text("Създаден е „\(created)“ в списъка с мезоцикли.")
+                    .font(.footnote)
+                    .padding(8)
+                    .background(.regularMaterial, in: Capsule())
+            }
+        }
     }
 }
