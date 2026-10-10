@@ -38,6 +38,6 @@ enum WorkoutMath {
 extension Double {
     /// Кратко число без излишни нули: 80, 82.5.
     var short: String {
-        formatted(.number.precision(.fractionLength(0...1)))
+        formatted(.number.grouping(.never).precision(.fractionLength(0...1)))
     }
 }
