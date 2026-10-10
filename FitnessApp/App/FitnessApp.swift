@@ -18,6 +18,8 @@ struct FitnessApp: App {
             WeightEntry.self,
             MeasurementEntry.self,
             DailyMetric.self,
+            FoodItem.self,
+            FoodEntry.self,
         ])
     }
 }
