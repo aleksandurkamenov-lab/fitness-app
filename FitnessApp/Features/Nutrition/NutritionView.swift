@@ -9,6 +9,8 @@ struct NutritionView: View {
     @State private var day = Calendar.current.startOfDay(for: .now)
     @State private var addingMeal: Meal?
     @State private var editing: FoodEntry?
+    @State private var health = HealthService()
+    @State private var healthDays: [Date: NutritionDay] = [:]
 
     private var calendar: Calendar { Calendar.current }
 
@@ -49,6 +51,7 @@ struct NutritionView: View {
 
     var body: some View {
         let today = entries(on: day)
+        let fromHealth = healthDays[calendar.startOfDay(for: day)] ?? NutritionDay()
         NavigationStack {
             List {
                 Section {
@@ -65,10 +68,15 @@ struct NutritionView: View {
                 }
 
                 Section("Общо за деня") {
-                    MacroBar(title: "Калории", value: today.reduce(0) { $0 + $1.kcal }, target: targets?.kcal, unit: "ккал")
-                    MacroBar(title: "Белтък", value: today.reduce(0) { $0 + $1.protein }, target: targets?.protein, unit: "г")
-                    MacroBar(title: "Въглехидрати", value: today.reduce(0) { $0 + $1.carbs }, target: targets?.carbs, unit: "г")
-                    MacroBar(title: "Мазнини", value: today.reduce(0) { $0 + $1.fat }, target: targets?.fat, unit: "г")
+                    MacroBar(title: "Калории", value: today.reduce(0) { $0 + $1.kcal } + fromHealth.kcal, target: targets?.kcal, unit: "ккал")
+                    MacroBar(title: "Белтък", value: today.reduce(0) { $0 + $1.protein } + fromHealth.protein, target: targets?.protein, unit: "г")
+                    MacroBar(title: "Въглехидрати", value: today.reduce(0) { $0 + $1.carbs } + fromHealth.carbs, target: targets?.carbs, unit: "г")
+                    MacroBar(title: "Мазнини", value: today.reduce(0) { $0 + $1.fat } + fromHealth.fat, target: targets?.fat, unit: "г")
+                    if fromHealth.kcal > 0 {
+                        Text("Вкл. от Apple Health (напр. MyFitnessPal): \(fromHealth.kcal.short) ккал")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                     if targets == nil {
                         Text("За цели попълни профила и теглото си (икона горе в дясно, Мерки).")
                             .font(.footnote)
@@ -116,6 +124,8 @@ struct NutritionView: View {
             }
             .navigationTitle("Хранене")
             .profileButton()
+            .task { healthDays = await health.nutrition(days: 14) }
+            .refreshable { healthDays = await health.nutrition(days: 14) }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {

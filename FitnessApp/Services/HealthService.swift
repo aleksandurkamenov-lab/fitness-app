@@ -35,6 +35,14 @@ struct WorkoutInfo: Identifiable {
     let kcal: Double?
 }
 
+/// Изядено за ден според Apple Health (например записано от MyFitnessPal).
+struct NutritionDay {
+    var kcal = 0.0
+    var protein = 0.0
+    var carbs = 0.0
+    var fat = 0.0
+}
+
 @Observable
 final class HealthService {
     private let store = HKHealthStore()
@@ -64,6 +72,10 @@ final class HealthService {
             HKQuantityType(.appleSleepingWristTemperature),
             HKQuantityType(.bodyMass),
             HKQuantityType(.bodyFatPercentage),
+            HKQuantityType(.dietaryEnergyConsumed),
+            HKQuantityType(.dietaryProtein),
+            HKQuantityType(.dietaryCarbohydrates),
+            HKQuantityType(.dietaryFatTotal),
         ]
         types.insert(HKObjectType.workoutType())
         return types
@@ -334,6 +346,27 @@ final class HealthService {
         add(.activeKcal, await dailyTotals(.activeEnergyBurned, unit: .kilocalorie(), from: from))
         add(.sleepHours, await sleepHoursByDay(from: from))
         return points
+    }
+
+    /// Калории и макроси по дни от Health за последните `days` дни.
+    func nutrition(days: Int) async -> [Date: NutritionDay] {
+        guard isAvailable else { return [:] }
+        if let status = try? await store.statusForAuthorizationRequest(toShare: [], read: readTypes),
+           status == .shouldRequest {
+            try? await store.requestAuthorization(toShare: [], read: readTypes)
+        }
+        let calendar = Calendar.current
+        let from = calendar.date(byAdding: .day, value: -days, to: calendar.startOfDay(for: .now)) ?? .now
+        let kcal = await dailyTotals(.dietaryEnergyConsumed, unit: .kilocalorie(), from: from)
+        let protein = await dailyTotals(.dietaryProtein, unit: .gram(), from: from)
+        let carbs = await dailyTotals(.dietaryCarbohydrates, unit: .gram(), from: from)
+        let fat = await dailyTotals(.dietaryFatTotal, unit: .gram(), from: from)
+        var result: [Date: NutritionDay] = [:]
+        for (day, value) in kcal { result[day, default: NutritionDay()].kcal = value }
+        for (day, value) in protein { result[day, default: NutritionDay()].protein = value }
+        for (day, value) in carbs { result[day, default: NutritionDay()].carbs = value }
+        for (day, value) in fat { result[day, default: NutritionDay()].fat = value }
+        return result
     }
 
     private func dailyTotals(_ identifier: HKQuantityTypeIdentifier, unit: HKUnit, from: Date) async -> [Date: Double] {
