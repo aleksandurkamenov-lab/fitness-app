@@ -6,6 +6,7 @@ struct WorkoutsView: View {
     @Query(sort: \Mesocycle.startDate, order: .reverse) private var mesocycles: [Mesocycle]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
     @State private var showingNewMeso = false
+    @State private var importError: String?
     @State private var activeSession: WorkoutSession?
 
     private var unfinished: WorkoutSession? { sessions.first { !$0.isFinished } }
@@ -71,8 +72,17 @@ struct WorkoutsView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingNewMeso = true
+                    Menu {
+                        Button {
+                            showingNewMeso = true
+                        } label: {
+                            Label("Нов празен мезоцикъл", systemImage: "plus")
+                        }
+                        Button {
+                            importMeso()
+                        } label: {
+                            Label("Импортирай Meso 22 (от Excel)", systemImage: "square.and.arrow.down")
+                        }
                     } label: {
                         Label("Нов мезоцикъл", systemImage: "plus")
                     }
@@ -84,6 +94,22 @@ struct WorkoutsView: View {
             .fullScreenCover(item: $activeSession) { session in
                 ActiveWorkoutView(session: session)
             }
+            .alert("Импортът не успя", isPresented: Binding(
+                get: { importError != nil },
+                set: { if !$0 { importError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(importError ?? "")
+            }
+        }
+    }
+
+    private func importMeso() {
+        do {
+            try MesoImporter.importBundledMeso(in: context)
+        } catch {
+            importError = error.localizedDescription
         }
     }
 }

@@ -72,7 +72,24 @@ final class WorkoutTemplate {
     }
 }
 
-/// Упражнение в шаблон с целеви серии и диапазон повторения.
+/// Цел за една серия: диапазон повторения и (по избор) най-добър резултат до момента.
+struct SetTarget: Codable, Hashable {
+    var repMin: Int
+    var repMax: Int
+    var bestWeight: Double?
+    var bestReps: Double?
+
+    var rangeText: String {
+        repMin == repMax ? "\(repMin)" : "\(repMin)–\(repMax)"
+    }
+
+    var bestText: String? {
+        guard let bestWeight, let bestReps else { return nil }
+        return "\(bestWeight.short)×\(bestReps.short)"
+    }
+}
+
+/// Упражнение в шаблон с целеви серии и диапазон повторения за всяка серия.
 @Model
 final class TemplateExercise {
     var order: Int
@@ -81,6 +98,7 @@ final class TemplateExercise {
     var repMax: Int
     var restSeconds: Int
     var note: String
+    var setTargets: [SetTarget] = []
     var exercise: Exercise?
     var template: WorkoutTemplate?
 
@@ -94,8 +112,24 @@ final class TemplateExercise {
         self.note = note
     }
 
+    /// Целите по серии. Ако няма отделни цели, всички серии са с един и същ диапазон.
+    var targets: [SetTarget] {
+        get {
+            if !setTargets.isEmpty { return setTargets }
+            return Array(repeating: SetTarget(repMin: repMin, repMax: repMax), count: max(targetSets, 1))
+        }
+        set {
+            setTargets = newValue
+            targetSets = newValue.count
+            if let first = newValue.first {
+                repMin = first.repMin
+                repMax = first.repMax
+            }
+        }
+    }
+
     var targetText: String {
-        repMin == repMax ? "\(targetSets)×\(repMin)" : "\(targetSets)×\(repMin)–\(repMax)"
+        targets.map(\.rangeText).joined(separator: " · ")
     }
 }
 
@@ -158,11 +192,15 @@ final class SetEntry {
     var targetRepMin: Int
     var targetRepMax: Int
     var restSeconds: Int
+    var bestWeight: Double = 0
+    var bestReps: Double = 0
+    var exerciseNote: String = ""
     var exercise: Exercise?
     var session: WorkoutSession?
 
     init(exercise: Exercise?, exerciseOrder: Int, setIndex: Int, weight: Double = 0, reps: Int = 0,
-         targetRepMin: Int = 0, targetRepMax: Int = 0, restSeconds: Int = 120) {
+         targetRepMin: Int = 0, targetRepMax: Int = 0, restSeconds: Int = 120,
+         bestWeight: Double = 0, bestReps: Double = 0, exerciseNote: String = "") {
         self.exercise = exercise
         self.exerciseOrder = exerciseOrder
         self.setIndex = setIndex
@@ -172,6 +210,9 @@ final class SetEntry {
         self.targetRepMin = targetRepMin
         self.targetRepMax = targetRepMax
         self.restSeconds = restSeconds
+        self.bestWeight = bestWeight
+        self.bestReps = bestReps
+        self.exerciseNote = exerciseNote
     }
 
     var volume: Double { weight * Double(reps) }

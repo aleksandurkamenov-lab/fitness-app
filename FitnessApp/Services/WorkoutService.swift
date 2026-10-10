@@ -12,7 +12,8 @@ enum WorkoutService {
         for item in template.sortedItems {
             guard let exercise = item.exercise else { continue }
             let previous = copyPrevious ? lastSets(for: exercise, before: session.date, in: context) : []
-            for index in 0..<max(item.targetSets, 1) {
+            let targets = item.targets
+            for (index, target) in targets.enumerated() {
                 let old = index < previous.count ? previous[index] : nil
                 let set = SetEntry(
                     exercise: exercise,
@@ -20,9 +21,12 @@ enum WorkoutService {
                     setIndex: index,
                     weight: old?.weight ?? 0,
                     reps: old?.reps ?? 0,
-                    targetRepMin: item.repMin,
-                    targetRepMax: item.repMax,
-                    restSeconds: item.restSeconds
+                    targetRepMin: target.repMin,
+                    targetRepMax: target.repMax,
+                    restSeconds: item.restSeconds,
+                    bestWeight: target.bestWeight ?? 0,
+                    bestReps: target.bestReps ?? 0,
+                    exerciseNote: index == 0 ? item.note : ""
                 )
                 set.session = session
                 context.insert(set)

@@ -83,21 +83,73 @@ private struct TemplateExerciseRow: View {
 
     var body: some View {
         DisclosureGroup(isExpanded: $expanded) {
-            Stepper("Серии: \(item.targetSets)", value: $item.targetSets, in: 1...10)
-            Stepper("Повторения от: \(item.repMin)", value: $item.repMin, in: 1...50)
-            Stepper("Повторения до: \(item.repMax)", value: $item.repMax, in: item.repMin...60)
-            Stepper("Почивка: \(item.restSeconds) сек", value: $item.restSeconds, in: 30...600, step: 15)
-            TextField("Бележка", text: $item.note)
-                .onChange(of: item.repMin) {
-                    if item.repMax < item.repMin { item.repMax = item.repMin }
+            ForEach(Array(item.targets.enumerated()), id: \.offset) { index, target in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Серия \(index + 1)").font(.subheadline.weight(.semibold))
+                    Stepper("Повторения от: \(target.repMin)", value: minBinding(index), in: 1...50)
+                    Stepper("Повторения до: \(target.repMax)", value: maxBinding(index), in: target.repMin...60)
+                    if let best = target.bestText {
+                        Text("Най-добър до сега: \(best)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+            }
+            HStack {
+                Button("Добави серия") {
+                    var targets = item.targets
+                    targets.append(targets.last ?? SetTarget(repMin: 8, repMax: 12))
+                    targets[targets.count - 1].bestWeight = nil
+                    targets[targets.count - 1].bestReps = nil
+                    item.targets = targets
+                }
+                Spacer()
+                Button("Махни серия", role: .destructive) {
+                    var targets = item.targets
+                    guard targets.count > 1 else { return }
+                    targets.removeLast()
+                    item.targets = targets
+                }
+            }
+            .buttonStyle(.borderless)
+            Stepper("Почивка: \(item.restSeconds) сек", value: $item.restSeconds, in: 30...600, step: 15)
+            TextField("Бележка", text: $item.note, axis: .vertical)
         } label: {
             VStack(alignment: .leading) {
                 Text(item.exercise?.name ?? "Изтрито упражнение")
                 Text(item.targetText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if !item.note.isEmpty {
+                    Text(item.note)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
             }
         }
+    }
+
+    private func minBinding(_ index: Int) -> Binding<Int> {
+        Binding(
+            get: { item.targets[index].repMin },
+            set: { newValue in
+                var targets = item.targets
+                targets[index].repMin = newValue
+                if targets[index].repMax < newValue { targets[index].repMax = newValue }
+                item.targets = targets
+            }
+        )
+    }
+
+    private func maxBinding(_ index: Int) -> Binding<Int> {
+        Binding(
+            get: { item.targets[index].repMax },
+            set: { newValue in
+                var targets = item.targets
+                targets[index].repMax = max(newValue, targets[index].repMin)
+                item.targets = targets
+            }
+        )
     }
 }

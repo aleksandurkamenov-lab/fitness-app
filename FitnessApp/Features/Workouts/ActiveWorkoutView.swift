@@ -150,10 +150,8 @@ private struct GroupHeader: View {
                 .font(.headline)
                 .foregroundStyle(.primary)
                 .textCase(nil)
-            if let first = group.sets.first, first.targetRepMax > 0 {
-                let range = first.targetRepMin == first.targetRepMax
-                    ? "\(first.targetRepMin)" : "\(first.targetRepMin)–\(first.targetRepMax)"
-                Text("Цел: \(group.sets.count) серии × \(range) повт.")
+            if let note = group.sets.first?.exerciseNote, !note.isEmpty {
+                Text(note)
                     .font(.caption)
                     .textCase(nil)
             }
@@ -165,6 +163,22 @@ private struct SetRow: View {
     @Bindable var set: SetEntry
     let previous: SetEntry?
     let onToggle: () -> Void
+
+    private var hints: String {
+        var parts: [String] = []
+        if set.targetRepMax > 0 {
+            let range = set.targetRepMin == set.targetRepMax
+                ? "\(set.targetRepMin)" : "\(set.targetRepMin)–\(set.targetRepMax)"
+            parts.append("цел \(range)")
+        }
+        if let previous {
+            parts.append("миналия път \(previous.weight.short)×\(previous.reps)")
+        }
+        if set.bestWeight > 0 {
+            parts.append("най-добър \(set.bestWeight.short)×\(set.bestReps.short)")
+        }
+        return parts.joined(separator: " · ")
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -184,8 +198,8 @@ private struct SetRow: View {
                         .frame(width: 52)
                         .textFieldStyle(.roundedBorder)
                 }
-                if let previous {
-                    Text("Миналия път: \(previous.weight.short) × \(previous.reps)")
+                if !hints.isEmpty {
+                    Text(hints)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
