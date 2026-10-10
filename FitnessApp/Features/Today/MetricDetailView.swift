@@ -97,7 +97,9 @@ struct MetricDetailView: View {
                         }
                     }
                     .chartYScale(domain: isBar ? .automatic : .automatic(includesZero: false))
-                    .frame(height: 220)
+                    .chartScrub(data.map { ScrubPoint(date: $0.day, value: $0.value, text: "\(scrubDate($0.day)): \(text($0.value)) \(unit)") })
+                    .padding(.top, 24)
+                    .frame(height: 244)
                 }
             } else {
                 Section {

@@ -124,7 +124,12 @@ struct WeightChart: View {
                 .interpolationMethod(.catmullRom)
         }
         .chartYScale(domain: .automatic(includesZero: false))
-        .frame(height: 200)
+        .chartScrub(points.map {
+            ScrubPoint(date: $0.date, value: $0.kg,
+                       text: "\(scrubDate($0.date)): \($0.kg.formatted(.number.precision(.fractionLength(0...2)))) кг (тренд \($0.trend.formatted(.number.precision(.fractionLength(0...2)))))")
+        })
+        .padding(.top, 24)
+        .frame(height: 224)
     }
 }
 
@@ -256,7 +261,12 @@ struct MeasurementDetailView: View {
                             .foregroundStyle(by: .value("Серия", label(entry)))
                     }
                     .chartYScale(domain: .automatic(includesZero: false))
-                    .frame(height: 200)
+                    .chartScrub(entries.map {
+                        ScrubPoint(date: $0.date, value: $0.cm,
+                                   text: "\(scrubDate($0.date)): \($0.cm.formatted(.number.precision(.fractionLength(0...1)))) см · \(label($0))")
+                    })
+                    .padding(.top, 24)
+                    .frame(height: 224)
                 }
             }
 

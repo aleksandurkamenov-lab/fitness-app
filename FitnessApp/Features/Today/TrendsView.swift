@@ -54,7 +54,9 @@ struct TrendsView: View {
                                     .foregroundStyle(.secondary)
                             }
                             .chartYScale(domain: .automatic(includesZero: false))
-                            .frame(height: 140)
+                            .chartScrub(data.map { ScrubPoint(date: $0.day, value: $0.value, text: "\(scrubDate($0.day)): \(format($0.value, kind)) \(kind.unit)") })
+                            .padding(.top, 24)
+                            .frame(height: 164)
                         }
                     }
                 }

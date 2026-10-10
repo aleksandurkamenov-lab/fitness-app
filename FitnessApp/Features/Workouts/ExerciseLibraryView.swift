@@ -190,7 +190,12 @@ struct ExerciseDetailView: View {
                         PointMark(x: .value("Дата", point.date), y: .value("1RM", point.oneRM))
                     }
                     .chartYScale(domain: .automatic(includesZero: false))
-                    .frame(height: 180)
+                    .chartScrub(points.map {
+                        ScrubPoint(date: $0.date, value: $0.oneRM,
+                                   text: "\(scrubDate($0.date)): \($0.oneRM.formatted(.number.precision(.fractionLength(0...1)))) кг")
+                    })
+                    .padding(.top, 24)
+                    .frame(height: 204)
                 }
             }
 
