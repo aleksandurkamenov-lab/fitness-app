@@ -197,12 +197,14 @@ final class SetEntry {
     var bestWeight: Double = 0
     var bestReps: Double = 0
     var exerciseNote: String = ""
+    /// Планирана тежест от шаблона; показва се като напомняне, докато не въведеш реална.
+    var plannedWeight: Double = 0
     var exercise: Exercise?
     var session: WorkoutSession?
 
     init(exercise: Exercise?, exerciseOrder: Int, setIndex: Int, weight: Double = 0, reps: Int = 0,
          targetRepMin: Int = 0, targetRepMax: Int = 0, restSeconds: Int = 120,
-         bestWeight: Double = 0, bestReps: Double = 0, exerciseNote: String = "") {
+         bestWeight: Double = 0, bestReps: Double = 0, exerciseNote: String = "", plannedWeight: Double = 0) {
         self.exercise = exercise
         self.exerciseOrder = exerciseOrder
         self.setIndex = setIndex
@@ -215,6 +217,7 @@ final class SetEntry {
         self.bestWeight = bestWeight
         self.bestReps = bestReps
         self.exerciseNote = exerciseNote
+        self.plannedWeight = plannedWeight
     }
 
     var volume: Double { weight * Double(reps) }

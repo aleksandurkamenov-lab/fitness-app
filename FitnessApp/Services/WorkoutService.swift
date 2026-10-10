@@ -19,14 +19,15 @@ enum WorkoutService {
                     exercise: exercise,
                     exerciseOrder: item.order,
                     setIndex: index,
-                    weight: old?.weight ?? target.plannedWeight ?? 0,
+                    weight: old?.weight ?? 0,
                     reps: old?.reps ?? 0,
                     targetRepMin: target.repMin,
                     targetRepMax: target.repMax,
                     restSeconds: item.restSeconds,
                     bestWeight: target.bestWeight ?? 0,
                     bestReps: target.bestReps ?? 0,
-                    exerciseNote: index == 0 ? item.note : ""
+                    exerciseNote: index == 0 ? item.note : "",
+                    plannedWeight: target.plannedWeight ?? 0
                 )
                 set.session = session
                 context.insert(set)

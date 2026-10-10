@@ -16,7 +16,6 @@ struct ActiveWorkoutView: View {
             List {
                 ForEach(session.exerciseGroups) { group in
                     Section {
-                        SetTableHeader()
                         ForEach(group.sets) { set in
                             SetRow(set: set, previous: previousSet(for: group, index: set.setIndex)) {
                                 if set.isDone { timer.start(seconds: set.restSeconds) }
@@ -102,8 +101,6 @@ struct ActiveWorkoutView: View {
             exercise: group.exercise,
             exerciseOrder: group.order,
             setIndex: (last?.setIndex ?? -1) + 1,
-            weight: last?.weight ?? 0,
-            reps: last?.reps ?? 0,
             targetRepMin: last?.targetRepMin ?? 0,
             targetRepMax: last?.targetRepMax ?? 0,
             restSeconds: last?.restSeconds ?? 120
@@ -165,73 +162,66 @@ private struct GroupHeader: View {
     }
 }
 
-/// Заглавен ред на таблицата със сериите.
-private struct SetTableHeader: View {
-    var body: some View {
-        HStack(spacing: 6) {
-            Text("№").frame(width: 22)
-            Text("Цел").frame(width: 48)
-            Text("Миналия път").frame(maxWidth: .infinity)
-            Text("Кг").frame(width: 62)
-            Text("Повт.").frame(width: 52)
-            Spacer().frame(width: 30)
-        }
-        .font(.caption2.weight(.semibold))
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-        .minimumScaleFactor(0.7)
-    }
-}
-
 private struct SetRow: View {
     @Bindable var set: SetEntry
     let previous: SetEntry?
     let onToggle: () -> Void
 
     private var target: String {
-        guard set.targetRepMax > 0 else { return "–" }
+        guard set.targetRepMax > 0 else { return "" }
         return set.targetRepMin == set.targetRepMax
             ? "\(set.targetRepMin)" : "\(set.targetRepMin)–\(set.targetRepMax)"
     }
 
-    private var previousText: String {
-        guard let previous else { return "–" }
-        return "\(previous.weight.short) × \(previous.reps)"
+    private var weightHint: String {
+        if let previous, previous.weight > 0 { return previous.weight.short }
+        return set.plannedWeight > 0 ? set.plannedWeight.short : "кг"
+    }
+
+    private var repsHint: String {
+        if let previous, previous.reps > 0 { return "\(previous.reps)" }
+        return "повт."
+    }
+
+    private var weightBinding: Binding<Double?> {
+        Binding(get: { set.weight > 0 ? set.weight : nil }, set: { set.weight = $0 ?? 0 })
+    }
+
+    private var repsBinding: Binding<Int?> {
+        Binding(get: { set.reps > 0 ? set.reps : nil }, set: { set.reps = $0 ?? 0 })
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 6) {
-                Text("\(set.setIndex + 1)")
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Серия \(set.setIndex + 1)")
                     .font(.subheadline.weight(.semibold))
-                    .frame(width: 22)
-                Text(target)
-                    .font(.subheadline)
-                    .frame(width: 48)
-                Text(previousText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                TextField("кг", value: $set.weight, format: .number)
+                Spacer()
+                if !target.isEmpty {
+                    Text("цел \(target) повт.")
+                        .font(.title3.weight(.bold))
+                }
+            }
+            HStack(spacing: 10) {
+                TextField(weightHint, value: weightBinding, format: .number)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 62)
-                TextField("повт.", value: $set.reps, format: .number)
+                Text("кг ×").foregroundStyle(.secondary)
+                TextField(repsHint, value: repsBinding, format: .number)
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 52)
+                Text("повт.").foregroundStyle(.secondary)
                 Button {
                     set.isDone.toggle()
                     onToggle()
                 } label: {
                     Image(systemName: set.isDone ? "checkmark.circle.fill" : "circle")
-                        .font(.title2)
+                        .font(.title)
                         .foregroundStyle(set.isDone ? Color.green : Color.secondary)
                 }
                 .buttonStyle(.plain)
-                .frame(width: 30)
             }
             if set.bestWeight > 0 {
                 Text("Най-добър до сега: \(set.bestWeight.short) × \(set.bestReps.short)")
@@ -239,7 +229,7 @@ private struct SetRow: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 }
 

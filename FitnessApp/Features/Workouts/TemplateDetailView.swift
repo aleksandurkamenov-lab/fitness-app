@@ -6,7 +6,6 @@ struct TemplateDetailView: View {
     @Bindable var template: WorkoutTemplate
     @Binding var activeSession: WorkoutSession?
     @State private var showingPicker = false
-    @State private var showingStartOptions = false
 
     var body: some View {
         List {
@@ -42,7 +41,7 @@ struct TemplateDetailView: View {
 
             Section {
                 Button {
-                    showingStartOptions = true
+                    start(copyPrevious: false)
                 } label: {
                     Label("Започни тренировка", systemImage: "play.fill")
                         .font(.headline)
@@ -60,11 +59,6 @@ struct TemplateDetailView: View {
                 item.template = template
                 context.insert(item)
             }
-        }
-        .confirmationDialog("Как да започнем?", isPresented: $showingStartOptions, titleVisibility: .visible) {
-            Button("С кг и повторения от миналия път") { start(copyPrevious: true) }
-            Button("Само упражненията") { start(copyPrevious: false) }
-            Button("Отказ", role: .cancel) {}
         }
     }
 
