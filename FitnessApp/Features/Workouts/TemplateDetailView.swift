@@ -85,6 +85,9 @@ private struct TemplateExerciseRow: View {
 
     var body: some View {
         DisclosureGroup(isExpanded: $expanded) {
+            if let exercise = item.exercise {
+                ExerciseNameField(exercise: exercise)
+            }
             HStack(spacing: 8) {
                 Text("Серия").frame(width: 44, alignment: .leading)
                 Text("Повт. от").frame(maxWidth: .infinity)
@@ -212,5 +215,15 @@ private struct RepStepperRow: View {
                 .fixedSize()
         }
         .frame(minHeight: 36)
+    }
+}
+
+/// Преименуване на упражнението директно от шаблона.
+private struct ExerciseNameField: View {
+    @Bindable var exercise: Exercise
+
+    var body: some View {
+        TextField("Име на упражнението", text: $exercise.name)
+            .font(.headline)
     }
 }

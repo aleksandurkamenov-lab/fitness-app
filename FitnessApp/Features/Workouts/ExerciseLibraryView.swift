@@ -155,7 +155,7 @@ struct NewExerciseSheet: View {
 /// Прогрес по упражнение: най-добри резултати и приблизителен 1RM във времето.
 struct ExerciseDetailView: View {
     @Environment(\.modelContext) private var context
-    let exercise: Exercise
+    @Bindable var exercise: Exercise
     @State private var history: [ExerciseHistoryEntry] = []
 
     private struct ProgressPoint: Identifiable {
@@ -173,6 +173,9 @@ struct ExerciseDetailView: View {
 
     var body: some View {
         List {
+            Section("Име") {
+                TextField("Име на упражнението", text: $exercise.name)
+            }
             Section {
                 LabeledContent("Основна група", value: exercise.primaryMuscle.title)
                 if !exercise.secondaryMuscles.isEmpty {
