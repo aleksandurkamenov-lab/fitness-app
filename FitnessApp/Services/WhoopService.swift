@@ -112,6 +112,8 @@ final class WhoopService {
     var isBusy = false
 
     var isConnected: Bool { refreshToken != nil || accessToken != nil }
+    private var cleanId: String { clientId.filter { !$0.isWhitespace } }
+    private var cleanSecret: String { clientSecret.filter { !$0.isWhitespace } }
     var hasKeys: Bool { !clientId.isEmpty && !clientSecret.isEmpty }
 
     init() {
@@ -128,7 +130,7 @@ final class WhoopService {
         var components = URLComponents(string: authURL)
         components?.queryItems = [
             URLQueryItem(name: "response_type", value: "code"),
-            URLQueryItem(name: "client_id", value: clientId),
+            URLQueryItem(name: "client_id", value: cleanId),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
             URLQueryItem(name: "scope", value: scopes),
             URLQueryItem(name: "state", value: state),
@@ -155,8 +157,8 @@ final class WhoopService {
         let fields = [
             "grant_type": "authorization_code",
             "code": code,
-            "client_id": clientId,
-            "client_secret": clientSecret,
+            "client_id": cleanId,
+            "client_secret": cleanSecret,
             "redirect_uri": redirectURI,
         ]
         if await requestToken(form: fields, basicAuth: false) { return }
@@ -174,7 +176,7 @@ final class WhoopService {
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if basicAuth {
-            let basic = Data("\(clientId):\(clientSecret)".utf8).base64EncodedString()
+            let basic = Data("\(cleanId):\(cleanSecret)".utf8).base64EncodedString()
             request.setValue("Basic \(basic)", forHTTPHeaderField: "Authorization")
         }
         var components = URLComponents()
@@ -192,8 +194,8 @@ final class WhoopService {
         request.httpBody = try? JSONSerialization.data(withJSONObject: [
             "grant_type": "refresh_token",
             "refresh_token": refreshToken,
-            "client_id": clientId,
-            "client_secret": clientSecret,
+            "client_id": cleanId,
+            "client_secret": cleanSecret,
             "scope": "offline",
         ])
         return await handleTokenResponse(request)
