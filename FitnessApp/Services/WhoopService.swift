@@ -107,6 +107,8 @@ final class WhoopService {
     private var accessToken: String?
     private var refreshToken: String?
     private var expiry: Date?
+    private var refreshTask: Task<Bool, Never>?
+    private var lastTokenStatus = 0
     var statusText: String?
     var snapshot: WhoopSnapshot?
     var isBusy = false
@@ -184,26 +186,39 @@ final class WhoopService {
         return await handleTokenResponse(request)
     }
 
+    /// Само едно обновяване наведнъж: WHOOP сменя refresh токена при всяко обновяване,
+    /// а паралелните заявки със стария токен могат да развалят връзката.
     private func refreshAccessToken() async -> Bool {
-        guard let refreshToken, let url = URL(string: tokenURL) else { return false }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: [
+        if let refreshTask { return await refreshTask.value }
+        let task = Task { await performRefresh() }
+        refreshTask = task
+        let ok = await task.value
+        refreshTask = nil
+        return ok
+    }
+
+    private func performRefresh() async -> Bool {
+        guard let refreshToken else { return false }
+        // Като при входа: form-urlencoded с ключовете в тялото (client_secret_post).
+        let ok = await requestToken(form: [
             "grant_type": "refresh_token",
             "refresh_token": refreshToken,
             "client_id": cleanId,
             "client_secret": cleanSecret,
             "scope": "offline",
-        ])
-        return await handleTokenResponse(request)
+        ], basicAuth: false)
+        if !ok && (lastTokenStatus == 400 || lastTokenStatus == 401) {
+            disconnect()
+            statusText = "Връзката с WHOOP изтече. Натисни „Свържи с WHOOP“ отново, ключовете са запазени."
+        }
+        return ok
     }
 
     private func handleTokenResponse(_ request: URLRequest) async -> Bool {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            lastTokenStatus = status
             guard status == 200,
                   let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let token = json["access_token"] as? String else {
