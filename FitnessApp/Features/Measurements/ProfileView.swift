@@ -15,6 +15,7 @@ struct ProfileView: View {
             }
         }
         .navigationTitle("Профил")
+        .keyboardDoneButton()
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -167,4 +168,24 @@ struct ProfileToolbarModifier: ViewModifier {
 
 extension View {
     func profileButton() -> some View { modifier(ProfileToolbarModifier()) }
+}
+
+/// Бутон "Готово" над клавиатурата: цифровите клавиатури нямат Enter.
+struct KeyboardDoneModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content.toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Готово") {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                                    to: nil, from: nil, for: nil)
+                }
+                .fontWeight(.semibold)
+            }
+        }
+    }
+}
+
+extension View {
+    func keyboardDoneButton() -> some View { modifier(KeyboardDoneModifier()) }
 }

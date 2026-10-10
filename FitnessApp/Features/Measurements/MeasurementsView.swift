@@ -114,6 +114,7 @@ struct AddWeightSheet: View {
                     .keyboardType(.decimalPad)
             }
             .navigationTitle("Ново тегло")
+            .keyboardDoneButton()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -206,6 +207,7 @@ struct MeasurementDetailView: View {
             }
         }
         .navigationTitle(kind.title)
+        .keyboardDoneButton()
         .navigationBarTitleDisplayMode(.inline)
     }
 }

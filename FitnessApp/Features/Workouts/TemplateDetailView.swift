@@ -50,6 +50,7 @@ struct TemplateDetailView: View {
             }
         }
         .navigationTitle(template.name)
+        .keyboardDoneButton()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { EditButton() }
         .sheet(isPresented: $showingPicker) {

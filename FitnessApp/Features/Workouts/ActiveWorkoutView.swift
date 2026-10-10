@@ -52,6 +52,7 @@ struct ActiveWorkoutView: View {
                 }
             }
             .navigationTitle(session.title)
+            .keyboardDoneButton()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
