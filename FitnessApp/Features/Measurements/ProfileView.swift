@@ -1,0 +1,138 @@
+import SwiftUI
+import SwiftData
+
+struct ProfileView: View {
+    @Environment(\.modelContext) private var context
+    @Query private var profiles: [UserProfile]
+
+    var body: some View {
+        Group {
+            if let profile = profiles.first {
+                ProfileForm(profile: profile)
+            } else {
+                ProgressView()
+                    .onAppear { context.insert(UserProfile()) }
+            }
+        }
+        .navigationTitle("Профил")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct ProfileForm: View {
+    @Bindable var profile: UserProfile
+
+    private let activities: [(String, Double)] = [
+        ("Почти без движение", 1.2),
+        ("Лека (1–3 тренировки)", 1.375),
+        ("Умерена (3–5 тренировки)", 1.55),
+        ("Висока (6–7 тренировки)", 1.725),
+    ]
+
+    var body: some View {
+        Form {
+            Section("За мен") {
+                Picker("Пол", selection: $profile.sex) {
+                    ForEach(Sex.allCases) { Text($0.title).tag($0) }
+                }
+                DatePicker("Рождена дата", selection: $profile.birthDate, in: ...Date.now, displayedComponents: .date)
+                HStack {
+                    Text("Ръст (см)")
+                    Spacer()
+                    TextField("см", value: $profile.heightCm, format: .number)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 80)
+                }
+                Picker("Активност", selection: $profile.activityFactor) {
+                    ForEach(activities, id: \.1) { Text($0.0).tag($0.1) }
+                }
+            }
+
+            Section("Цел") {
+                Picker("Цел", selection: $profile.goal) {
+                    ForEach(GoalKind.allCases) { Text($0.title).tag($0) }
+                }
+                if profile.goal != .maintain {
+                    Picker("Темпо на седмица", selection: $profile.weeklyRateKg) {
+                        Text("0,1 кг").tag(0.1)
+                        Text("0,5 кг").tag(0.5)
+                        Text("1 кг").tag(1.0)
+                    }
+                }
+            }
+
+            Section {
+            } footer: {
+                Text("Калкулаторите са ориентировъчни и не са медицински съвет.")
+            }
+        }
+    }
+}
+
+struct CalculatorsView: View {
+    @Query private var profiles: [UserProfile]
+    @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
+    @Query(sort: \MeasurementEntry.date) private var measurements: [MeasurementEntry]
+
+    private func latest(_ kind: MeasurementKind) -> Double? {
+        measurements.last { $0.kind == kind }?.cm
+    }
+
+    private func value(_ number: Double?, _ unit: String) -> String {
+        number.map { "\($0.short) \(unit)" } ?? "няма данни"
+    }
+
+    var body: some View {
+        List {
+            if let profile = profiles.first, let kg = weights.last?.kg {
+                let bmi = BodyMath.bmi(kg: kg, cm: profile.heightCm)
+                let navy = latest(.waist).flatMap { waist in
+                    latest(.neck).flatMap { neck in
+                        BodyMath.navyBodyFat(sex: profile.sex, heightCm: profile.heightCm,
+                                             waist: waist, neck: neck, hips: latest(.hips))
+                    }
+                }
+                let rfm = latest(.waist).flatMap { BodyMath.rfm(sex: profile.sex, heightCm: profile.heightCm, waist: $0) }
+                let scaleFat = weights.last?.bodyFatPercent
+
+                Section("Тяло") {
+                    LabeledContent("ИТМ", value: value(bmi, ""))
+                    LabeledContent("% мазнини (US Navy)", value: value(navy, "%"))
+                    LabeledContent("% мазнини (RFM)", value: value(rfm, "%"))
+                    if let scaleFat {
+                        LabeledContent("% мазнини (кантар)", value: "\(scaleFat.short) %")
+                        LabeledContent("Постна маса", value: "\((kg * (1 - scaleFat / 100)).short) кг")
+                    }
+                }
+
+                let bmr = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age)
+                Section("Енергия") {
+                    LabeledContent("BMR (Mifflin-St Jeor)", value: "\(Int(bmr)) ккал")
+                    LabeledContent("Разход за деня", value: "\(Int(BodyMath.tdee(bmr: bmr, activity: profile.activityFactor))) ккал")
+                }
+
+                if let targets = BodyMath.targets(profile: profile, kg: kg) {
+                    Section("Цел: \(profile.goal.title)") {
+                        LabeledContent("Калории", value: "\(Int(targets.kcal)) ккал")
+                        LabeledContent("Белтък", value: "\(Int(targets.protein)) г")
+                        LabeledContent("Мазнини", value: "\(Int(targets.fat)) г")
+                        LabeledContent("Въглехидрати", value: "\(Int(targets.carbs)) г")
+                    }
+                }
+            } else {
+                Section {
+                    Text("Попълни профила (горе вдясно в Мерки) и добави поне едно тегло.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section {
+            } footer: {
+                Text("Ориентировъчно, не е медицински съвет. Формулите имат грешка, особено % мазнини. Най-точен е трендът във времето.")
+            }
+        }
+        .navigationTitle("Калкулатори")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}

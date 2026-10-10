@@ -14,6 +14,9 @@ struct FitnessApp: App {
             TemplateExercise.self,
             WorkoutSession.self,
             SetEntry.self,
+            UserProfile.self,
+            WeightEntry.self,
+            MeasurementEntry.self,
         ])
     }
 }

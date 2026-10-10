@@ -1,0 +1,92 @@
+import Foundation
+import SwiftData
+
+enum Sex: String, CaseIterable, Identifiable, Codable {
+    case male, female
+    var id: String { rawValue }
+    var title: String { self == .male ? "Мъж" : "Жена" }
+}
+
+enum GoalKind: String, CaseIterable, Identifiable, Codable {
+    case lose, maintain, gain
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .lose: "Сваляне"
+        case .maintain: "Поддръжка"
+        case .gain: "Качване"
+        }
+    }
+}
+
+enum MeasurementKind: String, CaseIterable, Identifiable, Codable {
+    case waist, neck, chest, arm, thigh, hips
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .waist: "Талия (под пъпа)"
+        case .neck: "Врат"
+        case .chest: "Гърди"
+        case .arm: "Ръка"
+        case .thigh: "Бедро"
+        case .hips: "Ханш"
+        }
+    }
+}
+
+/// Профилът на потребителя: от него се смятат калкулаторите.
+@Model
+final class UserProfile {
+    var sexRaw: String = Sex.male.rawValue
+    var birthDate: Date = Calendar.current.date(byAdding: .year, value: -30, to: .now) ?? .now
+    var heightCm: Double = 175
+    var activityFactor: Double = 1.55
+    var goalRaw: String = GoalKind.maintain.rawValue
+    /// Желано темпо в кг на седмица (0.1 / 0.5 / 1).
+    var weeklyRateKg: Double = 0.5
+
+    init() {}
+
+    var sex: Sex {
+        get { Sex(rawValue: sexRaw) ?? .male }
+        set { sexRaw = newValue.rawValue }
+    }
+
+    var goal: GoalKind {
+        get { GoalKind(rawValue: goalRaw) ?? .maintain }
+        set { goalRaw = newValue.rawValue }
+    }
+
+    var age: Int {
+        Calendar.current.dateComponents([.year], from: birthDate, to: .now).year ?? 0
+    }
+}
+
+@Model
+final class WeightEntry {
+    var date: Date = Date.now
+    var kg: Double = 0
+    /// % мазнини, ако идва от кантар (по избор).
+    var bodyFatPercent: Double?
+
+    init(date: Date = .now, kg: Double, bodyFatPercent: Double? = nil) {
+        self.date = date
+        self.kg = kg
+        self.bodyFatPercent = bodyFatPercent
+    }
+}
+
+@Model
+final class MeasurementEntry {
+    var date: Date = Date.now
+    var kindRaw: String = MeasurementKind.waist.rawValue
+    var cm: Double = 0
+
+    init(date: Date = .now, kind: MeasurementKind, cm: Double) {
+        self.date = date
+        self.kindRaw = kind.rawValue
+        self.cm = cm
+    }
+
+    var kind: MeasurementKind { MeasurementKind(rawValue: kindRaw) ?? .waist }
+}
