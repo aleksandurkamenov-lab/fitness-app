@@ -81,4 +81,60 @@ enum BodyMath {
             return TrendPoint(date: entry.date, kg: entry.kg, trend: avg)
         }
     }
+
+    // MARK: Прогноза
+
+    /// Приблизителни ккал от тренировки със силови тежести (MET ≈ 5) за последните 28 дни, на седмица.
+    static func trainingKcalPerWeek(sessions: [WorkoutSession], kg: Double) -> (kcal: Double, perWeek: Double) {
+        let from = Date.now.addingTimeInterval(-28 * 86_400)
+        let recent = sessions.filter { $0.isFinished && $0.date >= from }
+        guard !recent.isEmpty else { return (0, 0) }
+        let minutes = recent.reduce(0.0) { total, session in
+            let end = session.finishedAt ?? session.date
+            return total + min(max(end.timeIntervalSince(session.date) / 60, 20), 150)
+        }
+        let kcal = 5 * 3.5 * kg / 200 * minutes
+        return (kcal / 4, Double(recent.count) / 4)
+    }
+
+    struct Forecast {
+        var intake: Double
+        var expenditure: Double
+        var baseKcal: Double
+        var stepsKcal: Double
+        var trainingKcal: Double
+        var cardioKcal: Double
+        var weeklyChangeKg: Double
+    }
+
+    /// Прогноза: приемът от макросите срещу приблизителния разход.
+    static func forecast(profile: UserProfile, kg: Double, intake: Double, sessions: [WorkoutSession]) -> Forecast {
+        let bmr = bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age)
+        let base = bmr * 1.15
+        let steps = profile.avgDailySteps * 0.00044 * kg
+        let training = trainingKcalPerWeek(sessions: sessions, kg: kg).kcal / 7
+        let cardio = profile.weeklyCardioMinutes * 6 * 3.5 * kg / 200 / 7
+        let expenditure = base + steps + training + cardio
+        return Forecast(intake: intake, expenditure: expenditure, baseKcal: base, stepsKcal: steps,
+                        trainingKcal: training, cardioKcal: cardio,
+                        weeklyChangeKg: (intake - expenditure) * 7 / 7700)
+    }
+
+    /// Реален наклон на теглото (кг на седмица) от последните 21 дни, ако има достатъчно данни.
+    static func actualWeeklyChange(_ entries: [WeightEntry]) -> Double? {
+        let from = Date.now.addingTimeInterval(-21 * 86_400)
+        let points = entries.filter { $0.date >= from }.sorted { $0.date < $1.date }
+        guard points.count >= 4,
+              let first = points.first, let last = points.last,
+              last.date.timeIntervalSince(first.date) >= 7 * 86_400 else { return nil }
+        let xs = points.map { $0.date.timeIntervalSince(first.date) / 86_400 }
+        let ys = points.map(\.kg)
+        let n = Double(points.count)
+        let sumX = xs.reduce(0, +), sumY = ys.reduce(0, +)
+        let sumXY = zip(xs, ys).reduce(0) { $0 + $1.0 * $1.1 }
+        let sumXX = xs.reduce(0) { $0 + $1 * $1 }
+        let denominator = n * sumXX - sumX * sumX
+        guard denominator != 0 else { return nil }
+        return (n * sumXY - sumX * sumY) / denominator * 7
+    }
 }

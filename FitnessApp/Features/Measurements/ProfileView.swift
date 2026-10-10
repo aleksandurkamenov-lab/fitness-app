@@ -88,6 +88,9 @@ private struct ProfileForm: View {
 private struct MacroEditor: View {
     @Bindable var profile: UserProfile
     let targets: BodyMath.Targets
+    let kg: Double
+    let sessions: [WorkoutSession]
+    let weights: [WeightEntry]
 
     private func binding(_ keyPath: ReferenceWritableKeyPath<UserProfile, Double>, auto: Double) -> Binding<Double?> {
         Binding(
@@ -105,7 +108,7 @@ private struct MacroEditor: View {
     private var kcal: Double { protein * 4 + carbs * 4 + fat * 9 }
     private var isCustom: Bool { profile.customProteinG > 0 || profile.customFatG > 0 || profile.customCarbsG > 0 }
 
-    private func row(_ title: String, _ value: Binding<Double?>) -> some View {
+    private func row(_ title: String, _ value: Binding<Double?>, unit: String = "г") -> some View {
         HStack {
             Text(title)
             Spacer()
@@ -114,7 +117,7 @@ private struct MacroEditor: View {
                 .multilineTextAlignment(.trailing)
                 .frame(width: 80)
                 .textFieldStyle(.roundedBorder)
-            Text("г")
+            Text(unit)
         }
     }
 
@@ -135,6 +138,36 @@ private struct MacroEditor: View {
             }
         }
         .keyboardDoneButton()
+
+        let forecast = BodyMath.forecast(profile: profile, kg: kg, intake: kcal, sessions: sessions)
+        Section("Прогноза по твоите макроси") {
+            row("Средни крачки на ден", Binding<Double?>(
+                get: { profile.avgDailySteps },
+                set: { profile.avgDailySteps = max($0 ?? 0, 0) }
+            ), unit: "")
+            row("Кардио на седмица", Binding<Double?>(
+                get: { profile.weeklyCardioMinutes },
+                set: { profile.weeklyCardioMinutes = max($0 ?? 0, 0) }
+            ), unit: "мин")
+            LabeledContent("Прием", value: "\(Int(forecast.intake)) ккал")
+            LabeledContent("Базов разход", value: "\(Int(forecast.baseKcal)) ккал")
+            LabeledContent("Крачки", value: "+\(Int(forecast.stepsKcal)) ккал")
+            LabeledContent("Тренировки", value: "+\(Int(forecast.trainingKcal)) ккал")
+            LabeledContent("Кардио", value: "+\(Int(forecast.cardioKcal)) ккал")
+            LabeledContent("Общ разход", value: "\(Int(forecast.expenditure)) ккал")
+            LabeledContent("Очаквана промяна", value: verdict(forecast.weeklyChangeKg))
+            if let actual = BodyMath.actualWeeklyChange(weights) {
+                LabeledContent("Реален тренд (21 дни)", value: "\(actual > 0 ? "+" : "")\(actual.formatted(.number.precision(.fractionLength(0...2)))) кг/седм.")
+            }
+        } footer: {
+            Text("Ориентировъчно, грешката е 10–15%. Тренировките се смятат от записаните сесии, крачките и кардиото са ръчни, докато не ги вземем от Apple Health. Сънят още не влиза в сметката: той показва възстановяване, не изгаря калории. Реалният тренд от теглото е по-точен от прогнозата.")
+        }
+    }
+
+    private func verdict(_ change: Double) -> String {
+        let text = abs(change).formatted(.number.precision(.fractionLength(0...2)))
+        if abs(change) < 0.1 { return "стабилно тегло" }
+        return change < 0 ? "сваляш ~\(text) кг/седм." : "качваш ~\(text) кг/седм."
     }
 }
 
@@ -142,6 +175,7 @@ struct CalculatorsView: View {
     @Query private var profiles: [UserProfile]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
     @Query(sort: \MeasurementEntry.date) private var measurements: [MeasurementEntry]
+    @Query private var sessions: [WorkoutSession]
 
     private func latest(_ kind: MeasurementKind) -> Double? {
         measurements.last { $0.kind == kind }?.cm
@@ -181,7 +215,7 @@ struct CalculatorsView: View {
                 }
 
                 if let targets = BodyMath.targets(profile: profile, kg: kg) {
-                    MacroEditor(profile: profile, targets: targets)
+                    MacroEditor(profile: profile, targets: targets, kg: kg, sessions: sessions, weights: weights)
                 }
             } else {
                 Section {

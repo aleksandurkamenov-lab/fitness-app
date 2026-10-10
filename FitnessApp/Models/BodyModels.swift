@@ -74,6 +74,9 @@ final class UserProfile {
     var customProteinG: Double = 0
     var customFatG: Double = 0
     var customCarbsG: Double = 0
+    /// Средни крачки на ден и кардио минути на седмица (ръчно, докато не идват от Health).
+    var avgDailySteps: Double = 8000
+    var weeklyCardioMinutes: Double = 0
 
     init() {}
 
