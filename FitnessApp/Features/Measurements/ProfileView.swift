@@ -84,6 +84,60 @@ private struct ProfileForm: View {
     }
 }
 
+/// Калории и макроси от целта, които може да се променят ръчно.
+private struct MacroEditor: View {
+    @Bindable var profile: UserProfile
+    let targets: BodyMath.Targets
+
+    private func binding(_ keyPath: ReferenceWritableKeyPath<UserProfile, Double>, auto: Double) -> Binding<Double?> {
+        Binding(
+            get: {
+                let custom = profile[keyPath: keyPath]
+                return (custom > 0 ? custom : auto).rounded()
+            },
+            set: { profile[keyPath: keyPath] = max($0 ?? 0, 0) }
+        )
+    }
+
+    private var protein: Double { profile.customProteinG > 0 ? profile.customProteinG : targets.protein }
+    private var fat: Double { profile.customFatG > 0 ? profile.customFatG : targets.fat }
+    private var carbs: Double { profile.customCarbsG > 0 ? profile.customCarbsG : targets.carbs }
+    private var kcal: Double { protein * 4 + carbs * 4 + fat * 9 }
+    private var isCustom: Bool { profile.customProteinG > 0 || profile.customFatG > 0 || profile.customCarbsG > 0 }
+
+    private func row(_ title: String, _ value: Binding<Double?>) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            TextField("г", value: value, format: .number)
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 80)
+                .textFieldStyle(.roundedBorder)
+            Text("г")
+        }
+    }
+
+    var body: some View {
+        Section("Цел: \(profile.goal.title)") {
+            LabeledContent("Калории от целта", value: "\(Int(targets.kcal)) ккал")
+            row("Белтък", binding(\.customProteinG, auto: targets.protein))
+            row("Мазнини", binding(\.customFatG, auto: targets.fat))
+            row("Въглехидрати", binding(\.customCarbsG, auto: targets.carbs))
+            LabeledContent("Калории от макросите", value: "\(Int(kcal)) ккал")
+            if isCustom {
+                LabeledContent("Разлика спрямо целта", value: "\(Int(kcal - targets.kcal)) ккал")
+                Button("Върни автоматичните стойности", role: .destructive) {
+                    profile.customProteinG = 0
+                    profile.customFatG = 0
+                    profile.customCarbsG = 0
+                }
+            }
+        }
+        .keyboardDoneButton()
+    }
+}
+
 struct CalculatorsView: View {
     @Query private var profiles: [UserProfile]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
@@ -127,12 +181,7 @@ struct CalculatorsView: View {
                 }
 
                 if let targets = BodyMath.targets(profile: profile, kg: kg) {
-                    Section("Цел: \(profile.goal.title)") {
-                        LabeledContent("Калории", value: "\(Int(targets.kcal)) ккал")
-                        LabeledContent("Белтък", value: "\(Int(targets.protein)) г")
-                        LabeledContent("Мазнини", value: "\(Int(targets.fat)) г")
-                        LabeledContent("Въглехидрати", value: "\(Int(targets.carbs)) г")
-                    }
+                    MacroEditor(profile: profile, targets: targets)
                 }
             } else {
                 Section {

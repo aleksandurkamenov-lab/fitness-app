@@ -70,6 +70,10 @@ final class UserProfile {
     var proteinOtherGPerKg: Double = 1.8
     /// Минимум мазнини в г на кг тегло.
     var fatMinGPerKg: Double = 0.8
+    /// Ръчно зададени макроси в грамове; 0 = автоматично.
+    var customProteinG: Double = 0
+    var customFatG: Double = 0
+    var customCarbsG: Double = 0
 
     init() {}
 
