@@ -84,10 +84,10 @@ private struct TemplateExerciseRow: View {
     var body: some View {
         DisclosureGroup(isExpanded: $expanded) {
             ForEach(Array(item.targets.enumerated()), id: \.offset) { index, target in
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 10) {
                     Text("Серия \(index + 1)").font(.subheadline.weight(.semibold))
-                    Stepper("Повторения от: \(target.repMin)", value: minBinding(index), in: 1...50)
-                    Stepper("Повторения до: \(target.repMax)", value: maxBinding(index), in: target.repMin...60)
+                    RepStepperRow(title: "Повторения от", value: minBinding(index), range: 1...50)
+                    RepStepperRow(title: "Повторения до", value: maxBinding(index), range: target.repMin...60)
                     if let best = target.bestText {
                         Text("Най-добър до сега: \(best)")
                             .font(.caption)
@@ -112,7 +112,7 @@ private struct TemplateExerciseRow: View {
                 }
             }
             .buttonStyle(.borderless)
-            Stepper("Почивка: \(item.restSeconds) сек", value: $item.restSeconds, in: 30...600, step: 15)
+            RepStepperRow(title: "Почивка (сек)", value: $item.restSeconds, range: 30...600, step: 15)
             TextField("Бележка", text: $item.note, axis: .vertical)
         } label: {
             VStack(alignment: .leading) {
@@ -151,5 +151,28 @@ private struct TemplateExerciseRow: View {
                 item.targets = targets
             }
         )
+    }
+}
+
+/// Ред с етикет, текущата стойност и малък −/+ контрол, без застъпване между редовете.
+private struct RepStepperRow: View {
+    let title: String
+    @Binding var value: Int
+    let range: ClosedRange<Int>
+    var step: Int = 1
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(title)
+            Spacer()
+            Text("\(value)")
+                .font(.title3.weight(.semibold))
+                .monospacedDigit()
+                .frame(minWidth: 40, alignment: .trailing)
+            Stepper("", value: $value, in: range, step: step)
+                .labelsHidden()
+                .fixedSize()
+        }
+        .frame(minHeight: 36)
     }
 }
