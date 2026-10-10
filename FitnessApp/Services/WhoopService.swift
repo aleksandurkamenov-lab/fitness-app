@@ -161,12 +161,9 @@ final class WhoopService {
             "client_secret": cleanSecret,
             "redirect_uri": redirectURI,
         ]
+        // WHOOP изисква данните за вход в тялото на заявката (client_secret_post).
         if await requestToken(form: fields, basicAuth: false) { return }
-        // Някои клиенти изискват данните за вход в хедъра.
-        var withoutSecrets = fields
-        withoutSecrets["client_id"] = nil
-        withoutSecrets["client_secret"] = nil
-        _ = await requestToken(form: withoutSecrets, basicAuth: true)
+        statusText = (statusText ?? "") + "\n(ID \(cleanId.count) знака, ключ \(cleanSecret.count) знака)"
     }
 
     private func requestToken(form: [String: String], basicAuth: Bool) async -> Bool {
@@ -179,9 +176,11 @@ final class WhoopService {
             let basic = Data("\(cleanId):\(cleanSecret)".utf8).base64EncodedString()
             request.setValue("Basic \(basic)", forHTTPHeaderField: "Authorization")
         }
-        var components = URLComponents()
-        components.queryItems = form.map { URLQueryItem(name: $0.key, value: $0.value) }
-        request.httpBody = components.percentEncodedQuery?.data(using: .utf8)
+        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~")
+        let body = form.map { key, value in
+            "\(key)=\(value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value)"
+        }.joined(separator: "&")
+        request.httpBody = body.data(using: .utf8)
         return await handleTokenResponse(request)
     }
 
