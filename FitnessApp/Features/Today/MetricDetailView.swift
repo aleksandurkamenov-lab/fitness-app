@@ -30,9 +30,13 @@ struct MetricDetailView: View {
         case .weight:
             let calendar = Calendar.current
             let inRange = weights.filter { $0.date >= start && $0.date < end }
-            return Dictionary(grouping: inRange) { calendar.startOfDay(for: $0.date) }
-                .map { DayValue(day: $0.key, value: $0.value.map(\.kg).reduce(0, +) / Double($0.value.count)) }
-                .sorted { $0.day < $1.day }
+            let byDay: [Date: [WeightEntry]] = Dictionary(grouping: inRange) { calendar.startOfDay(for: $0.date) }
+            var result: [DayValue] = []
+            for (day, entries) in byDay {
+                let total = entries.reduce(0.0) { $0 + $1.kg }
+                result.append(DayValue(day: day, value: total / Double(entries.count)))
+            }
+            return result.sorted { $0.day < $1.day }
         }
     }
 
