@@ -14,8 +14,17 @@ struct MesoGridView: View {
         allSessions.filter { $0.template?.persistentModelID == template.persistentModelID }
     }
 
+    /// За седмицата се взима сесията с най-много серии (при равенство - най-новата).
     private func session(week: Int) -> WorkoutSession? {
-        sessions.last { $0.week == week }
+        pick(from: sessions, week: week)
+    }
+
+    private func pick(from list: [WorkoutSession], week: Int) -> WorkoutSession? {
+        var best: WorkoutSession?
+        for candidate in list where candidate.week == week {
+            if best == nil || candidate.sets.count >= (best?.sets.count ?? 0) { best = candidate }
+        }
+        return best
     }
 
     /// Работните серии на упражнението за седмицата, по реда на сериите.
@@ -28,7 +37,11 @@ struct MesoGridView: View {
     }
 
     private func setCount(for item: TemplateExercise) -> Int {
-        let extra = (1...weeks).map { sets(for: item, week: $0).count }.max() ?? 0
+        var extra = 0
+        for week in 1...weeks {
+            let highest = (sets(for: item, week: week).map(\.setIndex).max() ?? -1) + 1
+            extra = max(extra, highest)
+        }
         return max(item.targets.count, extra)
     }
 
@@ -121,7 +134,10 @@ struct MesoGridView: View {
     }
 
     private func ensureSession(week: Int) -> WorkoutSession {
-        if let found = session(week: week) { return found }
+        // @Query може да не е опреснен веднага след запис, затова се търси директно в контекста.
+        let fresh = (try? context.fetch(FetchDescriptor<WorkoutSession>())) ?? []
+        let mine = fresh.filter { $0.template?.persistentModelID == template.persistentModelID }
+        if let found = pick(from: mine, week: week) { return found }
         let start = template.mesocycle?.startDate ?? .now
         let planned = Calendar.current.date(byAdding: .day, value: (week - 1) * 7, to: start) ?? .now
         let session = WorkoutSession(date: min(planned, .now), week: week, template: template)
@@ -132,7 +148,12 @@ struct MesoGridView: View {
 
     private func ensureSet(_ item: TemplateExercise, week: Int, index: Int) -> SetEntry {
         let session = ensureSession(week: week)
-        if let found = sets(for: item, week: week).first(where: { $0.setIndex == index }) { return found }
+        let exerciseID = item.exercise?.persistentModelID
+        let found = session.sets.first { entry in
+            entry.exerciseOrder == item.order && !entry.isWarmup && entry.setIndex == index
+                && entry.exercise?.persistentModelID == exerciseID
+        }
+        if let found { return found }
         let targets = item.targets
         let target = index < targets.count ? targets[index] : targets.last
         let set = SetEntry(exercise: item.exercise, exerciseOrder: item.order, setIndex: index,
