@@ -40,3 +40,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v36: AI without an API key: data and photos are shared to the Claude app
 - v37: New-record alerts, plate calculator, warm-up sets, RIR, supersets, records page, decimal weights with comma or dot
 - v38: Strength progress chart (1RM per exercise, % change, weekly tonnage)
+- v39: Week-by-week grid per workout (Excel-style): weeks as rows, kg x reps per set, volume and % change vs previous week; Push A block removed from bundled Meso 22

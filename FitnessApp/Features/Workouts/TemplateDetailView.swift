@@ -11,6 +11,12 @@ struct TemplateDetailView: View {
         List {
             Section {
                 TextField("Име на тренировката", text: $template.name)
+                NavigationLink {
+                    MesoGridView(template: template)
+                } label: {
+                    Label("Таблица по седмици (като в Excel)", systemImage: "tablecells")
+                }
+                .disabled(template.items.isEmpty)
             }
 
             Section("Упражнения") {
