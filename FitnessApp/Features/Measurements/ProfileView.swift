@@ -290,16 +290,24 @@ extension View {
 /// Бутон "Готово" над клавиатурата: цифровите клавиатури нямат Enter.
 struct KeyboardDoneModifier: ViewModifier {
     func body(content: Content) -> some View {
-        content.toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Готово") {
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
-                                                    to: nil, from: nil, for: nil)
+        content
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Готово") {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                                        to: nil, from: nil, for: nil)
+                    }
+                    .fontWeight(.semibold)
                 }
-                .fontWeight(.semibold)
             }
-        }
+            // Курсорът отива след въведеното число, за да се дописва и трие лесно.
+            .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidBeginEditingNotification)) { note in
+                guard let field = note.object as? UITextField else { return }
+                DispatchQueue.main.async {
+                    field.selectedTextRange = field.textRange(from: field.endOfDocument, to: field.endOfDocument)
+                }
+            }
     }
 }
 
