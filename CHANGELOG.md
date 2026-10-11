@@ -1,40 +1,42 @@
-# Версии
+# Changelog
 
-- v1: тренировки: мезоцикли, шаблони, логване (етап 1, част 1)
-- v2: импорт на Meso 22 от Excel с цели по серии
-- v3: история с кг × повторения по серии
-- v4: поправени застъпващи се бутони в шаблона
-- v5: таблица със серии, планирана тежест, свои бележки
-- v6: статична цел за повторения, предишните стойности като напомняне
-- v7: упражненията могат да се преименуват (от библиотеката и от шаблона)
-- v8: номерът на версията се вижда най-долу в таблото Тренировки
-- v9: молив до името на упражнението за преименуване (шаблон и тренировка)
-- v10: профил, тегло с графика и тренд (7/30/90 дни), обиколки, калкулатори (ИТМ, % мазнини, BMR, калории, макроси)
-- v11: профилът е достъпен от всеки таб, отделни темпо и макроси за дефицит и бълк
-- v12: бутон Готово над клавиатурата при въвеждане на числа
-- v13: ръка, бедро, прасец и корем с отпуснато и стегнато (см)
-- v14: ляво и дясно за ръка, бедро и прасец
-- v15: ръчна промяна на белтък, мазнини и въглехидрати в калкулатора
-- v16: прогноза дали ще сваляш или качваш според твоите макроси, тренировки, крачки и кардио
-- v17: таб Днес с Apple Health: сън, възстановяване, натоварване, монитор на здравето, табло
-- v18: свързване с Polar AccessLink (Профил → Устройства → Polar Loop)
-- v19: свързване с WHOOP API; данните му влизат в таб Днес
-- v20: внос на теглото от Apple Health, дневна история и екран Тенденции с графики
-- v21: натискане върху показател в Днес отваря 7/30/90 дни графика и статистика
-- v22: натискане/плъзгане по всяка графика показва точната стойност за деня
-- v23: поправка срив в таб Мерки (графика на теглото)
-- v24: CLAUDE.md с правилата и тестове за математиката (без промяна в приложението)
-- v25: агент за преглед преди качване и скрипт tools/precheck.sh (без промяна в приложението)
-- v26: поправка на графиката 1RM при две сесии в един и същи момент
-- v27: бърз тренд на теглото и най-много 150 точки в графиката (срив в Мерки)
-- v28: WHOOP вход само с client_secret_post, чисти интервали в ключовете и показва дължината им
-- v29: таб Хранене: дневник по хранения, запазени храни, макроси спрямо целите
-- v30: количество с автоматично преизчисляване и търсене на храни в Open Food Facts
-- v31: храненето от Apple Health (MyFitnessPal) се добавя към деня и икона на приложението
-- v32: таб Снимки (галерия/папка, сравнение), променлив калориен прием, следващ мезоцикъл с топ резултати, старт с кг от последния път
-- v33: AI треньор (Claude): чат със съвети по сън, възстановяване, тренировки, тегло и макроси, записване на храна и тегло с текст
-- v34: поправено обновяване на WHOOP токена (данните спираха след около час)
-- v35: седмичен AI анализ (снимки, тегло, мерки, тренировки, обем по мускулни групи)
-- v36: AI без API ключ: данните и снимките се пращат към Claude приложението
-- v37: рекорди по време на тренировка, калкулатор за дискове, загряващи серии, RIR, суперсерии, страница с рекорди, дробни кг с запетая или точка
-- v38: графика за силов прогрес (1RM по упражнения, % промяна, седмичен тонаж)
+Every change to the app is a numbered version. The current version is shown at the bottom of the Workouts tab.
+
+- v1: Workouts: mesocycles, templates and set logging
+- v2: Import of the Meso 22 program from Excel, with targets per set
+- v3: History with weight × reps per set
+- v4: Fixed overlapping buttons in the template screen
+- v5: Set table, planned weight and personal notes
+- v6: Fixed rep targets; previous values shown as hints
+- v7: Exercises can be renamed (from the library and from templates)
+- v8: Version number shown at the bottom of the Workouts tab
+- v9: Pencil next to the exercise name for renaming (template and workout)
+- v10: Profile, weight chart with trend (7/30/90 days), circumferences and calculators (BMI, body fat, BMR, calories, macros)
+- v11: Profile reachable from every tab; separate pace and macros for cutting and bulking
+- v12: Done button above the keyboard for number input
+- v13: Arm, thigh, calf and abdomen measured relaxed and flexed
+- v14: Left and right sides for arm, thigh and calf
+- v15: Manual protein, fat and carb overrides in the calculator
+- v16: Weight-change forecast from macros, workouts, steps and cardio
+- v17: Today tab with Apple Health: sleep, recovery, strain and health monitor
+- v18: Polar AccessLink connection (Profile → Devices → Polar Loop)
+- v19: WHOOP API connection; its data feeds the Today tab
+- v20: Weight import from Apple Health, daily history and a Trends screen with charts
+- v21: Tapping a metric in Today opens a 7/30/90-day chart with statistics
+- v22: Tap or drag on any chart to see the exact value for a day
+- v23: Fixed a crash in the Measurements tab (weight chart)
+- v24: CLAUDE.md working rules and math unit tests (no app change)
+- v25: Pre-release review agent and tools/precheck.sh (no app change)
+- v26: Fixed the 1RM chart when two sessions share the same timestamp
+- v27: Faster weight trend and at most 150 chart points (Measurements crash)
+- v28: WHOOP sign-in with client_secret_post only; key whitespace trimmed and key length shown
+- v29: Nutrition tab: diary by meal, saved foods and macros against targets
+- v30: Amounts with automatic recalculation; food search via Open Food Facts
+- v31: Nutrition from Apple Health (e.g. MyFitnessPal) added to the day; app icon
+- v32: Photos tab (library/folder import, comparison), variable calorie intake, next mesocycle with top results, start with last session's weights
+- v33: AI coach (Claude): advice on sleep, recovery, training, weight and macros; log food and weight from text
+- v34: Fixed WHOOP token refresh (data stopped after about an hour)
+- v35: Weekly AI review (photos, weight, measurements, workouts, volume per muscle group)
+- v36: AI without an API key: data and photos are shared to the Claude app
+- v37: New-record alerts, plate calculator, warm-up sets, RIR, supersets, records page, decimal weights with comma or dot
+- v38: Strength progress chart (1RM per exercise, % change, weekly tonnage)
