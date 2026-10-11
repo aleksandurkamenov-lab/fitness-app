@@ -20,7 +20,7 @@ struct MesocycleDetailView: View {
             Section("Тренировки") {
                 ForEach(mesocycle.sortedTemplates) { template in
                     NavigationLink {
-                        TemplateDetailView(template: template, activeSession: $activeSession)
+                        MesoGridView(template: template, activeSession: $activeSession)
                     } label: {
                         VStack(alignment: .leading) {
                             Text(template.name).font(.headline)
