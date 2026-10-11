@@ -6,6 +6,7 @@ import SwiftData
 struct MesoGridView: View {
     @Environment(\.modelContext) private var context
     let template: WorkoutTemplate
+    @Binding var activeSession: WorkoutSession?
     @Query(sort: \WorkoutSession.date) private var allSessions: [WorkoutSession]
 
     private var weeks: Int { max(template.mesocycle?.weekCount ?? 4, 1) }
@@ -88,6 +89,15 @@ struct MesoGridView: View {
         .navigationTitle(template.name)
         .navigationBarTitleDisplayMode(.inline)
         .keyboardDoneButton()
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                NavigationLink {
+                    TemplateDetailView(template: template, activeSession: $activeSession)
+                } label: {
+                    Label("Упражнения и старт", systemImage: "list.bullet.clipboard")
+                }
+            }
+        }
     }
 
     private var totalCard: some View {
