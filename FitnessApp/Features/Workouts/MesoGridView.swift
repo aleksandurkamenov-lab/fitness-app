@@ -8,6 +8,8 @@ struct MesoGridView: View {
     let template: WorkoutTemplate
     @Binding var activeSession: WorkoutSession?
     @Query(sort: \WorkoutSession.date) private var allSessions: [WorkoutSession]
+    @State private var isEditing = false
+    @State private var showingPicker = false
 
     private var weeks: Int { max(template.mesocycle?.weekCount ?? 4, 1) }
 
@@ -70,12 +72,26 @@ struct MesoGridView: View {
                 }
                 ForEach(template.sortedItems) { item in
                     ExerciseGridCard(item: item, weeks: weeks, setCount: setCount(for: item),
+                                     isEditing: isEditing,
+                                     canRemoveSet: canRemoveSet(item),
+                                     onAddSet: { addSet(to: item) },
+                                     onRemoveSet: { removeSet(from: item) },
+                                     onDelete: { context.delete(item) },
                                      sets: { sets(for: item, week: $0) },
                                      volume: { volume(item, week: $0) },
                                      previousWeek: { week in
                                          previousWeek(of: week) { volume(item, week: $0) > 0 }
                                      },
                                      binding: { binding(item, week: $0, index: $1) })
+                }
+                if isEditing {
+                    Button {
+                        showingPicker = true
+                    } label: {
+                        Label("Добави упражнение", systemImage: "plus.circle")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
                 }
                 if !template.items.isEmpty { totalCard }
                 Text("Въвеждаш кг и повторения направо в таблицата. Сивите числа са от предишната седмица. Обемът = кг × повторения.")
@@ -89,8 +105,19 @@ struct MesoGridView: View {
         .navigationTitle(template.name)
         .navigationBarTitleDisplayMode(.inline)
         .keyboardDoneButton()
+        .sheet(isPresented: $showingPicker) {
+            ExercisePickerView { exercise in
+                let order = (template.items.map(\.order).max() ?? -1) + 1
+                let item = TemplateExercise(exercise: exercise, order: order)
+                item.template = template
+                context.insert(item)
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
+                Button(isEditing ? "Готово" : "Редакция") { isEditing.toggle() }
+            }
+            ToolbarItem(placement: .secondaryAction) {
                 NavigationLink {
                     TemplateDetailView(template: template, activeSession: $activeSession)
                 } label: {
@@ -117,6 +144,35 @@ struct MesoGridView: View {
         }
         .padding(12)
         .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    // MARK: Редакция
+
+    private func addSet(to item: TemplateExercise) {
+        var targets = item.targets
+        targets.append(SetTarget(repMin: targets.last?.repMin ?? 8, repMax: targets.last?.repMax ?? 12))
+        item.targets = targets
+    }
+
+    /// Последната серия се маха само ако в нея няма въведени данни.
+    private func canRemoveSet(_ item: TemplateExercise) -> Bool {
+        let count = setCount(for: item)
+        guard count > 1 else { return false }
+        for week in 1...weeks {
+            let logged = sets(for: item, week: week).contains { $0.setIndex == count - 1 && ($0.reps > 0 || $0.weight > 0) }
+            if logged { return false }
+        }
+        return true
+    }
+
+    private func removeSet(from item: TemplateExercise) {
+        let count = setCount(for: item)
+        for week in 1...weeks {
+            for entry in sets(for: item, week: week) where entry.setIndex == count - 1 { context.delete(entry) }
+        }
+        var targets = item.targets
+        if targets.count > 1 && targets.count >= count { targets.removeLast() }
+        item.targets = targets
     }
 
     // MARK: Запис
@@ -182,6 +238,11 @@ private struct ExerciseGridCard: View {
     let item: TemplateExercise
     let weeks: Int
     let setCount: Int
+    let isEditing: Bool
+    let canRemoveSet: Bool
+    let onAddSet: () -> Void
+    let onRemoveSet: () -> Void
+    let onDelete: () -> Void
     let sets: (Int) -> [SetEntry]
     let volume: (Int) -> Double
     let previousWeek: (Int) -> Int?
@@ -220,8 +281,26 @@ private struct ExerciseGridCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if isEditing {
+                HStack {
+                    if let exercise = item.exercise {
+                        ExerciseNameField(exercise: exercise)
+                    }
+                    Button(role: .destructive, action: onDelete) {
+                        Image(systemName: "trash")
+                    }
+                }
+                HStack {
+                    Button(action: onRemoveSet) { Label("Серия", systemImage: "minus.circle") }
+                        .disabled(!canRemoveSet)
+                    Button(action: onAddSet) { Label("Серия", systemImage: "plus.circle") }
+                    Spacer()
+                }
+                .buttonStyle(.bordered)
+                .font(.subheadline)
+            }
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.exercise?.name ?? "Упражнение").font(.headline)
+                if !isEditing { Text(item.exercise?.name ?? "Упражнение").font(.headline) }
                 Text("Колона „Повт.“ е общо повторения; 🏆 е най-добрият до сега.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -328,5 +407,16 @@ private struct DeltaText: View {
         } else {
             Text(" ").font(.caption2)
         }
+    }
+}
+
+/// Преименуване на упражнението (променя името и в библиотеката).
+private struct ExerciseNameField: View {
+    @Bindable var exercise: Exercise
+
+    var body: some View {
+        TextField("Име на упражнението", text: $exercise.name)
+            .font(.headline)
+            .textFieldStyle(.roundedBorder)
     }
 }
