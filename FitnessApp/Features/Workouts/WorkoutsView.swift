@@ -5,10 +5,10 @@ struct WorkoutsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Mesocycle.startDate, order: .reverse) private var mesocycles: [Mesocycle]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
-    @State private var showingNewMeso = false
-    @State private var importError: String?
     @State private var activeSession: WorkoutSession?
 
+    /// Текущият мезоцикъл е най-новият по начална дата.
+    private var current: Mesocycle? { mesocycles.first }
     private var unfinished: WorkoutSession? { sessions.first { !$0.isFinished } }
     private var finished: [WorkoutSession] { sessions.filter(\.isFinished) }
 
@@ -26,25 +26,35 @@ struct WorkoutsView: View {
                     }
                 }
 
-                Section("Мезоцикли") {
-                    if mesocycles.isEmpty {
-                        Text("Създай първия си мезоцикъл с бутона +.")
-                            .foregroundStyle(.secondary)
-                    }
-                    ForEach(mesocycles) { meso in
-                        NavigationLink {
-                            MesocycleDetailView(mesocycle: meso, activeSession: $activeSession)
-                        } label: {
-                            VStack(alignment: .leading) {
-                                Text(meso.name).font(.headline)
-                                Text("Седмица \(meso.currentWeek) от \(meso.weekCount) · \(meso.templates.count) тренировки")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                if let current {
+                    Section {
+                        ForEach(current.sortedTemplates) { template in
+                            NavigationLink {
+                                MesoGridView(template: template, activeSession: $activeSession)
+                            } label: {
+                                VStack(alignment: .leading) {
+                                    Text(template.name).font(.headline)
+                                    Text("\(template.items.count) упражнения")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
+                    } header: {
+                        Text("\(current.name) · седмица \(current.currentWeek) от \(current.weekCount)")
                     }
-                    .onDelete { offsets in
-                        for index in offsets { context.delete(mesocycles[index]) }
+                } else {
+                    Section {
+                        Text("Още няма мезоцикъл. Създай или импортирай такъв от „Мезоцикли и сплит“.")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section {
+                    NavigationLink {
+                        MesocycleListView(activeSession: $activeSession)
+                    } label: {
+                        Label("Мезоцикли и сплит", systemImage: "square.stack.3d.up")
                     }
                 }
 
@@ -64,7 +74,7 @@ struct WorkoutsView: View {
 
                 Section {
                 } footer: {
-                    Text("Версия v43")
+                    Text("Версия v44")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -78,45 +88,10 @@ struct WorkoutsView: View {
                         Label("Упражнения", systemImage: "list.bullet")
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button {
-                            showingNewMeso = true
-                        } label: {
-                            Label("Нов празен мезоцикъл", systemImage: "plus")
-                        }
-                        Button {
-                            importMeso()
-                        } label: {
-                            Label("Импортирай Meso 22 (от Excel)", systemImage: "square.and.arrow.down")
-                        }
-                    } label: {
-                        Label("Нов мезоцикъл", systemImage: "plus")
-                    }
-                }
-            }
-            .sheet(isPresented: $showingNewMeso) {
-                NewMesocycleSheet()
             }
             .fullScreenCover(item: $activeSession) { session in
                 ActiveWorkoutView(session: session)
             }
-            .alert("Импортът не успя", isPresented: Binding(
-                get: { importError != nil },
-                set: { if !$0 { importError = nil } }
-            )) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(importError ?? "")
-            }
-        }
-    }
-
-    private func importMeso() {
-        do {
-            try MesoImporter.importBundledMeso(in: context)
-        } catch {
-            importError = error.localizedDescription
         }
     }
 }
@@ -178,6 +153,82 @@ private struct NewMesocycleSheet: View {
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
+        }
+    }
+}
+
+/// Управление на мезоцикли и сплит: списък, нов, импорт, следващ мезоцикъл, имена и тренировки.
+struct MesocycleListView: View {
+    @Environment(\.modelContext) private var context
+    @Query(sort: \Mesocycle.startDate, order: .reverse) private var mesocycles: [Mesocycle]
+    @Binding var activeSession: WorkoutSession?
+    @State private var showingNewMeso = false
+    @State private var importError: String?
+
+    var body: some View {
+        List {
+            Section {
+                if mesocycles.isEmpty {
+                    Text("Създай първия си мезоцикъл с бутона +.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(mesocycles) { meso in
+                    NavigationLink {
+                        MesocycleDetailView(mesocycle: meso, activeSession: $activeSession)
+                    } label: {
+                        VStack(alignment: .leading) {
+                            Text(meso.name).font(.headline)
+                            Text("Седмица \(meso.currentWeek) от \(meso.weekCount) · \(meso.templates.count) тренировки")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .onDelete { offsets in
+                    for index in offsets { context.delete(mesocycles[index]) }
+                }
+            } footer: {
+                Text("Най-новият мезоцикъл е текущият и се показва в таба Тренировки.")
+            }
+        }
+        .navigationTitle("Мезоцикли и сплит")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        showingNewMeso = true
+                    } label: {
+                        Label("Нов празен мезоцикъл", systemImage: "plus")
+                    }
+                    Button {
+                        importMeso()
+                    } label: {
+                        Label("Импортирай Meso 22 (от Excel)", systemImage: "square.and.arrow.down")
+                    }
+                } label: {
+                    Label("Нов мезоцикъл", systemImage: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $showingNewMeso) {
+            NewMesocycleSheet()
+        }
+        .alert("Импортът не успя", isPresented: Binding(
+            get: { importError != nil },
+            set: { if !$0 { importError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(importError ?? "")
+        }
+    }
+
+    private func importMeso() {
+        do {
+            try MesoImporter.importBundledMeso(in: context)
+        } catch {
+            importError = error.localizedDescription
         }
     }
 }
