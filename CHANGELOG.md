@@ -42,3 +42,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v38: Strength progress chart (1RM per exercise, % change, weekly tonnage)
 - v39: Week-by-week grid per workout (Excel-style): weeks as rows, kg x reps per set, volume and % change vs previous week; Push A block removed from bundled Meso 22
 - v40: Tapping a workout in a mesocycle opens the week grid directly; exercises and start moved to a toolbar button
+- v41: Edit mode in the week grid: rename exercises, add/remove sets, add/delete exercises
