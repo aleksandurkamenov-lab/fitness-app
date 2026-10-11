@@ -159,6 +159,23 @@ private struct ExerciseGridCard: View {
     private let weekWidth: CGFloat = 26
     private let cellWidth: CGFloat = 70
     private let volumeWidth: CGFloat = 58
+    private let repsWidth: CGFloat = 34
+
+    private func targetText(_ index: Int) -> String {
+        let targets = item.targets
+        guard index < targets.count else { return "" }
+        return targets[index].rangeText
+    }
+
+    private func bestText(_ index: Int) -> String {
+        let targets = item.targets
+        guard index < targets.count else { return "" }
+        return targets[index].bestText ?? ""
+    }
+
+    private func totalReps(_ week: Int) -> Int {
+        WorkoutMath.totalReps(sets(week))
+    }
 
     private func hintWeight(_ set: SetEntry?) -> String {
         guard let set, set.weight > 0 else { return "" }
@@ -174,7 +191,7 @@ private struct ExerciseGridCard: View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.exercise?.name ?? "Упражнение").font(.headline)
-                Text("Цел: \(item.targetText) повт.")
+                Text("Колона „Повт.“ е общо повторения; 🏆 е най-добрият до сега.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -183,12 +200,30 @@ private struct ExerciseGridCard: View {
                     HStack(spacing: 4) {
                         Text("Сед.").frame(width: weekWidth)
                         ForEach(0..<setCount, id: \.self) { index in
-                            Text("С\(index + 1)").frame(width: cellWidth)
+                            VStack(spacing: 0) {
+                                Text("Серия \(index + 1)")
+                                Text(targetText(index)).foregroundStyle(.primary)
+                            }
+                            .frame(width: cellWidth)
                         }
+                        Text("Повт.").frame(width: repsWidth)
                         Text("Обем").frame(width: volumeWidth)
                     }
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
+
+                    if item.targets.contains(where: { $0.bestText != nil }) {
+                        HStack(spacing: 4) {
+                            Text("🏆").frame(width: weekWidth)
+                            ForEach(0..<setCount, id: \.self) { index in
+                                Text(bestText(index)).frame(width: cellWidth)
+                            }
+                            Color.clear.frame(width: repsWidth, height: 1)
+                            Color.clear.frame(width: volumeWidth, height: 1)
+                        }
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.orange)
+                    }
 
                     ForEach(1...weeks, id: \.self) { week in
                         let prev = previousWeek(week)
@@ -203,6 +238,10 @@ private struct ExerciseGridCard: View {
                                          repsHint: hintReps(hint))
                                     .frame(width: cellWidth)
                             }
+                            Text(totalReps(week) > 0 ? "\(totalReps(week))" : "–")
+                                .font(.subheadline)
+                                .monospacedDigit()
+                                .frame(width: repsWidth)
                             VStack(spacing: 0) {
                                 let value = volume(week)
                                 Text(value > 0 ? value.short : "–")
