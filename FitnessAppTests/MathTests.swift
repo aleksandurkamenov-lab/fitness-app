@@ -2,8 +2,7 @@ import Testing
 import Foundation
 @testable import FitnessApp
 
-// Тестове за математиката. За да се пускат: в Xcode File > New > Target > Unit Testing Bundle
-// (име FitnessAppTests), после Cmd+U. Файлът стои извън приложението и не влияе на билда.
+// Тестове за математиката. Пускат се автоматично в GitHub Actions (CI) или в Xcode с Cmd+U.
 
 struct RecoveryMathTests {
     @Test func sleepScoreFullNightIsHundred() {
