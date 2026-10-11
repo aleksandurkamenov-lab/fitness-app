@@ -45,3 +45,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v41: Edit mode in the week grid: rename exercises, add/remove sets, add/delete exercises
 - v42: Week grid is the only way to log workouts; per-week options: RIR, warm-ups, plate calculator, notes, record badge, optional rest timer; start-workout buttons removed
 - v43: Cursor goes to the end of the number when a field is tapped (easier to edit/delete)
+- v44: Workouts tab shows the current mesocycle's workouts that open the week grid directly; mesocycle/split management moved to its own screen
