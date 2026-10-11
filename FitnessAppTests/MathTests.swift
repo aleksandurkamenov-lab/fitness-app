@@ -11,7 +11,8 @@ struct RecoveryMathTests {
 
     @Test func sleepScoreShortNightIsLower() {
         let score = RecoveryMath.sleepScore(asleepHours: 4, inBedHours: 4.4)
-        #expect(score < 60 && score > 30)
+        // 4/8 часа × 0.8 + пълна ефективност × 0.2 = 60
+        #expect(abs(score - 60) < 0.01)
     }
 
     @Test func baselineNeedsThreeValues() {
