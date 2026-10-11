@@ -377,7 +377,7 @@ private struct SetRow: View {
     }
 }
 
-private struct RestTimerBar: View {
+struct RestTimerBar: View {
     let timer: RestTimer
 
     var body: some View {

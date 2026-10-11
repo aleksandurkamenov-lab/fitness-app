@@ -38,22 +38,6 @@ struct TemplateDetailView: View {
                     }
                 }
             }
-
-            Section {
-                Button {
-                    start(copyPrevious: false)
-                } label: {
-                    Label("Започни тренировка", systemImage: "play.fill")
-                        .font(.headline)
-                }
-                .disabled(template.items.isEmpty)
-                Button {
-                    start(copyPrevious: true)
-                } label: {
-                    Label("Започни с кг и повт. от последния път", systemImage: "doc.on.doc")
-                }
-                .disabled(template.items.isEmpty)
-            }
         }
         .navigationTitle(template.name)
         .keyboardDoneButton()
@@ -67,11 +51,6 @@ struct TemplateDetailView: View {
                 context.insert(item)
             }
         }
-    }
-
-    private func start(copyPrevious: Bool) {
-        RestTimer.requestPermission()
-        activeSession = WorkoutService.startSession(from: template, copyPrevious: copyPrevious, in: context)
     }
 
     private func delete(at offsets: IndexSet) {
