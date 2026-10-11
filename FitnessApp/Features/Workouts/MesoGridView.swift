@@ -37,7 +37,7 @@ struct MesoGridView: View {
     private func sets(for item: TemplateExercise, week: Int) -> [SetEntry] {
         guard let session = session(week: week), let exercise = item.exercise else { return [] }
         return session.sets
-            .filter { $0.exerciseOrder == item.order && !$0.isWarmup
+            .filter { !$0.isWarmup
                 && $0.exercise?.persistentModelID == exercise.persistentModelID }
             .sorted { $0.setIndex < $1.setIndex }
     }
@@ -176,7 +176,7 @@ struct MesoGridView: View {
     private func allSets(for item: TemplateExercise, week: Int) -> [SetEntry] {
         guard let session = session(week: week), let exercise = item.exercise else { return [] }
         return session.sets
-            .filter { $0.exerciseOrder == item.order && $0.exercise?.persistentModelID == exercise.persistentModelID }
+            .filter { $0.exercise?.persistentModelID == exercise.persistentModelID }
             .sorted { $0.setIndex < $1.setIndex }
     }
 
@@ -293,7 +293,7 @@ struct MesoGridView: View {
         let session = ensureSession(week: week)
         let exerciseID = item.exercise?.persistentModelID
         let found = session.sets.first { entry in
-            entry.exerciseOrder == item.order && !entry.isWarmup && entry.setIndex == index
+            !entry.isWarmup && entry.setIndex == index
                 && entry.exercise?.persistentModelID == exerciseID
         }
         if let found { return found }
