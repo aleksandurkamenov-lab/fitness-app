@@ -10,6 +10,9 @@ struct MesoGridView: View {
     @Query(sort: \WorkoutSession.date) private var allSessions: [WorkoutSession]
     @State private var isEditing = false
     @State private var showingPicker = false
+    @State private var detail: GridDetail?
+    @State private var timer = RestTimer()
+    @AppStorage("gridRestTimer") private var restTimerOn = false
 
     private var weeks: Int { max(template.mesocycle?.weekCount ?? 4, 1) }
 
@@ -77,6 +80,8 @@ struct MesoGridView: View {
                                      onAddSet: { addSet(to: item) },
                                      onRemoveSet: { removeSet(from: item) },
                                      onDelete: { context.delete(item) },
+                                     onDetail: { detail = GridDetail(order: item.order, week: $0) },
+                                     isRecord: { isRecordWeek(item, week: $0) },
                                      sets: { sets(for: item, week: $0) },
                                      volume: { volume(item, week: $0) },
                                      previousWeek: { week in
@@ -94,7 +99,7 @@ struct MesoGridView: View {
                     .buttonStyle(.bordered)
                 }
                 if !template.items.isEmpty { totalCard }
-                Text("Въвеждаш кг и повторения направо в таблицата. Сивите числа са от предишната седмица. Обемът = кг × повторения.")
+                Text("Въвеждаш кг и повторения направо в таблицата и те се записват в историята. Сивите числа са от предишната седмица. Обемът = кг × повторения, 🏆 = нов рекорд.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
@@ -113,15 +118,28 @@ struct MesoGridView: View {
                 context.insert(item)
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            if timer.endDate != nil { RestTimerBar(timer: timer) }
+        }
+        .sheet(item: $detail) { target in
+            if let item = template.sortedItems.first(where: { $0.order == target.order }) {
+                WeekDetailSheet(item: item, week: target.week,
+                                entries: { allSets(for: item, week: target.week) },
+                                onWarmups: { addWarmups(to: item, week: target.week) })
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button(isEditing ? "Готово" : "Редакция") { isEditing.toggle() }
             }
             ToolbarItem(placement: .secondaryAction) {
+                Toggle("Таймер за почивка", isOn: $restTimerOn)
+            }
+            ToolbarItem(placement: .secondaryAction) {
                 NavigationLink {
                     TemplateDetailView(template: template, activeSession: $activeSession)
                 } label: {
-                    Label("Упражнения и старт", systemImage: "list.bullet.clipboard")
+                    Label("Цели по серии и упражнения", systemImage: "list.bullet.clipboard")
                 }
             }
         }
@@ -144,6 +162,64 @@ struct MesoGridView: View {
         }
         .padding(12)
         .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    // MARK: Опции
+
+    struct GridDetail: Identifiable {
+        let order: Int
+        let week: Int
+        var id: Int { order * 100 + week }
+    }
+
+    /// Всички серии (и загрявките) на упражнението за седмицата.
+    private func allSets(for item: TemplateExercise, week: Int) -> [SetEntry] {
+        guard let session = session(week: week), let exercise = item.exercise else { return [] }
+        return session.sets
+            .filter { $0.exerciseOrder == item.order && $0.exercise?.persistentModelID == exercise.persistentModelID }
+            .sorted { $0.setIndex < $1.setIndex }
+    }
+
+    /// Рекорд: тази седмица има по-тежка серия или по-висок 1RM от предишните седмици и от „най-добро до сега“.
+    private func isRecordWeek(_ item: TemplateExercise, week: Int) -> Bool {
+        let current = sets(for: item, week: week).filter { $0.reps > 0 }
+        guard !current.isEmpty else { return false }
+        var baseWeight = 0.0
+        var baseOneRM = 0.0
+        for target in item.targets {
+            if let w = target.bestWeight, let r = target.bestReps {
+                baseWeight = max(baseWeight, w)
+                baseOneRM = max(baseOneRM, WorkoutMath.epley(weight: w, reps: Int(r.rounded())))
+            }
+        }
+        if week > 1 {
+            for earlier in 1..<week {
+                for entry in sets(for: item, week: earlier) where entry.reps > 0 {
+                    baseWeight = max(baseWeight, entry.weight)
+                    baseOneRM = max(baseOneRM, entry.estimatedOneRepMax)
+                }
+            }
+        }
+        guard baseWeight > 0 else { return false }
+        return current.contains { $0.weight > baseWeight + 0.001 || $0.estimatedOneRepMax > baseOneRM + 0.001 }
+    }
+
+    /// Загряващи серии 40/60/80 % от работната тежест (въведената, от предишната седмица или планираната).
+    private func addWarmups(to item: TemplateExercise, week: Int) {
+        var base = sets(for: item, week: week).first(where: { $0.weight > 0 })?.weight ?? 0
+        if base == 0, week > 1 {
+            for earlier in (1..<week).reversed() {
+                if let found = sets(for: item, week: earlier).first(where: { $0.weight > 0 }) {
+                    base = found.weight
+                    break
+                }
+            }
+        }
+        if base == 0 { base = item.targets.first?.plannedWeight ?? 0 }
+        guard base > 0 else { return }
+        let session = ensureSession(week: week)
+        let group = ExerciseGroup(order: item.order, exercise: item.exercise, sets: allSets(for: item, week: week))
+        WorkoutService.addWarmups(to: group, baseWeight: base, session: session, in: context)
     }
 
     // MARK: Редакция
@@ -194,6 +270,7 @@ struct MesoGridView: View {
                 let set = ensureSet(item, week: week, index: index)
                 set.reps = newValue ?? 0
                 set.isDone = set.reps > 0
+                if restTimerOn && set.reps > 0 { timer.start(seconds: item.restSeconds) }
             }
         )
         return (weight, reps)
@@ -243,12 +320,14 @@ private struct ExerciseGridCard: View {
     let onAddSet: () -> Void
     let onRemoveSet: () -> Void
     let onDelete: () -> Void
+    let onDetail: (Int) -> Void
+    let isRecord: (Int) -> Bool
     let sets: (Int) -> [SetEntry]
     let volume: (Int) -> Double
     let previousWeek: (Int) -> Int?
     let binding: (Int, Int) -> (weight: Binding<Double>, reps: Binding<Int?>)
 
-    private let weekWidth: CGFloat = 26
+    private let weekWidth: CGFloat = 40
     private let cellWidth: CGFloat = 70
     private let volumeWidth: CGFloat = 58
     private let repsWidth: CGFloat = 34
@@ -301,7 +380,7 @@ private struct ExerciseGridCard: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 if !isEditing { Text(item.exercise?.name ?? "Упражнение").font(.headline) }
-                Text("Колона „Повт.“ е общо повторения; 🏆 е най-добрият до сега.")
+                Text("Натисни номера на седмицата за RIR, загрявки, плочи и бележка.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -338,9 +417,17 @@ private struct ExerciseGridCard: View {
                     ForEach(1...weeks, id: \.self) { week in
                         let prev = previousWeek(week)
                         HStack(spacing: 4) {
-                            Text("\(week)")
-                                .font(.subheadline.weight(.bold))
+                            Button { onDetail(week) } label: {
+                                VStack(spacing: 0) {
+                                    HStack(spacing: 1) {
+                                        Text("\(week)").font(.subheadline.weight(.bold))
+                                        Image(systemName: "ellipsis.circle").font(.caption2)
+                                    }
+                                    if isRecord(week) { Text("🏆").font(.caption2) }
+                                }
                                 .frame(width: weekWidth)
+                            }
+                            .buttonStyle(.plain)
                             ForEach(0..<setCount, id: \.self) { index in
                                 let hint = prev.flatMap { pw in sets(pw).first { entry in entry.setIndex == index } }
                                 GridCell(binding: binding(week, index),
@@ -418,5 +505,107 @@ private struct ExerciseNameField: View {
         TextField("Име на упражнението", text: $exercise.name)
             .font(.headline)
             .textFieldStyle(.roundedBorder)
+    }
+}
+
+/// Допълнителни опции за упражнение в дадена седмица: RIR, загрявки, плочи, бележка.
+private struct WeekDetailSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Bindable var item: TemplateExercise
+    let week: Int
+    let entries: () -> [SetEntry]
+    let onWarmups: () -> Void
+    @State private var plate: PlateRequest?
+
+    private func workingWeight() -> Double {
+        entries().first(where: { !$0.isWarmup && $0.weight > 0 })?.weight ?? 0
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(entries()) { entry in
+                        DetailSetRow(set: entry)
+                    }
+                    if entries().isEmpty {
+                        Text("Първо въведи кг и повторения в таблицата.")
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text("Седмица \(week)")
+                }
+                Section {
+                    Button { onWarmups() } label: {
+                        Label("Добави загрявки (40 / 60 / 80 %)", systemImage: "flame")
+                    }
+                    Button { plate = PlateRequest(weight: workingWeight()) } label: {
+                        Label("Калкулатор на плочите", systemImage: "circle.grid.cross")
+                    }
+                }
+                Section {
+                    TextField("Бележка за упражнението", text: $item.note, axis: .vertical)
+                } header: {
+                    Text("Бележка")
+                } footer: {
+                    Text("Бележката е за упражнението във всички седмици.")
+                }
+            }
+            .navigationTitle(item.exercise?.name ?? "Упражнение")
+            .navigationBarTitleDisplayMode(.inline)
+            .keyboardDoneButton()
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Готово") { dismiss() }
+                }
+            }
+            .sheet(item: $plate) { request in
+                PlateCalculatorView(weight: request.weight)
+            }
+        }
+    }
+}
+
+private struct DetailSetRow: View {
+    @Bindable var set: SetEntry
+
+    private var repsBinding: Binding<Int?> {
+        Binding(get: { set.reps > 0 ? set.reps : nil },
+                set: { set.reps = $0 ?? 0; set.isDone = set.reps > 0 })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if set.isWarmup {
+                Label("Загрявка", systemImage: "flame")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.orange)
+            } else {
+                Text("Серия \(set.setIndex + 1)").font(.subheadline.weight(.semibold))
+            }
+            HStack(spacing: 10) {
+                DecimalField(placeholder: "кг", value: $set.weight)
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.roundedBorder)
+                Text("×").foregroundStyle(.secondary)
+                TextField("повт.", value: repsBinding, format: .number)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.roundedBorder)
+            }
+            if !set.isWarmup {
+                HStack(spacing: 6) {
+                    Text("RIR").font(.caption).foregroundStyle(.secondary)
+                    Picker("RIR", selection: $set.rir) {
+                        Text("–").tag(-1)
+                        ForEach(0...5, id: \.self) { value in
+                            Text(value == 5 ? "5+" : "\(value)").tag(value)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
+        }
+        .padding(.vertical, 2)
     }
 }
