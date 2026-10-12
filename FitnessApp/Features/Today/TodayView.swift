@@ -6,6 +6,7 @@ struct TodayView: View {
     @Environment(\.modelContext) private var context
     @State private var health = HealthService()
     @State private var whoop = WhoopService.shared
+    @State private var healthFood: [Date: NutritionDay] = [:]
     @Query private var profiles: [UserProfile]
     @Query(sort: \FoodEntry.date) private var foods: [FoodEntry]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
@@ -41,11 +42,13 @@ struct TodayView: View {
                 await health.load(age: age)
                 await whoop.load()
                 await syncHistory()
+                healthFood = await health.nutrition(days: 28)
             }
             .task {
                 if health.wasRequested { await health.load(age: age) }
                 if whoop.isConnected { await whoop.load() }
                 await syncHistory()
+                if health.wasRequested { healthFood = await health.nutrition(days: 28) }
             }
         }
     }
@@ -293,6 +296,7 @@ struct TodayView: View {
         let profile = profiles.first
         let kg = weights.last?.kg
         let intake = foods.filter { Calendar.current.isDateInToday($0.date) }.reduce(0) { $0 + $1.kcal }
+            + (healthFood[Calendar.current.startOfDay(for: .now)]?.kcal ?? 0)
         return VStack(alignment: .leading, spacing: 8) {
             Text("Енергиен баланс днес").font(.headline)
             if let profile, let kg {
@@ -301,7 +305,7 @@ struct TodayView: View {
                 energyRow("Базов обмен до сега", day.basal)
                 energyRow("Активни (крачки, тренировки, кардио)", day.active)
                 energyRow("Разход до сега", day.total, bold: true)
-                energyRow("Прием (записана храна)", day.intake)
+                energyRow("Прием (храна и Apple Health)", day.intake)
                 HStack {
                     Text("Баланс до сега").fontWeight(.semibold)
                     Spacer()
@@ -316,7 +320,7 @@ struct TodayView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 NavigationLink {
-                    EnergyTrendView()
+                    EnergyTrendView(healthFood: healthFood)
                 } label: {
                     Label("Тенденция и точност на разхода", systemImage: "chart.line.uptrend.xyaxis")
                         .font(.subheadline)

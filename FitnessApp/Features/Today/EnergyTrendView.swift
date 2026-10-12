@@ -10,6 +10,8 @@ struct EnergyTrendView: View {
     @Query(sort: \FoodEntry.date) private var foods: [FoodEntry]
     @Query private var metrics: [DailyMetric]
     @State private var showingApply = false
+    /// Храна от Apple Health (напр. MyFitnessPal), събира се с записаната в приложението.
+    var healthFood: [Date: NutritionDay] = [:]
 
     private var weeks: [EnergyModel.WeekPoint] {
         guard let profile = profiles.first else { return [] }
@@ -23,6 +25,7 @@ struct EnergyTrendView: View {
     private var intakeByDay: [Date: Double] {
         var result: [Date: Double] = [:]
         for food in foods { result[Calendar.current.startOfDay(for: food.date), default: 0] += food.kcal }
+        for (day, value) in healthFood { result[day, default: 0] += value.kcal }
         return result
     }
 
