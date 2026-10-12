@@ -55,6 +55,12 @@ struct EnergyTrendView: View {
         return "\(Int(value.rounded())) ккал"
     }
 
+    /// Очаквана промяна в кг за седмицата: (прием − разход с активност, иначе дневен разход) × 7 / 7700.
+    private func expectedChange(_ week: EnergyModel.WeekPoint) -> Double? {
+        guard let intake = week.intake, let expenditure = week.device ?? week.formula else { return nil }
+        return (intake - expenditure) * 7 / EnergyModel.kcalPerKg
+    }
+
     private func valuesText(_ week: EnergyModel.WeekPoint) -> String {
         var result = "разход \(text(week.formula)) · с активност \(text(week.device))"
         if let real = week.real { result += " · реален \(text(real))" }
@@ -137,6 +143,11 @@ struct EnergyTrendView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text(valuesText(week))
+                        if let change = expectedChange(week) {
+                            Text("Очаквана промяна по прием и разход: \(change >= 0 ? "+" : "−")\(abs(change).formatted(.number.precision(.fractionLength(2)))) кг")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                             .font(.caption)
                     }
                 }
