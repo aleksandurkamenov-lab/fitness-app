@@ -61,6 +61,34 @@ struct EnergyTrendView: View {
         return (intake - expenditure) * 7 / EnergyModel.kcalPerKg
     }
 
+    private func weightText(_ week: EnergyModel.WeekPoint) -> String {
+        let kg = week.kg.map { $0.formatted(.number.precision(.fractionLength(0...1))) + " кг" } ?? "–"
+        return "Тегло \(kg) · прием \(text(week.intake))"
+    }
+
+    private func changeText(_ change: Double) -> String {
+        let sign = change >= 0 ? "+" : "−"
+        let value = abs(change).formatted(.number.precision(.fractionLength(2)))
+        return "Очаквана промяна по прием и разход: \(sign)\(value) кг"
+    }
+
+    private func weekRow(_ week: EnergyModel.WeekPoint) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Седмица от \(week.weekStart.formatted(.dateTime.day().month(.abbreviated)))")
+                .font(.subheadline.weight(.semibold))
+            Text(weightText(week))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(valuesText(week))
+                .font(.caption)
+            if let change = expectedChange(week) {
+                Text(changeText(change))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     private func valuesText(_ week: EnergyModel.WeekPoint) -> String {
         var result = "разход \(text(week.formula)) · с активност \(text(week.device))"
         if let real = week.real { result += " · реален \(text(real))" }
@@ -136,20 +164,7 @@ struct EnergyTrendView: View {
 
             Section("Седмиците") {
                 ForEach(weeks.reversed()) { week in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Седмица от \(week.weekStart.formatted(.dateTime.day().month(.abbreviated)))")
-                            .font(.subheadline.weight(.semibold))
-                        Text("Тегло \(week.kg.map { $0.formatted(.number.precision(.fractionLength(0...1))) + " кг" } ?? "–") · прием \(text(week.intake))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(valuesText(week))
-                        if let change = expectedChange(week) {
-                            Text("Очаквана промяна по прием и разход: \(change >= 0 ? "+" : "−")\(abs(change).formatted(.number.precision(.fractionLength(2)))) кг")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                            .font(.caption)
-                    }
+                    weekRow(week)
                 }
             }
         }
