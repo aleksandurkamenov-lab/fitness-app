@@ -39,20 +39,22 @@ enum BodyMath {
         return sex == .male ? base + 5 : base - 161
     }
 
-    /// Най-добра оценка на % мазнини: кантар (до 30 дни), иначе US Navy от врат и корем (или талия).
+    /// Най-добра оценка на % мазнини: ръчно зададен, иначе US Navy от врат и корем (или талия), иначе кантар (неточен).
     static func bodyFatEstimate(profile: UserProfile, weights: [WeightEntry],
                                 measurements: [MeasurementEntry]) -> (percent: Double, source: String)? {
+        if profile.manualBodyFat >= 4 { return (profile.manualBodyFat, "ръчно") }
+        func latest(_ kind: MeasurementKind) -> Double? {
+            measurements.sorted { $0.date < $1.date }.last { $0.kind == kind && !$0.isFlexed && $0.cm > 0 }?.cm
+        }
+        if let waist = latest(.abdomen) ?? latest(.waist), let neck = latest(.neck),
+           let navy = navyBodyFat(sex: profile.sex, heightCm: profile.heightCm, waist: waist, neck: neck, hips: latest(.hips)) {
+            return (navy, "US Navy")
+        }
         let cutoff = Date.now.addingTimeInterval(-30 * 86_400)
         if let scale = weights.last(where: { $0.date >= cutoff && ($0.bodyFatPercent ?? 0) > 0 })?.bodyFatPercent {
             return (scale, "кантар")
         }
-        func latest(_ kind: MeasurementKind) -> Double? {
-            measurements.sorted { $0.date < $1.date }.last { $0.kind == kind && !$0.isFlexed && $0.cm > 0 }?.cm
-        }
-        guard let waist = latest(.abdomen) ?? latest(.waist), let neck = latest(.neck),
-              let navy = navyBodyFat(sex: profile.sex, heightCm: profile.heightCm, waist: waist, neck: neck, hips: latest(.hips))
-        else { return nil }
-        return (navy, "US Navy")
+        return nil
     }
 
     /// Записва оценката в профила, за да я ползват калкулаторите за разход.

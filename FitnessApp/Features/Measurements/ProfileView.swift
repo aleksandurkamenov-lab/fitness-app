@@ -228,6 +228,13 @@ struct CalculatorsView: View {
                 Section("Тяло") {
                     LabeledContent("ИТМ", value: value(bmi, ""))
                     LabeledContent("% мазнини (US Navy)", value: value(navy, "%"))
+                    LabeledContent("% мазнини ръчно (0 = автоматично)") {
+                        DecimalField(placeholder: "0", value: Binding(get: { profile.manualBodyFat }, set: {
+                            profile.manualBodyFat = $0
+                            BodyMath.refreshBodyFat(profile: profile, weights: weights, measurements: measurements)
+                        }))
+                        .multilineTextAlignment(.trailing)
+                    }
                     LabeledContent("% мазнини (RFM)", value: value(rfm, "%"))
                     if let scaleFat {
                         LabeledContent("% мазнини (кантар)", value: "\(scaleFat.short) %")
