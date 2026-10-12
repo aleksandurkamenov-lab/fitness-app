@@ -59,6 +59,9 @@ final class UserProfile {
     var birthDate: Date = Calendar.current.date(byAdding: .year, value: -30, to: .now) ?? .now
     var heightCm: Double = 175
     var activityFactor: Double = 1.55
+    /// Оценка на % мазнини (0 = няма) и откъде е; ползва се за BMR по постната маса.
+    var bodyFatPercent: Double = 0
+    var bodyFatSource: String = ""
     var goalRaw: String = GoalKind.maintain.rawValue
     /// Желано темпо в кг на седмица (0.1 / 0.5 / 1).
     var weeklyRateKg: Double = 0.5

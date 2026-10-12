@@ -16,7 +16,7 @@ struct EnergyTrendView: View {
     private var weeks: [EnergyModel.WeekPoint] {
         guard let profile = profiles.first else { return [] }
         let params = EnergyModel.Params(sex: profile.sex, heightCm: profile.heightCm, age: profile.age,
-                                        activityFactor: profile.activityFactor)
+                                        activityFactor: profile.activityFactor, bodyFat: profile.bodyFatPercent)
         return EnergyModel.weeks(params: params,
                                  weights: weights.map { (date: $0.date, kg: $0.kg) },
                                  intakeByDay: intakeByDay, activeByDay: activeByDay)
@@ -69,11 +69,11 @@ struct EnergyTrendView: View {
             } header: {
                 Text("Сега")
             } footer: {
-                Text("Формула: Mifflin-St Jeor × коефициент на активност. Устройства: базов обмен + активни калории от Apple Health, с ~10% термичен ефект. Реален: среден записан прием минус промяната в теглото × 7700 ккал/кг за последните 3 седмици (нужни са поне 10 дни със записана храна и редовно тегло). Реалният е най-точният, ако записваш храната си. Ориентировъчно.")
+                Text("Формула: BMR (Katch-McArdle по постната маса, ако има % мазнини от кантар или US Navy; иначе Mifflin-St Jeor) × коефициент на активност. Устройства: базов обмен + активни калории от Apple Health, с ~10% термичен ефект. Реален: среден записан прием минус промяната в теглото × 7700 ккал/кг за последните 3 седмици (нужни са поне 10 дни със записана храна и редовно тегло). Реалният е най-точният, ако записваш храната си. Ориентировъчно.")
             }
 
             if let real = latestReal, let profile = profiles.first, let kg = weights.last?.kg {
-                let bmr = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age)
+                let bmr = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age, bodyFat: profile.bodyFatPercent)
                 let suggested = min(max(real / bmr, 1.2), 2.2)
                 Section {
                     LabeledContent("Сега в профила", value: profile.activityFactor.formatted(.number.precision(.fractionLength(0...2))))
@@ -146,7 +146,7 @@ struct EnergyTrendView: View {
 
     private func applySuggested() {
         guard let real = latestReal, let profile = profiles.first, let kg = weights.last?.kg else { return }
-        let bmr = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age)
+        let bmr = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age, bodyFat: profile.bodyFatPercent)
         profile.activityFactor = (min(max(real / bmr, 1.2), 2.2) * 100).rounded() / 100
     }
 }

@@ -7,6 +7,7 @@ enum EnergyModel {
         var heightCm: Double
         var age: Int
         var activityFactor: Double
+        var bodyFat: Double = 0
     }
 
     struct WeekPoint: Identifiable {
@@ -82,7 +83,7 @@ enum EnergyModel {
             }
 
             if let kg = referenceKg {
-                let bmr = BodyMath.bmr(sex: params.sex, kg: kg, cm: params.heightCm, age: params.age)
+                let bmr = BodyMath.bmr(sex: params.sex, kg: kg, cm: params.heightCm, age: params.age, bodyFat: params.bodyFat)
                 point.formula = BodyMath.tdee(bmr: bmr, activity: params.activityFactor)
                 let active = activeByDay.filter { $0.key >= start && $0.key < lastDay && $0.value > 0 }
                 if active.count >= 3 {

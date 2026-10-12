@@ -10,6 +10,7 @@ struct TodayView: View {
     @Query private var profiles: [UserProfile]
     @Query(sort: \FoodEntry.date) private var foods: [FoodEntry]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
+    @Query(sort: \MeasurementEntry.date) private var measurements: [MeasurementEntry]
     @Query(sort: \DailyMetric.day, order: .reverse) private var storedMetrics: [DailyMetric]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
 
@@ -39,17 +40,25 @@ struct TodayView: View {
             .navigationTitle("Днес")
             .profileButton()
             .refreshable {
+                refreshBodyFat()
                 await health.load(age: age)
                 await whoop.load()
                 await syncHistory()
                 healthFood = await health.nutrition(days: 28)
             }
             .task {
+                refreshBodyFat()
                 if health.wasRequested { await health.load(age: age) }
                 if whoop.isConnected { await whoop.load() }
                 await syncHistory()
                 if health.wasRequested { healthFood = await health.nutrition(days: 28) }
             }
+        }
+    }
+
+    private func refreshBodyFat() {
+        if let profile = profiles.first {
+            BodyMath.refreshBodyFat(profile: profile, weights: weights, measurements: measurements)
         }
     }
 

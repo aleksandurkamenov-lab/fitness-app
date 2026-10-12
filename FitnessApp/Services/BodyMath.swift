@@ -30,10 +30,38 @@ enum BodyMath {
         return value > 0 && value < 70 ? value : nil
     }
 
-    /// Базален метаболизъм по Mifflin-St Jeor (ккал/ден).
-    static func bmr(sex: Sex, kg: Double, cm: Double, age: Int) -> Double {
+    /// Базален метаболизъм (ккал/ден): Katch-McArdle по постната маса, когато е известен % мазнини, иначе Mifflin-St Jeor.
+    static func bmr(sex: Sex, kg: Double, cm: Double, age: Int, bodyFat: Double = 0) -> Double {
+        if bodyFat >= 4 && bodyFat <= 55 {
+            return 370 + 21.6 * kg * (1 - bodyFat / 100)
+        }
         let base = 10 * kg + 6.25 * cm - 5 * Double(age)
         return sex == .male ? base + 5 : base - 161
+    }
+
+    /// Най-добра оценка на % мазнини: кантар (до 30 дни), иначе US Navy от врат и корем (или талия).
+    static func bodyFatEstimate(profile: UserProfile, weights: [WeightEntry],
+                                measurements: [MeasurementEntry]) -> (percent: Double, source: String)? {
+        let cutoff = Date.now.addingTimeInterval(-30 * 86_400)
+        if let scale = weights.last(where: { $0.date >= cutoff && ($0.bodyFatPercent ?? 0) > 0 })?.bodyFatPercent {
+            return (scale, "кантар")
+        }
+        func latest(_ kind: MeasurementKind) -> Double? {
+            measurements.sorted { $0.date < $1.date }.last { $0.kind == kind && !$0.isFlexed && $0.cm > 0 }?.cm
+        }
+        guard let waist = latest(.abdomen) ?? latest(.waist), let neck = latest(.neck),
+              let navy = navyBodyFat(sex: profile.sex, heightCm: profile.heightCm, waist: waist, neck: neck, hips: latest(.hips))
+        else { return nil }
+        return (navy, "US Navy")
+    }
+
+    /// Записва оценката в профила, за да я ползват калкулаторите за разход.
+    static func refreshBodyFat(profile: UserProfile, weights: [WeightEntry], measurements: [MeasurementEntry]) {
+        let estimate = bodyFatEstimate(profile: profile, weights: weights, measurements: measurements)
+        let percent = estimate?.percent ?? 0
+        let source = estimate?.source ?? ""
+        if abs(profile.bodyFatPercent - percent) > 0.01 { profile.bodyFatPercent = percent }
+        if profile.bodyFatSource != source { profile.bodyFatSource = source }
     }
 
     static func tdee(bmr: Double, activity: Double) -> Double { bmr * activity }
@@ -48,7 +76,7 @@ enum BodyMath {
     /// Калории и макроси. 1 кг телесна маса ≈ 7700 ккал.
     static func targets(profile: UserProfile, kg: Double) -> Targets? {
         guard kg > 0 else { return nil }
-        let bmr = bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age)
+        let bmr = bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age, bodyFat: profile.bodyFatPercent)
         let maintenance = tdee(bmr: bmr, activity: profile.activityFactor)
         let rate = profile.goal == .lose ? profile.lossRateKg : profile.gainRateKg
         let daily = rate * 7700 / 7
@@ -119,7 +147,7 @@ enum BodyMath {
     /// Разход за деня до момента: при WHOOP е общата енергия на цикъла, иначе базов обмен (пропорционално на изминалата част от деня) + активни калории от Health.
     static func dayEnergy(profile: UserProfile, kg: Double, intake: Double, activeKcal: Double?,
                           whoopTotal: Double?, now: Date = .now) -> DayEnergy {
-        let daily = bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age)
+        let daily = bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age, bodyFat: profile.bodyFatPercent)
         let startOfDay = Calendar.current.startOfDay(for: now)
         let fraction = min(max(now.timeIntervalSince(startOfDay) / 86_400, 0), 1)
         let basal = daily * fraction
@@ -142,7 +170,7 @@ enum BodyMath {
 
     /// Прогноза: приемът от макросите срещу приблизителния разход.
     static func forecast(profile: UserProfile, kg: Double, intake: Double, sessions: [WorkoutSession]) -> Forecast {
-        let bmr = bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age)
+        let bmr = bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age, bodyFat: profile.bodyFatPercent)
         let base = bmr * 1.15
         let steps = profile.avgDailySteps * 0.00044 * kg
         let training = trainingKcalPerWeek(sessions: sessions, kg: kg).kcal / 7
