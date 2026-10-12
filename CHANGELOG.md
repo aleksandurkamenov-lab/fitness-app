@@ -53,3 +53,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v49: BMR uses Katch-McArdle (lean mass) from a body fat estimate: manual value, else mean of US Navy and RFM from neck, abdomen, height, else scale; falls back to Mifflin-St Jeor.
 - v50: Energy card shows expected full-day expenditure (basal for the day + active so far) with breakdown.
 - v51: Energy card simplified: base daily expenditure + workout + cardio + activity/steps = final, with approximate daily deficit/surplus.
+- v52: Activity/steps row falls back to a steps-based estimate when no active energy; deficit label simplified.
