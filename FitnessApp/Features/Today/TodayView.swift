@@ -310,7 +310,10 @@ struct TodayView: View {
         let strength = s.workouts.filter(isStrength).reduce(0) { $0 + ($1.kcal ?? 0) }
         let cardio = s.workouts.filter { !isStrength($0) }.reduce(0) { $0 + ($1.kcal ?? 0) }
         let activeTotal = s.activeKcal ?? max((s.whoopTotalKcal ?? 0) - base * 0.9, 0)
-        return (base, strength, cardio, max(activeTotal - strength - cardio, 0))
+        // Без часовник Health често няма активни калории: тогава крачките се превръщат в калории (~0.00044 ккал на крачка на кг).
+        let remainder = activeTotal - strength - cardio
+        let fromSteps = (s.steps ?? 0) * 0.00044 * kg
+        return (base, strength, cardio, remainder >= 50 ? remainder : fromSteps)
     }
 
     private func energyCard(_ s: HealthSnapshot) -> some View {
@@ -332,13 +335,13 @@ struct TodayView: View {
                 energyRow("Прием (храна и Apple Health)", intake)
                 HStack {
                     let value = Int((intake - total).rounded())
-                    Text(value >= 0 ? "Примерно дневен излишък" : "Примерно дневен дефицит").fontWeight(.semibold)
+                    Text(value >= 0 ? "Дневен излишък" : "Дневен дефицит").fontWeight(.semibold)
                     Spacer()
                     Text("\(abs(value)) ккал")
                         .fontWeight(.semibold)
                         .foregroundStyle(value >= 0 ? Color.orange : Color.green)
                 }
-                Text("Базовият разход е по профила (BMR + ~10% за храненето, ориентировъчно). Тренировка, кардио и крачки идват от Apple Health и WHOOP за днес. Приемът е от записаната храна и Apple Health.")
+                Text("Базовият разход е по профила (BMR + ~10% за храненето, ориентировъчно). Без активни калории от часовник крачките се превръщат в калории по теглото. Тренировка, кардио и крачки идват от Apple Health и WHOOP за днес. Приемът е от записаната храна и Apple Health.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 NavigationLink {
