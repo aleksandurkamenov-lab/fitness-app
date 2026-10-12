@@ -62,6 +62,8 @@ final class UserProfile {
     /// Оценка на % мазнини (0 = няма) и откъде е; ползва се за BMR по постната маса.
     var bodyFatPercent: Double = 0
     var bodyFatSource: String = ""
+    /// Ръчно зададен % мазнини (0 = автоматично); има предимство пред оценката.
+    var manualBodyFat: Double = 0
     var goalRaw: String = GoalKind.maintain.rawValue
     /// Желано темпо в кг на седмица (0.1 / 0.5 / 1).
     var weeklyRateKg: Double = 0.5
