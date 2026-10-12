@@ -55,21 +55,27 @@ struct EnergyTrendView: View {
         return "\(Int(value.rounded())) ккал"
     }
 
+    private func valuesText(_ week: EnergyModel.WeekPoint) -> String {
+        var result = "разход \(text(week.formula)) · с активност \(text(week.device))"
+        if let real = week.real { result += " · реален \(text(real))" }
+        return result
+    }
+
     var body: some View {
         List {
             Section {
-                LabeledContent("По формулата", value: text(latestFormula))
-                LabeledContent("От устройствата", value: text(latestDevice))
-                LabeledContent("Реален (тегло и прием)", value: text(latestReal))
+                LabeledContent("Дневен енергиен разход", value: text(latestFormula))
+                LabeledContent("Енергиен разход с активността", value: text(latestDevice))
                 if let real = latestReal, let formula = latestFormula, formula > 0 {
+                    LabeledContent("Реален (тегло и прием)", value: text(real))
                     let percent = (real - formula) / formula * 100
-                    LabeledContent("Реален спрямо формулата",
+                    LabeledContent("Реален спрямо дневния разход",
                                    value: "\(percent >= 0 ? "+" : "")\(percent.formatted(.number.precision(.fractionLength(0)))) %")
                 }
             } header: {
                 Text("Сега")
             } footer: {
-                Text("Формула: BMR (Katch-McArdle по постната маса, ако има % мазнини от кантар или US Navy; иначе Mifflin-St Jeor) × коефициент на активност. Устройства: базов обмен + активни калории от Apple Health, с ~10% термичен ефект. Реален: среден записан прием минус промяната в теглото × 7700 ккал/кг за последните 3 седмици (нужни са поне 10 дни със записана храна и редовно тегло). Реалният е най-точният, ако записваш храната си. Ориентировъчно.")
+                Text("Дневен енергиен разход: BMR (по постната маса, ако има % мазнини) × коефициент на активност. С активността: базов обмен + активни калории от Apple Health, с ~10% термичен ефект. Реален разход (по теглото и записаната храна) се показва, когато има поне 10 дни със записана храна и редовно тегло. Ориентировъчно.")
             }
 
             if let real = latestReal, let profile = profiles.first, let kg = weights.last?.kg {
@@ -92,13 +98,13 @@ struct EnergyTrendView: View {
                         ForEach(weeks) { week in
                             if let value = week.formula {
                                 LineMark(x: .value("Седмица", week.weekStart), y: .value("ккал", value),
-                                         series: .value("Метод", "Формула"))
-                                    .foregroundStyle(by: .value("Метод", "Формула"))
+                                         series: .value("Метод", "Дневен разход"))
+                                    .foregroundStyle(by: .value("Метод", "Дневен разход"))
                             }
                             if let value = week.device {
                                 LineMark(x: .value("Седмица", week.weekStart), y: .value("ккал", value),
-                                         series: .value("Метод", "Устройства"))
-                                    .foregroundStyle(by: .value("Метод", "Устройства"))
+                                         series: .value("Метод", "С активност"))
+                                    .foregroundStyle(by: .value("Метод", "С активност"))
                             }
                             if let value = week.real {
                                 LineMark(x: .value("Седмица", week.weekStart), y: .value("ккал", value),
@@ -110,7 +116,7 @@ struct EnergyTrendView: View {
                     .chartYScale(domain: .automatic(includesZero: false))
                     .chartScrub(weeks.map {
                         ScrubPoint(date: $0.weekStart, value: $0.formula ?? $0.device ?? $0.real ?? 0,
-                                   text: "Седмица от \(scrubDate($0.weekStart)): формула \(text($0.formula)) · устройства \(text($0.device)) · реален \(text($0.real))")
+                                   text: "Седмица от \(scrubDate($0.weekStart)): " + valuesText($0))
                     })
                     .padding(.top, 24)
                     .frame(height: 230)
@@ -130,7 +136,7 @@ struct EnergyTrendView: View {
                         Text("Тегло \(week.kg.map { $0.formatted(.number.precision(.fractionLength(0...1))) + " кг" } ?? "–") · прием \(text(week.intake))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("Формула \(text(week.formula)) · устройства \(text(week.device)) · реален \(text(week.real))")
+                        Text(valuesText(week))
                             .font(.caption)
                     }
                 }
