@@ -39,3 +39,32 @@ struct BodyMathTests {
         #expect(abs((BodyMath.bmi(kg: 80, cm: 180) ?? 0) - 24.69) < 0.05)
     }
 }
+
+struct EnergyModelTests {
+    @Test func slopeOfLinearWeightGain() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let points = (0..<8).map { (date: start.addingTimeInterval(Double($0) * 86_400), kg: 80 + 0.1 * Double($0)) }
+        let slope = EnergyModel.slopePerDay(points)
+        #expect(abs((slope ?? 0) - 0.1) < 0.001)
+    }
+
+    @Test func slopeNeedsFourPointsOverAWeek() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let points = (0..<3).map { (date: start.addingTimeInterval(Double($0) * 86_400), kg: 80.0) }
+        #expect(EnergyModel.slopePerDay(points) == nil)
+    }
+
+    @Test func realExpenditureFromStableWeightEqualsIntake() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date.now)
+        var intake: [Date: Double] = [:]
+        var weights: [(date: Date, kg: Double)] = []
+        for day in 0..<21 {
+            let date = calendar.date(byAdding: .day, value: -day, to: today)!
+            intake[date] = 2500
+            if day % 3 == 0 { weights.append((date: date.addingTimeInterval(3600), kg: 80)) }
+        }
+        let real = EnergyModel.realExpenditure(intakeByDay: intake, weights: weights, endingAt: today)
+        #expect(abs((real ?? 0) - 2500) < 1)
+    }
+}

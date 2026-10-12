@@ -47,3 +47,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v43: Cursor goes to the end of the number when a field is tapped (easier to edit/delete)
 - v44: Workouts tab shows the current mesocycle's workouts that open the week grid directly; mesocycle/split management moved to its own screen
 - v45: Today: daily energy balance (basal + Health active kcal, or WHOOP total, vs logged intake)
+- v46: Energy trend screen: formula vs device data vs real expenditure (weight change and logged intake) by week, with activity-factor calibration

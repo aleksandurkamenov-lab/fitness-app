@@ -300,6 +300,12 @@ struct TodayView: View {
                      : "Базовият обмен е по формула (пол, тегло, ръст, възраст), активните калории са от Apple Health (крачки, тренировки, кардио, пулс). Приемът е от записаната храна. Ориентировъчно.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                NavigationLink {
+                    EnergyTrendView()
+                } label: {
+                    Label("Тенденция и точност на разхода", systemImage: "chart.line.uptrend.xyaxis")
+                        .font(.subheadline)
+                }
             } else {
                 Text("Попълни профила (пол, ръст, възраст) и въведи тегло, за да се смята разходът.")
                     .font(.subheadline)
