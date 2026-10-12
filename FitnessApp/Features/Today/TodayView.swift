@@ -309,29 +309,30 @@ struct TodayView: View {
         return VStack(alignment: .leading, spacing: 8) {
             Text("Енергиен баланс днес").font(.headline)
             if let profile, let kg {
-                let day = BodyMath.dayEnergy(profile: profile, kg: kg, intake: intake,
-                                             activeKcal: s.activeKcal, whoopTotal: s.whoopTotalKcal)
-                energyRow("Дневен разход (очакван за целия ден)", day.projectedTotal, bold: true)
-                energyRow("Базов обмен за деня", day.fullDayBasal)
-                energyRow("Активни до сега (крачки, тренировки, кардио)", day.active)
-                let workoutKcal = s.workouts.reduce(0) { $0 + ($1.kcal ?? 0) }
-                if workoutKcal > 0 { energyRow("от тях тренировки и кардио", workoutKcal) }
-                if let steps = s.steps { energyRow("Крачки днес", steps, unit: " стъпки") }
-                Divider()
-                energyRow("Базов обмен до сега", day.basal)
-                energyRow("Разход до сега", day.total, bold: true)
-                energyRow("Прием (храна и Apple Health)", day.intake)
+                let base = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age,
+                                        bodyFat: profile.bodyFatPercent) * EnergyModel.thermicFactor
+                let strengthWords = ["сила", "strength", "weight", "functional", "crossfit", "powerlifting"]
+                func isStrength(_ w: WorkoutInfo) -> Bool { strengthWords.contains { w.name.lowercased().contains($0) } }
+                let strength = s.workouts.filter(isStrength).reduce(0) { $0 + ($1.kcal ?? 0) }
+                let cardio = s.workouts.filter { !isStrength($0) }.reduce(0) { $0 + ($1.kcal ?? 0) }
+                let activeTotal = s.activeKcal ?? max((s.whoopTotalKcal ?? 0) - base * 0.9, 0)
+                let activity = max(activeTotal - strength - cardio, 0)
+                let total = base + strength + cardio + activity
+                energyRow("Дневен разход (базов)", base)
+                energyRow("Тренировка", strength, prefix: "+")
+                energyRow("Кардио", cardio, prefix: "+")
+                energyRow("Активност / крачки", activity, prefix: "+")
+                energyRow("Краен дневен разход", total, bold: true)
+                energyRow("Прием (храна и Apple Health)", intake)
                 HStack {
-                    Text("Баланс до сега").fontWeight(.semibold)
+                    let value = Int((intake - total).rounded())
+                    Text(value >= 0 ? "Примерно дневен излишък" : "Примерно дневен дефицит").fontWeight(.semibold)
                     Spacer()
-                    let value = Int(day.balance.rounded())
-                    Text(value >= 0 ? "+\(value) ккал излишък" : "\(value) ккал дефицит")
+                    Text("\(abs(value)) ккал")
                         .fontWeight(.semibold)
                         .foregroundStyle(value >= 0 ? Color.orange : Color.green)
                 }
-                Text(day.fromWhoop
-                     ? "Разходът е от WHOOP (цялата енергия на деня). Приемът е от записаната храна."
-                     : "Базовият обмен е по формула (пол, тегло, ръст, възраст), активните калории са от Apple Health (крачки, тренировки, кардио, пулс). Приемът е от записаната храна. Ориентировъчно.")
+                Text("Базовият разход е по профила (BMR + ~10% за храненето, ориентировъчно). Тренировка, кардио и крачки идват от Apple Health и WHOOP за днес. Приемът е от записаната храна и Apple Health.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 NavigationLink {
@@ -350,11 +351,11 @@ struct TodayView: View {
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
     }
 
-    private func energyRow(_ title: String, _ value: Double, bold: Bool = false, unit: String = " ккал") -> some View {
+    private func energyRow(_ title: String, _ value: Double, bold: Bool = false, unit: String = " ккал", prefix: String = "") -> some View {
         HStack {
             Text(title).fontWeight(bold ? .semibold : .regular)
             Spacer()
-            Text("\(Int(value.rounded()))\(unit)").fontWeight(bold ? .semibold : .regular).monospacedDigit()
+            Text("\(prefix)\(Int(value.rounded()))\(unit)").fontWeight(bold ? .semibold : .regular).monospacedDigit()
         }
     }
 
