@@ -10,6 +10,8 @@ struct PhotosView: View {
     @State private var showingPicker = false
     @State private var showingFolder = false
     @State private var importPose: PhotoPose = .front
+    @State private var showingPoseDialog = false
+    @State private var pendingFolder: URL?
     @State private var filter: PhotoPose?
     @State private var progress: String?
 
@@ -81,11 +83,6 @@ struct PhotosView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Picker("Поза за новите снимки", selection: $importPose) {
-                            ForEach(PhotoPose.allCases) { pose in
-                                Text(pose.title).tag(pose)
-                            }
-                        }
                         Button {
                             showingPicker = true
                         } label: {
@@ -106,11 +103,31 @@ struct PhotosView: View {
                           matching: .images, photoLibrary: .shared())
             .onChange(of: pickerItems) { _, items in
                 guard !items.isEmpty else { return }
-                Task { await importPicked(items) }
+                pendingFolder = nil
+                showingPoseDialog = true
+            }
+            .confirmationDialog("Каква поза са снимките?", isPresented: $showingPoseDialog, titleVisibility: .visible) {
+                ForEach(PhotoPose.allCases) { pose in
+                    Button(pose.title) {
+                        importPose = pose
+                        if let folder = pendingFolder {
+                            pendingFolder = nil
+                            Task { await importFolder(folder) }
+                        } else {
+                            let items = pickerItems
+                            Task { await importPicked(items) }
+                        }
+                    }
+                }
+                Button("Отказ", role: .cancel) {
+                    pickerItems = []
+                    pendingFolder = nil
+                }
             }
             .fileImporter(isPresented: $showingFolder, allowedContentTypes: [.folder]) { result in
                 if case .success(let url) = result {
-                    Task { await importFolder(url) }
+                    pendingFolder = url
+                    showingPoseDialog = true
                 }
             }
         }
