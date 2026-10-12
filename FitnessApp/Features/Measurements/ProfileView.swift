@@ -235,9 +235,9 @@ struct CalculatorsView: View {
                     }
                 }
 
-                let bmr = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age)
+                let bmr = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age, bodyFat: profile.bodyFatPercent)
                 Section("Енергия") {
-                    LabeledContent("BMR (Mifflin-St Jeor)", value: "\(Int(bmr)) ккал")
+                    LabeledContent(profile.bodyFatPercent > 0 ? "BMR (Katch-McArdle, \(profile.bodyFatSource))" : "BMR (Mifflin-St Jeor)", value: "\(Int(bmr)) ккал")
                     LabeledContent("Разход за деня", value: "\(Int(BodyMath.tdee(bmr: bmr, activity: profile.activityFactor))) ккал")
                 }
 
@@ -254,6 +254,11 @@ struct CalculatorsView: View {
             Section {
             } footer: {
                 Text("Ориентировъчно, не е медицински съвет. Формулите имат грешка, особено % мазнини. Най-точен е трендът във времето.")
+            }
+        }
+        .task {
+            if let profile = profiles.first {
+                BodyMath.refreshBodyFat(profile: profile, weights: weights, measurements: measurements)
             }
         }
         .navigationTitle("Калкулатори")

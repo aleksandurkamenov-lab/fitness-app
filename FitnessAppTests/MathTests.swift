@@ -68,3 +68,15 @@ struct EnergyModelTests {
         #expect(abs((real ?? 0) - 2500) < 1)
     }
 }
+
+struct KatchTests {
+    @Test func katchUsesLeanMassWhenBodyFatKnown() {
+        let bmr = BodyMath.bmr(sex: .male, kg: 100, cm: 180, age: 30, bodyFat: 20)
+        #expect(abs(bmr - (370 + 21.6 * 80)) < 0.01)
+    }
+
+    @Test func fallsBackToMifflinWithoutBodyFat() {
+        let bmr = BodyMath.bmr(sex: .male, kg: 80, cm: 180, age: 30)
+        #expect(abs(bmr - (800 + 1125 - 150 + 5)) < 0.01)
+    }
+}
