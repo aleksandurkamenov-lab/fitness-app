@@ -106,6 +106,30 @@ enum BodyMath {
         return (kcal / 4, Double(recent.count) / 4)
     }
 
+    /// Енергиен баланс за днес до този момент.
+    struct DayEnergy {
+        var basal: Double
+        var active: Double
+        var total: Double
+        var intake: Double
+        var fromWhoop: Bool
+        var balance: Double { intake - total }
+    }
+
+    /// Разход за деня до момента: при WHOOP е общата енергия на цикъла, иначе базов обмен (пропорционално на изминалата част от деня) + активни калории от Health.
+    static func dayEnergy(profile: UserProfile, kg: Double, intake: Double, activeKcal: Double?,
+                          whoopTotal: Double?, now: Date = .now) -> DayEnergy {
+        let daily = bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age)
+        let startOfDay = Calendar.current.startOfDay(for: now)
+        let fraction = min(max(now.timeIntervalSince(startOfDay) / 86_400, 0), 1)
+        let basal = daily * fraction
+        let active = activeKcal ?? 0
+        if let whoopTotal, whoopTotal > 0 {
+            return DayEnergy(basal: max(whoopTotal - active, 0), active: active, total: whoopTotal, intake: intake, fromWhoop: true)
+        }
+        return DayEnergy(basal: basal, active: active, total: basal + active, intake: intake, fromWhoop: false)
+    }
+
     struct Forecast {
         var intake: Double
         var expenditure: Double

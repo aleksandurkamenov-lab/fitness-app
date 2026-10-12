@@ -7,6 +7,7 @@ struct TodayView: View {
     @State private var health = HealthService()
     @State private var whoop = WhoopService.shared
     @Query private var profiles: [UserProfile]
+    @Query(sort: \FoodEntry.date) private var foods: [FoodEntry]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
 
@@ -148,6 +149,7 @@ struct TodayView: View {
 
         healthMonitor(s)
         dashboard(s)
+        energyCard(s)
         myDay(s)
 
         if w != nil {
@@ -175,7 +177,7 @@ struct TodayView: View {
         h.sleepStart = w.sleepStart ?? h.sleepStart
         h.sleepEnd = w.sleepEnd ?? h.sleepEnd
         h.sleepSource = "WHOOP"
-        if let kcal = w.cycleKcal, h.activeKcal == nil { h.activeKcal = kcal }
+        h.whoopTotalKcal = w.cycleKcal
         // Тренировки от WHOOP, без повторения с тези от Health със същото начало.
         let known = Set(h.workouts.map { Int($0.start.timeIntervalSince1970 / 300) })
         h.workouts += w.workouts.filter { !known.contains(Int($0.start.timeIntervalSince1970 / 300)) }
@@ -268,6 +270,52 @@ struct TodayView: View {
         }
         .padding()
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    // MARK: Енергиен баланс
+
+    private func energyCard(_ s: HealthSnapshot) -> some View {
+        let profile = profiles.first
+        let kg = weights.last?.kg
+        let intake = foods.filter { Calendar.current.isDateInToday($0.date) }.reduce(0) { $0 + $1.kcal }
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Енергиен баланс днес").font(.headline)
+            if let profile, let kg {
+                let day = BodyMath.dayEnergy(profile: profile, kg: kg, intake: intake,
+                                             activeKcal: s.activeKcal, whoopTotal: s.whoopTotalKcal)
+                energyRow("Базов обмен до сега", day.basal)
+                energyRow("Активни (крачки, тренировки, кардио)", day.active)
+                energyRow("Разход до сега", day.total, bold: true)
+                energyRow("Прием (записана храна)", day.intake)
+                HStack {
+                    Text("Баланс до сега").fontWeight(.semibold)
+                    Spacer()
+                    let value = Int(day.balance.rounded())
+                    Text(value >= 0 ? "+\(value) ккал излишък" : "\(value) ккал дефицит")
+                        .fontWeight(.semibold)
+                        .foregroundStyle(value >= 0 ? Color.orange : Color.green)
+                }
+                Text(day.fromWhoop
+                     ? "Разходът е от WHOOP (цялата енергия на деня). Приемът е от записаната храна."
+                     : "Базовият обмен е по формула (пол, тегло, ръст, възраст), активните калории са от Apple Health (крачки, тренировки, кардио, пулс). Приемът е от записаната храна. Ориентировъчно.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("Попълни профила (пол, ръст, възраст) и въведи тегло, за да се смята разходът.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding()
+        .background(.background, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func energyRow(_ title: String, _ value: Double, bold: Bool = false) -> some View {
+        HStack {
+            Text(title).fontWeight(bold ? .semibold : .regular)
+            Spacer()
+            Text("\(Int(value.rounded())) ккал").fontWeight(bold ? .semibold : .regular).monospacedDigit()
+        }
     }
 
     // MARK: Моят ден

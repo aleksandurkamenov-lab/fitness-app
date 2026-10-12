@@ -18,6 +18,8 @@ struct HealthSnapshot {
     var activeKcal: Double?
     var avgSteps: Double?
     var avgActiveKcal: Double?
+    /// Обща енергия на деня от WHOOP (с базовия обмен), ако е свързан.
+    var whoopTotalKcal: Double?
     var vo2Max: Double?
     var heartRates: [(date: Date, bpm: Double)] = []
     var workouts: [WorkoutInfo] = []
