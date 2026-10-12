@@ -39,16 +39,25 @@ enum BodyMath {
         return sex == .male ? base + 5 : base - 161
     }
 
-    /// Най-добра оценка на % мазнини: ръчно зададен, иначе US Navy от врат и корем (или талия), иначе кантар (неточен).
+    /// Най-добра оценка на % мазнини: ръчно зададен, иначе средно от US Navy (врат, корем) и RFM (корем, ръст), иначе кантар (неточен).
     static func bodyFatEstimate(profile: UserProfile, weights: [WeightEntry],
                                 measurements: [MeasurementEntry]) -> (percent: Double, source: String)? {
         if profile.manualBodyFat >= 4 { return (profile.manualBodyFat, "ръчно") }
         func latest(_ kind: MeasurementKind) -> Double? {
             measurements.sorted { $0.date < $1.date }.last { $0.kind == kind && !$0.isFlexed && $0.cm > 0 }?.cm
         }
-        if let waist = latest(.abdomen) ?? latest(.waist), let neck = latest(.neck),
-           let navy = navyBodyFat(sex: profile.sex, heightCm: profile.heightCm, waist: waist, neck: neck, hips: latest(.hips)) {
-            return (navy, "US Navy")
+        if let waist = latest(.abdomen) ?? latest(.waist) {
+            let navy = latest(.neck).flatMap {
+                navyBodyFat(sex: profile.sex, heightCm: profile.heightCm, waist: waist, neck: $0, hips: latest(.hips))
+            }
+            let relative = rfm(sex: profile.sex, heightCm: profile.heightCm, waist: waist)
+            // И двете формули са по обиколки, не по ИТМ, затова не надуват мазнините при мускулести хора; средното ги изглажда.
+            switch (navy, relative) {
+            case let (n?, r?): return ((n + r) / 2, "US Navy + RFM")
+            case let (n?, nil): return (n, "US Navy")
+            case let (nil, r?): return (r, "RFM")
+            default: break
+            }
         }
         let cutoff = Date.now.addingTimeInterval(-30 * 86_400)
         if let scale = weights.last(where: { $0.date >= cutoff && ($0.bodyFatPercent ?? 0) > 0 })?.bodyFatPercent {
