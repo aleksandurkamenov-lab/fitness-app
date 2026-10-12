@@ -9,6 +9,7 @@ struct TodayView: View {
     @Query private var profiles: [UserProfile]
     @Query(sort: \FoodEntry.date) private var foods: [FoodEntry]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
+    @Query(sort: \DailyMetric.day, order: .reverse) private var storedMetrics: [DailyMetric]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
 
     private var age: Int { profiles.first?.age ?? 30 }
@@ -161,8 +162,8 @@ struct TodayView: View {
 
     /// Данните на WHOOP имат предимство пред Apple Health за сън, пулс и HRV.
     private func merged(_ health: HealthSnapshot, with w: WhoopSnapshot?) -> HealthSnapshot {
-        guard let w else { return health }
         var h = health
+        guard let w else { return withStoredFallback(h) }
         h.hrv = w.hrv ?? h.hrv
         h.rhr = w.rhr ?? h.rhr
         h.respiratory = w.respiratory ?? h.respiratory
@@ -181,6 +182,20 @@ struct TodayView: View {
         // Тренировки от WHOOP, без повторения с тези от Health със същото начало.
         let known = Set(h.workouts.map { Int($0.start.timeIntervalSince1970 / 300) })
         h.workouts += w.workouts.filter { !known.contains(Int($0.start.timeIntervalSince1970 / 300)) }
+        return withStoredFallback(h)
+    }
+
+    /// Ако източникът не върне стойност (грешка в мрежата, още няма оценка), показваме последната записана от последните 3 дни.
+    private func withStoredFallback(_ snapshot: HealthSnapshot) -> HealthSnapshot {
+        var h = snapshot
+        let cutoff = Calendar.current.date(byAdding: .day, value: -3, to: .now) ?? .now
+        func latest(_ kind: MetricKind) -> Double? {
+            storedMetrics.first { $0.kindRaw == kind.rawValue && $0.day >= cutoff }?.value
+        }
+        h.hrv = h.hrv ?? latest(.hrv)
+        h.oxygen = h.oxygen ?? latest(.spo2)
+        h.rhr = h.rhr ?? latest(.rhr)
+        h.respiratory = h.respiratory ?? latest(.respiratory)
         return h
     }
 

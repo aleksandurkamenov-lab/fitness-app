@@ -123,6 +123,11 @@ struct NutritionView: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
+                    if healthDays.isEmpty {
+                        Text("Няма храна от Apple Health. В MyFitnessPal включи записване в Health, а в Здраве → Споделяне → Приложения → FitnessApp разреши Хранене.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                     if targets == nil {
                         Text("За цели попълни профила и теглото си (икона горе в дясно, Мерки).")
                             .font(.footnote)
