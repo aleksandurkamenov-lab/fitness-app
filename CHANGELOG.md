@@ -49,3 +49,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v45: Today: daily energy balance (basal + Health active kcal, or WHOOP total, vs logged intake)
 - v46: Energy trend screen: formula vs device data vs real expenditure (weight change and logged intake) by week, with activity-factor calibration
 - v47: Photo pose is asked after picking (no more wrong pose), HRV/SpO2/RHR fall back to last stored value, hint when no food comes from Apple Health.
+- v48: Energy balance and trend now include food from Apple Health (MyFitnessPal), not only food logged in the app.
