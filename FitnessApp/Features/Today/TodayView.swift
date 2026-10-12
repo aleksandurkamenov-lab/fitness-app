@@ -301,6 +301,18 @@ struct TodayView: View {
 
     // MARK: Енергиен баланс
 
+    private func energyParts(_ s: HealthSnapshot, profile: UserProfile, kg: Double)
+        -> (base: Double, strength: Double, cardio: Double, activity: Double) {
+        let base = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age,
+                                bodyFat: profile.bodyFatPercent) * EnergyModel.thermicFactor
+        let strengthWords = ["сила", "strength", "weight", "functional", "crossfit", "powerlifting"]
+        func isStrength(_ w: WorkoutInfo) -> Bool { strengthWords.contains { w.name.lowercased().contains($0) } }
+        let strength = s.workouts.filter(isStrength).reduce(0) { $0 + ($1.kcal ?? 0) }
+        let cardio = s.workouts.filter { !isStrength($0) }.reduce(0) { $0 + ($1.kcal ?? 0) }
+        let activeTotal = s.activeKcal ?? max((s.whoopTotalKcal ?? 0) - base * 0.9, 0)
+        return (base, strength, cardio, max(activeTotal - strength - cardio, 0))
+    }
+
     private func energyCard(_ s: HealthSnapshot) -> some View {
         let profile = profiles.first
         let kg = weights.last?.kg
@@ -309,14 +321,8 @@ struct TodayView: View {
         return VStack(alignment: .leading, spacing: 8) {
             Text("Енергиен баланс днес").font(.headline)
             if let profile, let kg {
-                let base = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age,
-                                        bodyFat: profile.bodyFatPercent) * EnergyModel.thermicFactor
-                let strengthWords = ["сила", "strength", "weight", "functional", "crossfit", "powerlifting"]
-                func isStrength(_ w: WorkoutInfo) -> Bool { strengthWords.contains { w.name.lowercased().contains($0) } }
-                let strength = s.workouts.filter(isStrength).reduce(0) { $0 + ($1.kcal ?? 0) }
-                let cardio = s.workouts.filter { !isStrength($0) }.reduce(0) { $0 + ($1.kcal ?? 0) }
-                let activeTotal = s.activeKcal ?? max((s.whoopTotalKcal ?? 0) - base * 0.9, 0)
-                let activity = max(activeTotal - strength - cardio, 0)
+                let parts = energyParts(s, profile: profile, kg: kg)
+                let base = parts.base, strength = parts.strength, cardio = parts.cardio, activity = parts.activity
                 let total = base + strength + cardio + activity
                 energyRow("Дневен разход (базов)", base)
                 energyRow("Тренировка", strength, prefix: "+")
