@@ -55,3 +55,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v51: Energy card simplified: base daily expenditure + workout + cardio + activity/steps = final, with approximate daily deficit/surplus.
 - v52: Activity/steps row falls back to a steps-based estimate when no active energy; deficit label simplified.
 - v53: Energy trend screen: clearer labels (daily energy expenditure), real expenditure hidden until there is data.
+- v54: Expected weekly weight change from daily balance (Today card) and per week in the trend screen.

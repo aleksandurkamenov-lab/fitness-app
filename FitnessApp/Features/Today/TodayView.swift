@@ -341,6 +341,14 @@ struct TodayView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(value >= 0 ? Color.orange : Color.green)
                 }
+                let weekly = (intake - total) * 7 / EnergyModel.kcalPerKg
+                HStack {
+                    Text("Очаквана промяна за седмица при такъв ден")
+                    Spacer()
+                    Text("\(weekly >= 0 ? "+" : "−")\(abs(weekly).formatted(.number.precision(.fractionLength(2)))) кг")
+                        .monospacedDigit()
+                }
+                .font(.subheadline)
                 Text("Базовият разход е по профила (BMR + ~10% за храненето, ориентировъчно). Без активни калории от часовник крачките се превръщат в калории по теглото. Тренировка, кардио и крачки идват от Apple Health и WHOOP за днес. Приемът е от записаната храна и Apple Health.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
