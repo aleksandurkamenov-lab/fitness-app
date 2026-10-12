@@ -305,7 +305,7 @@ struct TodayView: View {
         -> (base: Double, strength: Double, cardio: Double, activity: Double) {
         let base = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age,
                                 bodyFat: profile.bodyFatPercent) * EnergyModel.thermicFactor
-        let strengthWords = ["сила", "strength", "weight", "functional", "crossfit", "powerlifting"]
+        let strengthWords = ["силов", "strength", "weight", "functional", "crossfit", "powerlifting"]
         func isStrength(_ w: WorkoutInfo) -> Bool { strengthWords.contains { w.name.lowercased().contains($0) } }
         let strength = s.workouts.filter(isStrength).reduce(0) { $0 + ($1.kcal ?? 0) }
         let cardio = s.workouts.filter { !isStrength($0) }.reduce(0) { $0 + ($1.kcal ?? 0) }
