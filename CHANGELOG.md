@@ -51,3 +51,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v47: Photo pose is asked after picking (no more wrong pose), HRV/SpO2/RHR fall back to last stored value, hint when no food comes from Apple Health.
 - v48: Energy balance and trend now include food from Apple Health (MyFitnessPal), not only food logged in the app.
 - v49: BMR uses Katch-McArdle (lean mass) from a body fat estimate: manual value, else mean of US Navy and RFM from neck, abdomen, height, else scale; falls back to Mifflin-St Jeor.
+- v50: Energy card shows expected full-day expenditure (basal for the day + active so far) with breakdown.

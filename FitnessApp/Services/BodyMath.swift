@@ -152,6 +152,10 @@ enum BodyMath {
         var total: Double
         var intake: Double
         var fromWhoop: Bool
+        /// Базов обмен за целия ден (24 ч).
+        var fullDayBasal: Double = 0
+        /// Очакван разход за целия ден: до сега + остатъкът от базовия обмен.
+        var projectedTotal: Double = 0
         var balance: Double { intake - total }
     }
 
@@ -164,9 +168,11 @@ enum BodyMath {
         let basal = daily * fraction
         let active = activeKcal ?? 0
         if let whoopTotal, whoopTotal > 0 {
-            return DayEnergy(basal: max(whoopTotal - active, 0), active: active, total: whoopTotal, intake: intake, fromWhoop: true)
+            return DayEnergy(basal: max(whoopTotal - active, 0), active: active, total: whoopTotal, intake: intake, fromWhoop: true,
+                             fullDayBasal: daily, projectedTotal: whoopTotal + daily * (1 - fraction))
         }
-        return DayEnergy(basal: basal, active: active, total: basal + active, intake: intake, fromWhoop: false)
+        return DayEnergy(basal: basal, active: active, total: basal + active, intake: intake, fromWhoop: false,
+                         fullDayBasal: daily, projectedTotal: daily + active)
     }
 
     struct Forecast {

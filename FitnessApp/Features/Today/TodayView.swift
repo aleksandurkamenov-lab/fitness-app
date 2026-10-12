@@ -311,8 +311,14 @@ struct TodayView: View {
             if let profile, let kg {
                 let day = BodyMath.dayEnergy(profile: profile, kg: kg, intake: intake,
                                              activeKcal: s.activeKcal, whoopTotal: s.whoopTotalKcal)
+                energyRow("Дневен разход (очакван за целия ден)", day.projectedTotal, bold: true)
+                energyRow("Базов обмен за деня", day.fullDayBasal)
+                energyRow("Активни до сега (крачки, тренировки, кардио)", day.active)
+                let workoutKcal = s.workouts.reduce(0) { $0 + ($1.kcal ?? 0) }
+                if workoutKcal > 0 { energyRow("от тях тренировки и кардио", workoutKcal) }
+                if let steps = s.steps { energyRow("Крачки днес", steps, unit: " стъпки") }
+                Divider()
                 energyRow("Базов обмен до сега", day.basal)
-                energyRow("Активни (крачки, тренировки, кардио)", day.active)
                 energyRow("Разход до сега", day.total, bold: true)
                 energyRow("Прием (храна и Apple Health)", day.intake)
                 HStack {
@@ -344,11 +350,11 @@ struct TodayView: View {
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
     }
 
-    private func energyRow(_ title: String, _ value: Double, bold: Bool = false) -> some View {
+    private func energyRow(_ title: String, _ value: Double, bold: Bool = false, unit: String = " ккал") -> some View {
         HStack {
             Text(title).fontWeight(bold ? .semibold : .regular)
             Spacer()
-            Text("\(Int(value.rounded())) ккал").fontWeight(bold ? .semibold : .regular).monospacedDigit()
+            Text("\(Int(value.rounded()))\(unit)").fontWeight(bold ? .semibold : .regular).monospacedDigit()
         }
     }
 
