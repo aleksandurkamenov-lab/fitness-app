@@ -209,6 +209,8 @@ final class SetEntry {
     var isWarmup: Bool = false
     /// Повторения в резерв (RIR), -1 = не е въведено.
     var rir: Int = -1
+    /// Дробна част на повторенията (напр. 0.5 за половин повторение); цялата част е в `reps`.
+    var repsFraction: Double = 0
     /// Суперсерия със следващото упражнение.
     var supersetNext: Bool = false
     var exercise: Exercise?
@@ -232,8 +234,21 @@ final class SetEntry {
         self.plannedWeight = plannedWeight
     }
 
-    var volume: Double { weight * Double(reps) }
+    /// Повторения като число, може да е дробно (1.5).
+    var repsValue: Double {
+        get { Double(reps) + repsFraction }
+        set {
+            let value = max(newValue, 0)
+            reps = Int(value.rounded(.down))
+            repsFraction = ((value - value.rounded(.down)) * 100).rounded() / 100
+        }
+    }
+
+    /// „5“ или „1.5“ за показване.
+    var repsText: String { repsValue.short }
+
+    var volume: Double { weight * repsValue }
     /// Завършена работна серия (без загрявките).
     var isWorkSet: Bool { isDone && !isWarmup }
-    var estimatedOneRepMax: Double { WorkoutMath.epley(weight: weight, reps: reps) }
+    var estimatedOneRepMax: Double { WorkoutMath.epley(weight: weight, reps: repsValue) }
 }

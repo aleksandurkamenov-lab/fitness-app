@@ -4,7 +4,6 @@ import SwiftData
 struct TemplateDetailView: View {
     @Environment(\.modelContext) private var context
     @Bindable var template: WorkoutTemplate
-    @Binding var activeSession: WorkoutSession?
     @State private var showingPicker = false
 
     var body: some View {

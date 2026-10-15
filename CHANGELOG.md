@@ -57,3 +57,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v53: Energy trend screen: clearer labels (daily energy expenditure), real expenditure hidden until there is data.
 - v54: Expected weekly weight change from daily balance (Today card) and per week in the trend screen.
 - v55: Fix strength workouts being counted as cardio in the energy card (Bulgarian name match).
+- v56: Reps accept decimals (0.5, 1.5); removed the old live workout screen (Continue workout, Edit), only the weekly grid remains.

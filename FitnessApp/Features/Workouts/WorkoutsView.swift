@@ -5,32 +5,19 @@ struct WorkoutsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Mesocycle.startDate, order: .reverse) private var mesocycles: [Mesocycle]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
-    @State private var activeSession: WorkoutSession?
 
     /// Текущият мезоцикъл е най-новият по начална дата.
     private var current: Mesocycle? { mesocycles.first }
-    private var unfinished: WorkoutSession? { sessions.first { !$0.isFinished } }
     private var finished: [WorkoutSession] { sessions.filter(\.isFinished) }
 
     var body: some View {
         NavigationStack {
             List {
-                if let unfinished {
-                    Section {
-                        Button {
-                            activeSession = unfinished
-                        } label: {
-                            Label("Продължи: \(unfinished.title)", systemImage: "play.circle.fill")
-                                .font(.headline)
-                        }
-                    }
-                }
-
                 if let current {
                     Section {
                         ForEach(current.sortedTemplates) { template in
                             NavigationLink {
-                                MesoGridView(template: template, activeSession: $activeSession)
+                                MesoGridView(template: template)
                             } label: {
                                 VStack(alignment: .leading) {
                                     Text(template.name).font(.headline)
@@ -52,7 +39,7 @@ struct WorkoutsView: View {
 
                 Section {
                     NavigationLink {
-                        MesocycleListView(activeSession: $activeSession)
+                        MesocycleListView()
                     } label: {
                         Label("Мезоцикли и сплит", systemImage: "square.stack.3d.up")
                     }
@@ -74,7 +61,7 @@ struct WorkoutsView: View {
 
                 Section {
                 } footer: {
-                    Text("Версия v55")
+                    Text("Версия v56")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -88,9 +75,6 @@ struct WorkoutsView: View {
                         Label("Упражнения", systemImage: "list.bullet")
                     }
                 }
-            }
-            .fullScreenCover(item: $activeSession) { session in
-                ActiveWorkoutView(session: session)
             }
         }
     }
@@ -111,13 +95,13 @@ struct SessionRow: View {
                     VStack(alignment: .leading, spacing: 0) {
                         Text(group.exercise?.name ?? "Упражнение")
                             .font(.caption.weight(.semibold))
-                        Text(done.map { "\($0.weight.short) кг × \($0.reps)" }.joined(separator: "  ·  "))
+                        Text(done.map { "\($0.weight.short) кг × \($0.repsText)" }.joined(separator: "  ·  "))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            Text("Обем \(WorkoutMath.totalVolume(session.sets).short) кг · \(WorkoutMath.totalReps(session.sets)) повт.")
+            Text("Обем \(WorkoutMath.totalVolume(session.sets).short) кг · \(WorkoutMath.totalReps(session.sets).short) повт.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -161,7 +145,6 @@ private struct NewMesocycleSheet: View {
 struct MesocycleListView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Mesocycle.startDate, order: .reverse) private var mesocycles: [Mesocycle]
-    @Binding var activeSession: WorkoutSession?
     @State private var showingNewMeso = false
     @State private var importError: String?
 
@@ -174,7 +157,7 @@ struct MesocycleListView: View {
                 }
                 ForEach(mesocycles) { meso in
                     NavigationLink {
-                        MesocycleDetailView(mesocycle: meso, activeSession: $activeSession)
+                        MesocycleDetailView(mesocycle: meso)
                     } label: {
                         VStack(alignment: .leading) {
                             Text(meso.name).font(.headline)

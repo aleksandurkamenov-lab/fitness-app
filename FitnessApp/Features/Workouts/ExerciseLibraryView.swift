@@ -199,15 +199,15 @@ struct ExerciseDetailView: View {
                 }
             }
 
-            let allSets = history.flatMap(\.sets).filter { $0.reps > 0 }
+            let allSets = history.flatMap(\.sets).filter { $0.repsValue > 0 }
             if let best = allSets.max(by: { $0.estimatedOneRepMax < $1.estimatedOneRepMax }) {
                 Section("Рекорди") {
-                    LabeledContent("Приблизителен 1RM", value: "~\(best.estimatedOneRepMax.short) кг (\(best.weight.short)×\(best.reps))")
-                    if let heaviest = allSets.max(by: { ($0.weight, $0.reps) < ($1.weight, $1.reps) }) {
-                        LabeledContent("Най-тежко", value: "\(heaviest.weight.short) кг × \(heaviest.reps)")
+                    LabeledContent("Приблизителен 1RM", value: "~\(best.estimatedOneRepMax.short) кг (\(best.weight.short)×\(best.repsText))")
+                    if let heaviest = allSets.max(by: { ($0.weight, $0.repsValue) < ($1.weight, $1.repsValue) }) {
+                        LabeledContent("Най-тежко", value: "\(heaviest.weight.short) кг × \(heaviest.repsText)")
                     }
-                    if let most = allSets.max(by: { ($0.reps, $0.weight) < ($1.reps, $1.weight) }) {
-                        LabeledContent("Най-много повторения", value: "\(most.reps) × \(most.weight.short) кг")
+                    if let most = allSets.max(by: { ($0.repsValue, $0.weight) < ($1.repsValue, $1.weight) }) {
+                        LabeledContent("Най-много повторения", value: "\(most.repsText) × \(most.weight.short) кг")
                     }
                     if let biggest = allSets.max(by: { $0.volume < $1.volume }) {
                         LabeledContent("Най-голям обем в серия", value: "\(biggest.volume.short) кг")
@@ -228,7 +228,7 @@ struct ExerciseDetailView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(entry.session.date.formatted(date: .abbreviated, time: .omitted))
                             .font(.subheadline.weight(.semibold))
-                        Text(entry.sets.map { "\($0.weight.short)×\($0.reps)" }.joined(separator: "  "))
+                        Text(entry.sets.map { "\($0.weight.short)×\($0.repsText)" }.joined(separator: "  "))
                             .font(.caption)
                         Text("Обем \(WorkoutMath.totalVolume(entry.sets).short) кг")
                             .font(.caption)

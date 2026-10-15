@@ -307,7 +307,7 @@ enum AIAssistant {
             for set in done {
                 let name = set.exercise?.name ?? "?"
                 let rir = set.rir >= 0 ? " RIR\(set.rir)" : ""
-                let text = "\(short(set.weight))×\(set.reps)\(rir)"
+                let text = "\(short(set.weight))×\(set.repsText)\(rir)"
                 if let index = byExercise.firstIndex(where: { $0.name == name }) {
                     byExercise[index].sets.append(text)
                 } else {

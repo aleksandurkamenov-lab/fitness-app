@@ -44,7 +44,7 @@ struct StrengthProgressView: View {
         var byName: [String: [Point]] = [:]
         for session in list {
             var best: [String: Double] = [:]
-            for set in session.sets where set.isWorkSet && set.reps > 0 {
+            for set in session.sets where set.isWorkSet && set.repsValue > 0 {
                 let name = set.exercise?.name ?? "Упражнение"
                 best[name] = max(best[name] ?? 0, set.estimatedOneRepMax)
             }
