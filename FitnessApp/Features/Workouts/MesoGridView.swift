@@ -6,7 +6,6 @@ import SwiftData
 struct MesoGridView: View {
     @Environment(\.modelContext) private var context
     let template: WorkoutTemplate
-    @Binding var activeSession: WorkoutSession?
     @Query(sort: \WorkoutSession.date) private var allSessions: [WorkoutSession]
     @State private var isEditing = false
     @State private var showingPicker = false
@@ -137,7 +136,7 @@ struct MesoGridView: View {
             }
             ToolbarItem(placement: .secondaryAction) {
                 NavigationLink {
-                    TemplateDetailView(template: template, activeSession: $activeSession)
+                    TemplateDetailView(template: template)
                 } label: {
                     Label("Цели по серии и упражнения", systemImage: "list.bullet.clipboard")
                 }
@@ -182,19 +181,19 @@ struct MesoGridView: View {
 
     /// Рекорд: тази седмица има по-тежка серия или по-висок 1RM от предишните седмици и от „най-добро до сега“.
     private func isRecordWeek(_ item: TemplateExercise, week: Int) -> Bool {
-        let current = sets(for: item, week: week).filter { $0.reps > 0 }
+        let current = sets(for: item, week: week).filter { $0.repsValue > 0 }
         guard !current.isEmpty else { return false }
         var baseWeight = 0.0
         var baseOneRM = 0.0
         for target in item.targets {
             if let w = target.bestWeight, let r = target.bestReps {
                 baseWeight = max(baseWeight, w)
-                baseOneRM = max(baseOneRM, WorkoutMath.epley(weight: w, reps: Int(r.rounded())))
+                baseOneRM = max(baseOneRM, WorkoutMath.epley(weight: w, reps: r))
             }
         }
         if week > 1 {
             for earlier in 1..<week {
-                for entry in sets(for: item, week: earlier) where entry.reps > 0 {
+                for entry in sets(for: item, week: earlier) where entry.repsValue > 0 {
                     baseWeight = max(baseWeight, entry.weight)
                     baseOneRM = max(baseOneRM, entry.estimatedOneRepMax)
                 }
@@ -235,7 +234,7 @@ struct MesoGridView: View {
         let count = setCount(for: item)
         guard count > 1 else { return false }
         for week in 1...weeks {
-            let logged = sets(for: item, week: week).contains { $0.setIndex == count - 1 && ($0.reps > 0 || $0.weight > 0) }
+            let logged = sets(for: item, week: week).contains { $0.setIndex == count - 1 && ($0.repsValue > 0 || $0.weight > 0) }
             if logged { return false }
         }
         return true
@@ -254,7 +253,7 @@ struct MesoGridView: View {
     // MARK: Запис
 
     /// Връзка към серия; тренировката и серията се създават чак когато въведеш стойност.
-    private func binding(_ item: TemplateExercise, week: Int, index: Int) -> (weight: Binding<Double>, reps: Binding<Int?>) {
+    private func binding(_ item: TemplateExercise, week: Int, index: Int) -> (weight: Binding<Double>, reps: Binding<Double?>) {
         let existing = { sets(for: item, week: week).first { $0.setIndex == index } }
         let weight = Binding<Double>(
             get: { existing()?.weight ?? 0 },
@@ -263,14 +262,14 @@ struct MesoGridView: View {
                 ensureSet(item, week: week, index: index).weight = newValue
             }
         )
-        let reps = Binding<Int?>(
-            get: { existing().flatMap { $0.reps > 0 ? $0.reps : nil } },
+        let reps = Binding<Double?>(
+            get: { existing().flatMap { $0.repsValue > 0 ? $0.repsValue : nil } },
             set: { newValue in
                 guard (newValue ?? 0) > 0 || existing() != nil else { return }
                 let set = ensureSet(item, week: week, index: index)
-                set.reps = newValue ?? 0
-                set.isDone = set.reps > 0
-                if restTimerOn && set.reps > 0 { timer.start(seconds: item.restSeconds) }
+                set.repsValue = newValue ?? 0
+                set.isDone = set.repsValue > 0
+                if restTimerOn && set.repsValue > 0 { timer.start(seconds: item.restSeconds) }
             }
         )
         return (weight, reps)
@@ -325,7 +324,7 @@ private struct ExerciseGridCard: View {
     let sets: (Int) -> [SetEntry]
     let volume: (Int) -> Double
     let previousWeek: (Int) -> Int?
-    let binding: (Int, Int) -> (weight: Binding<Double>, reps: Binding<Int?>)
+    let binding: (Int, Int) -> (weight: Binding<Double>, reps: Binding<Double?>)
 
     private let weekWidth: CGFloat = 40
     private let cellWidth: CGFloat = 70
@@ -344,7 +343,7 @@ private struct ExerciseGridCard: View {
         return targets[index].bestText ?? ""
     }
 
-    private func totalReps(_ week: Int) -> Int {
+    private func totalReps(_ week: Int) -> Double {
         WorkoutMath.totalReps(sets(week))
     }
 
@@ -354,8 +353,8 @@ private struct ExerciseGridCard: View {
     }
 
     private func hintReps(_ set: SetEntry?) -> String {
-        guard let set, set.reps > 0 else { return "" }
-        return "\(set.reps)"
+        guard let set, set.repsValue > 0 else { return "" }
+        return "\(set.repsText)"
     }
 
     var body: some View {
@@ -435,7 +434,7 @@ private struct ExerciseGridCard: View {
                                          repsHint: hintReps(hint))
                                     .frame(width: cellWidth)
                             }
-                            Text(totalReps(week) > 0 ? "\(totalReps(week))" : "–")
+                            Text(totalReps(week) > 0 ? totalReps(week).short : "–")
                                 .font(.subheadline)
                                 .monospacedDigit()
                                 .frame(width: repsWidth)
@@ -459,7 +458,7 @@ private struct ExerciseGridCard: View {
 
 /// Едно поле „кг × повт.“.
 private struct GridCell: View {
-    let binding: (weight: Binding<Double>, reps: Binding<Int?>)
+    let binding: (weight: Binding<Double>, reps: Binding<Double?>)
     let weightHint: String
     let repsHint: String
 
@@ -471,9 +470,9 @@ private struct GridCell: View {
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
             Text("×").font(.caption2).foregroundStyle(.secondary)
             TextField(repsHint, value: binding.reps, format: .number)
-                .keyboardType(.numberPad)
+                .keyboardType(.decimalPad)
                 .multilineTextAlignment(.center)
-                .frame(width: 24, height: 32)
+                .frame(width: 30, height: 32)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
         }
         .font(.subheadline)
@@ -569,9 +568,9 @@ private struct WeekDetailSheet: View {
 private struct DetailSetRow: View {
     @Bindable var set: SetEntry
 
-    private var repsBinding: Binding<Int?> {
-        Binding(get: { set.reps > 0 ? set.reps : nil },
-                set: { set.reps = $0 ?? 0; set.isDone = set.reps > 0 })
+    private var repsBinding: Binding<Double?> {
+        Binding(get: { set.repsValue > 0 ? set.repsValue : nil },
+                set: { set.repsValue = $0 ?? 0; set.isDone = set.repsValue > 0 })
     }
 
     var body: some View {
@@ -589,7 +588,7 @@ private struct DetailSetRow: View {
                     .textFieldStyle(.roundedBorder)
                 Text("×").foregroundStyle(.secondary)
                 TextField("повт.", value: repsBinding, format: .number)
-                    .keyboardType(.numberPad)
+                    .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.roundedBorder)
             }

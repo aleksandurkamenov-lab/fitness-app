@@ -3,22 +3,26 @@ import Foundation
 /// Изчисления за тренировките. Стойностите са ориентировъчни.
 enum WorkoutMath {
     /// Приблизителен 1RM по Epley: тегло × (1 + повторения / 30).
-    static func epley(weight: Double, reps: Int) -> Double {
+    static func epley(weight: Double, reps: Double) -> Double {
         guard weight > 0, reps > 0 else { return 0 }
-        return reps == 1 ? weight : weight * (1 + Double(reps) / 30)
+        return reps <= 1 ? weight : weight * (1 + reps / 30)
+    }
+
+    static func epley(weight: Double, reps: Int) -> Double {
+        epley(weight: weight, reps: Double(reps))
     }
 
     static func totalVolume(_ sets: [SetEntry]) -> Double {
         sets.filter(\.isWorkSet).reduce(0) { $0 + $1.volume }
     }
 
-    static func totalReps(_ sets: [SetEntry]) -> Int {
-        sets.filter(\.isWorkSet).reduce(0) { $0 + $1.reps }
+    static func totalReps(_ sets: [SetEntry]) -> Double {
+        sets.filter(\.isWorkSet).reduce(0) { $0 + $1.repsValue }
     }
 
     /// Най-добрата серия по приблизителен 1RM.
     static func bestSet(_ sets: [SetEntry]) -> SetEntry? {
-        sets.filter { $0.isWorkSet && $0.reps > 0 }.max { $0.estimatedOneRepMax < $1.estimatedOneRepMax }
+        sets.filter { $0.isWorkSet && $0.repsValue > 0 }.max { $0.estimatedOneRepMax < $1.estimatedOneRepMax }
     }
 
     /// Тежест за загрявка: процент от работната, закръглен до 2,5 кг.

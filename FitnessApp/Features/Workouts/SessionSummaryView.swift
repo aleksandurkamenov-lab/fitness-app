@@ -5,7 +5,6 @@ struct SessionSummaryView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Bindable var session: WorkoutSession
-    @State private var editing: WorkoutSession?
 
     var body: some View {
         List {
@@ -13,7 +12,7 @@ struct SessionSummaryView: View {
                 LabeledContent("Дата", value: session.date.formatted(date: .abbreviated, time: .shortened))
                 LabeledContent("Седмица", value: "\(session.week)")
                 LabeledContent("Обем", value: "\(WorkoutMath.totalVolume(session.sets).short) кг")
-                LabeledContent("Повторения", value: "\(WorkoutMath.totalReps(session.sets))")
+                LabeledContent("Повторения", value: WorkoutMath.totalReps(session.sets).short)
                 if let end = session.finishedAt {
                     LabeledContent("Продължителност",
                                    value: Duration.seconds(end.timeIntervalSince(session.date))
@@ -27,7 +26,7 @@ struct SessionSummaryView: View {
                         HStack {
                             Text(set.isWarmup ? "З" : "\(set.setIndex + 1).")
                                 .foregroundStyle(.secondary)
-                            Text("\(set.weight.short) кг × \(set.reps)\(set.rir >= 0 ? " · RIR \(set.rir)" : "")")
+                            Text("\(set.weight.short) кг × \(set.repsText)\(set.rir >= 0 ? " · RIR \(set.rir)" : "")")
                             Spacer()
                             Text("1RM ~\(set.estimatedOneRepMax.short)")
                                 .font(.caption)
@@ -44,7 +43,6 @@ struct SessionSummaryView: View {
             }
 
             Section {
-                Button("Редактирай") { editing = session }
                 Button("Изтрий тренировката", role: .destructive) {
                     context.delete(session)
                     dismiss()
@@ -53,8 +51,5 @@ struct SessionSummaryView: View {
         }
         .navigationTitle(session.title)
         .navigationBarTitleDisplayMode(.inline)
-        .fullScreenCover(item: $editing) { session in
-            ActiveWorkoutView(session: session)
-        }
     }
 }

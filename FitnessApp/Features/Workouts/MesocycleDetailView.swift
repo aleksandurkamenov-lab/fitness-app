@@ -4,7 +4,6 @@ import SwiftData
 struct MesocycleDetailView: View {
     @Environment(\.modelContext) private var context
     @Bindable var mesocycle: Mesocycle
-    @Binding var activeSession: WorkoutSession?
     @State private var createdName: String?
 
     var body: some View {
@@ -20,7 +19,7 @@ struct MesocycleDetailView: View {
             Section("Тренировки") {
                 ForEach(mesocycle.sortedTemplates) { template in
                     NavigationLink {
-                        MesoGridView(template: template, activeSession: $activeSession)
+                        MesoGridView(template: template)
                     } label: {
                         VStack(alignment: .leading) {
                             Text(template.name).font(.headline)

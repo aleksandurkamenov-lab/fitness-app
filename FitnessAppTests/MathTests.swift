@@ -80,3 +80,14 @@ struct KatchTests {
         #expect(abs(bmr - (800 + 1125 - 150 + 5)) < 0.01)
     }
 }
+
+struct RepsTests {
+    @Test func fractionalRepsKeepWholeAndFraction() {
+        let set = SetEntry(exercise: nil, exerciseOrder: 0, setIndex: 0)
+        set.repsValue = 1.5
+        #expect(set.reps == 1)
+        #expect(abs(set.repsValue - 1.5) < 0.001)
+        set.weight = 100
+        #expect(abs(set.volume - 150) < 0.001)
+    }
+}

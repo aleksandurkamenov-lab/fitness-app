@@ -68,7 +68,7 @@ enum WorkoutService {
         let sets = history(for: exercise, in: context)
             .filter { $0.session.date < date }
             .flatMap(\.sets)
-            .filter { $0.reps > 0 }
+            .filter { $0.repsValue > 0 }
         return (sets.map(\.weight).max() ?? 0, sets.map(\.estimatedOneRepMax).max() ?? 0)
     }
 
@@ -124,7 +124,7 @@ enum WorkoutService {
                     let pool = sameSet.isEmpty ? done : sameSet
                     if let best = pool.max(by: { $0.estimatedOneRepMax < $1.estimatedOneRepMax }) {
                         next.bestWeight = best.weight
-                        next.bestReps = Double(best.reps)
+                        next.bestReps = best.repsValue
                     }
                     if index < last.count, last[index].weight > 0 {
                         next.plannedWeight = last[index].weight
