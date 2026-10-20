@@ -8,7 +8,7 @@
         {
           "name": "Barbell Overhead Press (Seated като на видеото в Whatsup)",
           "muscle": "shoulders",
-          "note": "70кг ми бяха ок можех 6-8, но гледам да не се насилвам",
+          "note": "",
           "sets": [
             {
               "repMin": 4,
@@ -27,7 +27,7 @@
         {
           "name": "Lat Pulldown (close grip handle)",
           "muscle": "back",
-          "note": "Едностранно",
+          "note": "",
           "sets": [
             {
               "repMin": 5,
@@ -46,7 +46,7 @@
         {
           "name": "Pec Dec Machine",
           "muscle": "chest",
-          "note": "Скипнах понеже имах болки",
+          "note": "",
           "sets": [
             {
               "repMin": 8,
@@ -65,7 +65,7 @@
         {
           "name": "D handle Cable Lateral Raises",
           "muscle": "shoulders",
-          "note": "Опитай да вдигаш товара смикро тежест",
+          "note": "",
           "sets": [
             {
               "repMin": 9,
@@ -103,7 +103,7 @@
         {
           "name": "Triceps Rope Extension",
           "muscle": "triceps",
-          "note": "Гледай да си хитваш реп рейнджа не прави повече репс",
+          "note": "",
           "sets": [
             {
               "repMin": 9,
@@ -146,7 +146,7 @@
         {
           "name": "RDL",
           "muscle": "hamstrings",
-          "note": "Ако можем да минем на майн и бак офф най - добре",
+          "note": "",
           "sets": [
             {
               "repMin": 7,
@@ -184,7 +184,7 @@
         {
           "name": "Seated Leg Curl",
           "muscle": "hamstrings",
-          "note": "Unilateral",
+          "note": "",
           "sets": [
             {
               "repMin": 9,
@@ -222,7 +222,7 @@
         {
           "name": "Standing Calves Press (unilateral)",
           "muscle": "calves",
-          "note": "Тука също спазвай диапазона на повторения",
+          "note": "",
           "sets": [
             {
               "repMin": 7,
@@ -265,7 +265,7 @@
         {
           "name": "Barbell Bench Press",
           "muscle": "chest",
-          "note": "Карам го леко след втората плазма",
+          "note": "",
           "sets": [
             {
               "repMin": 4,
@@ -322,7 +322,7 @@
         {
           "name": "Bayesain Curl",
           "muscle": "biceps",
-          "note": "С дъмбели понеже ме боли рамото на кабела",
+          "note": "",
           "sets": [
             {
               "repMin": 9,
@@ -341,7 +341,7 @@
         {
           "name": "Triceps Unilateral Extension",
           "muscle": "triceps",
-          "note": "с къф · Намалявам товара понеже ме боли рамото и гледам да не го натискам",
+          "note": "",
           "sets": [
             {
               "repMin": 9,
@@ -384,7 +384,7 @@
         {
           "name": "Hack Squat",
           "muscle": "quads",
-          "note": "Смит машина",
+          "note": "",
           "sets": [
             {
               "repMin": 4,
@@ -422,7 +422,7 @@
         {
           "name": "Leg Extension",
           "muscle": "quads",
-          "note": "Unilateral",
+          "note": "",
           "sets": [
             {
               "repMin": 9,
@@ -460,7 +460,7 @@
         {
           "name": "Leg Press Calves press",
           "muscle": "calves",
-          "note": "Фокус върху стреча в дълбока позиция",
+          "note": "",
           "sets": [
             {
               "repMin": 12,
