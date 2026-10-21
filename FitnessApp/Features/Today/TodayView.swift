@@ -7,6 +7,8 @@ struct TodayView: View {
     @State private var health = HealthService()
     @State private var whoop = WhoopService.shared
     @State private var healthFood: [Date: NutritionDay] = [:]
+    /// Кога за последно е зареждано всичко; връщане към таба скоро след това не презарежда.
+    @State private var lastLoad: Date?
     @Query private var profiles: [UserProfile]
     @Query(sort: \FoodEntry.date) private var foods: [FoodEntry]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
@@ -45,13 +47,16 @@ struct TodayView: View {
                 await whoop.load()
                 await syncHistory()
                 healthFood = await health.nutrition(days: 28)
+                lastLoad = .now
             }
             .task {
                 refreshBodyFat()
+                if let lastLoad, Date.now.timeIntervalSince(lastLoad) < 600, health.snapshot != nil { return }
                 if health.wasRequested { await health.load(age: age) }
                 if whoop.isConnected { await whoop.load() }
                 await syncHistory()
                 if health.wasRequested { healthFood = await health.nutrition(days: 28) }
+                if !Task.isCancelled { lastLoad = .now }
             }
         }
     }
@@ -192,8 +197,11 @@ struct TodayView: View {
         h.sleepSource = "WHOOP"
         h.whoopTotalKcal = w.cycleKcal
         // Тренировки от WHOOP, без повторения с тези от Health със същото начало.
-        let known = Set(h.workouts.map { Int($0.start.timeIntervalSince1970 / 300) })
-        h.workouts += w.workouts.filter { !known.contains(Int($0.start.timeIntervalSince1970 / 300)) }
+        // Начало с разлика под 10 минути се счита за същата тренировка (5-минутни кофи пропускаха двойки около границата).
+        let known = h.workouts.map(\.start)
+        h.workouts += w.workouts.filter { item in
+            !known.contains { abs($0.timeIntervalSince(item.start)) < 600 }
+        }
         return withStoredFallback(h)
     }
 
