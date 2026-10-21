@@ -34,6 +34,13 @@ struct AddFoodSheet: View {
         return foods.filter { $0.name.localizedCaseInsensitiveContains(query) }
     }
 
+    private var newEntryIsValid: Bool {
+        let amount = number(grams)
+        return amount.isFinite && amount > 0
+            && !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && [number(kcal), number(protein), number(carbs), number(fat)].allSatisfy { $0.isFinite && $0 >= 0 }
+    }
+
     private func addEntry(name: String, grams: Double, kcal100: Double, protein100: Double, carbs100: Double, fat100: Double) {
         let factor = grams / 100
         context.insert(FoodEntry(date: day, meal: meal, name: name, grams: grams,
@@ -115,7 +122,7 @@ struct AddFoodSheet: View {
                         carbs: picked.carbsPer100, fat: picked.fatPer100)
                 Button("Добави \(picked.name)") {
                     let amount = number(pickedGrams)
-                    guard amount > 0 else { return }
+                    guard amount.isFinite, amount > 0 else { return }
                     addEntry(name: picked.name, grams: amount, kcal100: picked.kcalPer100,
                              protein100: picked.proteinPer100, carbs100: picked.carbsPer100, fat100: picked.fatPer100)
                     picked.servingG = amount
@@ -150,8 +157,9 @@ struct AddFoodSheet: View {
             Button("Добави") {
                 let amount = number(grams)
                 let title = name.trimmingCharacters(in: .whitespaces)
-                guard amount > 0, !title.isEmpty else { return }
+                guard amount.isFinite, amount > 0, !title.isEmpty else { return }
                 let k = number(kcal), p = number(protein), c = number(carbs), f = number(fat)
+                guard [k, p, c, f].allSatisfy({ $0.isFinite && $0 >= 0 }) else { return }
                 addEntry(name: title, grams: amount, kcal100: k, protein100: p, carbs100: c, fat100: f)
                 if saveToLibrary {
                     let food = FoodItem(name: title, kcalPer100: k, proteinPer100: p, carbsPer100: c, fatPer100: f, servingG: amount)
@@ -160,7 +168,7 @@ struct AddFoodSheet: View {
                 }
                 dismiss()
             }
-            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+            .disabled(!newEntryIsValid)
         }
     }
 

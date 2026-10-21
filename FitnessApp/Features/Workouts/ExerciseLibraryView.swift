@@ -6,8 +6,11 @@ import Charts
 struct ExerciseLibraryView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Exercise.name) private var exercises: [Exercise]
+    @Query private var templates: [WorkoutTemplate]
+    @Query private var sessions: [WorkoutSession]
     @State private var search = ""
     @State private var showingNew = false
+    @State private var inUseExerciseName: String?
 
     private var filtered: [Exercise] {
         search.isEmpty ? exercises : exercises.filter { $0.name.localizedCaseInsensitiveContains(search) }
@@ -25,7 +28,19 @@ struct ExerciseLibraryView: View {
                             }
                         }
                         .onDelete { offsets in
-                            for index in offsets { context.delete(items[index]) }
+                            for index in offsets {
+                                let exercise = items[index]
+                                let isUsed = templates.contains { template in
+                                    template.items.contains { $0.exercise?.persistentModelID == exercise.persistentModelID }
+                                } || sessions.contains { session in
+                                    session.sets.contains { $0.exercise?.persistentModelID == exercise.persistentModelID }
+                                }
+                                if isUsed {
+                                    inUseExerciseName = exercise.name
+                                } else {
+                                    context.delete(exercise)
+                                }
+                            }
                         }
                     }
                 }
@@ -42,6 +57,14 @@ struct ExerciseLibraryView: View {
         }
         .sheet(isPresented: $showingNew) {
             NewExerciseSheet { _ in }
+        }
+        .alert("Упражнението се използва", isPresented: Binding(
+            get: { inUseExerciseName != nil },
+            set: { if !$0 { inUseExerciseName = nil } }
+        )) {
+            Button("Добре", role: .cancel) { inUseExerciseName = nil }
+        } message: {
+            Text("„\(inUseExerciseName ?? "")“ присъства в шаблон или история на тренировка и не може да бъде изтрито, за да останат старите записи свързани.")
         }
     }
 }
