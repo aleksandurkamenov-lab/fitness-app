@@ -62,3 +62,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v58: Grid shows a 🏆 on each set cell that beats its previous best (per set, not only per week).
 - v59: Fixed folder photo deduplication, weekly AI share tracking, plate-calculator messaging and food-search errors; validated Polar/WHOOP OAuth callbacks and sped up health-history loading.
 - v60: Fixed a compile error in Today health-history synchronization.
+- v61: Prevented invalid food values from the AI coach or manual entry; protected exercise history from deleting exercises in use; request rest-timer notification permission when enabled.

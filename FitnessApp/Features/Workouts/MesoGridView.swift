@@ -143,6 +143,9 @@ struct MesoGridView: View {
                 }
             }
         }
+        .onChange(of: restTimerOn) { _, isOn in
+            if isOn { RestTimer.requestPermission() }
+        }
     }
 
     private var totalCard: some View {
