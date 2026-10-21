@@ -61,3 +61,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v57: Grid 🏆 best row auto-updates from logged sets in any week (new exercises get a best after the first workout; higher kg×reps by 1RM replaces it).
 - v58: Grid shows a 🏆 on each set cell that beats its previous best (per set, not only per week).
 - v59: Fixed folder photo deduplication, weekly AI share tracking, plate-calculator messaging and food-search errors; validated Polar/WHOOP OAuth callbacks and sped up health-history loading.
+- v60: Fixed a compile error in Today health-history synchronization.
