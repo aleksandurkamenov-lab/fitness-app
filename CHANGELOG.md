@@ -59,3 +59,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v55: Fix strength workouts being counted as cardio in the energy card (Bulgarian name match).
 - v56: Reps accept decimals (0.5, 1.5); removed the old live workout screen (Continue workout, Edit), only the weekly grid remains.
 - v57: Grid 🏆 best row auto-updates from logged sets in any week (new exercises get a best after the first workout; higher kg×reps by 1RM replaces it).
+- v58: Grid shows a 🏆 on each set cell that beats its previous best (per set, not only per week).
