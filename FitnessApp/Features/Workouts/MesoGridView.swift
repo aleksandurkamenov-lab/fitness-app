@@ -337,10 +337,24 @@ private struct ExerciseGridCard: View {
         return targets[index].rangeText
     }
 
-    private func bestText(_ index: Int) -> String {
+    /// Най-добър резултат за серията: записаният от шаблона или по-добър от въведените в която и да е седмица (по 1RM).
+    private func best(_ index: Int) -> (weight: Double, reps: Double)? {
         let targets = item.targets
-        guard index < targets.count else { return "" }
-        return targets[index].bestText ?? ""
+        var result: (weight: Double, reps: Double)?
+        if index < targets.count, let w = targets[index].bestWeight, let r = targets[index].bestReps { result = (w, r) }
+        for week in 1...max(weeks, 1) {
+            guard let entry = sets(week).first(where: { $0.setIndex == index }),
+                  entry.weight > 0, entry.repsValue > 0 else { continue }
+            if let current = result,
+               WorkoutMath.epley(weight: current.weight, reps: current.reps) >= entry.estimatedOneRepMax - 0.001 { continue }
+            result = (entry.weight, entry.repsValue)
+        }
+        return result
+    }
+
+    private func bestText(_ index: Int) -> String {
+        guard let best = best(index) else { return "" }
+        return "\(best.weight.short)×\(best.reps.short)"
     }
 
     private func totalReps(_ week: Int) -> Double {
@@ -400,7 +414,7 @@ private struct ExerciseGridCard: View {
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                    if item.targets.contains(where: { $0.bestText != nil }) {
+                    if (0..<setCount).contains(where: { best($0) != nil }) {
                         HStack(spacing: 4) {
                             Text("🏆").frame(width: weekWidth)
                             ForEach(0..<setCount, id: \.self) { index in
