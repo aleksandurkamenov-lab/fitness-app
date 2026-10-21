@@ -67,3 +67,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v63: Today no longer reloads Health/WHOOP history on every return to the tab (10 min throttle); WHOOP/Health workouts within 10 minutes are treated as the same workout.
 - v64: Profile sex selector is now a segmented control, so the value no longer shows as "..." after switching tabs.
 - v65: Health monitor on Today has a "Тегло днес" tile that opens the weight statistics (7/30/90 days).
+- v66: Weight tile renamed with 7-day change, Measurements shows 7-day average and change, weight chart shows only the trend line.

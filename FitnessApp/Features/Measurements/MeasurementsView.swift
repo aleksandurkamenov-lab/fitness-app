@@ -46,7 +46,12 @@ struct MeasurementsView: View {
                 Section("Тегло") {
                     if let last = trend.last {
                         LabeledContent("Последно", value: "\(last.kg.short) кг")
-                        LabeledContent("Тренд (7 дни)", value: "\(last.trend.short) кг")
+                        if let week = BodyMath.weekSummary(weights) {
+                            LabeledContent("Средно (7 дни)", value: "\(week.average.short) кг")
+                            if let change = week.change {
+                                LabeledContent("Промяна за 7 дни", value: BodyMath.signedKg(change))
+                            }
+                        }
                     } else {
                         Text("Още няма записано тегло.")
                             .foregroundStyle(.secondary)
@@ -130,15 +135,13 @@ struct WeightChart: View {
 
     var body: some View {
         Chart(Array(points.enumerated()), id: \.offset) { _, point in
-            PointMark(x: .value("Дата", point.date), y: .value("кг", point.kg))
-                .foregroundStyle(.secondary)
             LineMark(x: .value("Дата", point.date), y: .value("Тренд", point.trend))
                 .foregroundStyle(Color.accentColor)
                 .interpolationMethod(.catmullRom)
         }
         .chartYScale(domain: .automatic(includesZero: false))
         .chartScrub(points.map {
-            ScrubPoint(date: $0.date, value: $0.kg,
+            ScrubPoint(date: $0.date, value: $0.trend,
                        text: "\(scrubDate($0.date)): \($0.kg.formatted(.number.precision(.fractionLength(0...2)))) кг (тренд \($0.trend.formatted(.number.precision(.fractionLength(0...2)))))")
         })
         .padding(.top, 24)
