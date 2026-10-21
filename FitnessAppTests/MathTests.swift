@@ -91,3 +91,19 @@ struct RepsTests {
         #expect(abs(set.volume - 150) < 0.001)
     }
 }
+
+struct AIFoodInputTests {
+    @Test func validFoodValuesAreAccepted() {
+        #expect(AIAssistant.isValidFoodInput(name: "Ориз", grams: 150, kcal: 195,
+                                             protein: 4, carbs: 42, fat: 0.5))
+    }
+
+    @Test func invalidFoodValuesAreRejected() {
+        #expect(!AIAssistant.isValidFoodInput(name: "Ориз", grams: -10, kcal: 195,
+                                              protein: 4, carbs: 42, fat: 0.5))
+        #expect(!AIAssistant.isValidFoodInput(name: "Ориз", grams: 150, kcal: -.infinity,
+                                              protein: 4, carbs: 42, fat: 0.5))
+        #expect(!AIAssistant.isValidFoodInput(name: "   ", grams: 150, kcal: 195,
+                                              protein: 4, carbs: 42, fat: 0.5))
+    }
+}
