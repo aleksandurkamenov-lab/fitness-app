@@ -108,6 +108,7 @@ final class WhoopService {
     private var refreshToken: String?
     private var expiry: Date?
     private var refreshTask: Task<Bool, Never>?
+    private var pendingOAuthState: String?
     private var lastTokenStatus = 0
     var statusText: String?
     var snapshot: WhoopSnapshot?
@@ -128,14 +129,14 @@ final class WhoopService {
     }
 
     var authorizationURL: URL? {
-        let state = String((0..<8).map { _ in "abcdefghijklmnopqrstuvwxyz0123456789".randomElement()! })
+        if pendingOAuthState == nil { pendingOAuthState = UUID().uuidString }
         var components = URLComponents(string: authURL)
         components?.queryItems = [
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "client_id", value: cleanId),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
             URLQueryItem(name: "scope", value: scopes),
-            URLQueryItem(name: "state", value: state),
+            URLQueryItem(name: "state", value: pendingOAuthState),
         ]
         return components?.url
     }
@@ -152,7 +153,13 @@ final class WhoopService {
 
     // MARK: Вход и токени
 
-    func finishAuthorization(code: String) async {
+    func finishAuthorization(code: String, state: String?) async {
+        guard let expectedState = pendingOAuthState, state == expectedState else {
+            pendingOAuthState = nil
+            statusText = "Входът в WHOOP не беше потвърден. Опитай отново."
+            return
+        }
+        pendingOAuthState = nil
         isBusy = true
         defer { isBusy = false }
         statusText = "Свързвам…"

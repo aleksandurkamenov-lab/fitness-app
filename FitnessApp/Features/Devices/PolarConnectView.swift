@@ -55,9 +55,9 @@ struct PolarConnectView: View {
         .sheet(isPresented: $showingLogin) {
             NavigationStack {
                 if let url = polar.authorizationURL {
-                    PolarLoginWebView(url: url, redirectPrefix: polar.redirectURI) { code in
+                    PolarLoginWebView(url: url, redirectURI: polar.redirectURI) { code, state in
                         showingLogin = false
-                        Task { await polar.finishAuthorization(code: code) }
+                        Task { await polar.finishAuthorization(code: code, state: state) }
                     }
                     .navigationTitle("Polar")
                     .navigationBarTitleDisplayMode(.inline)
@@ -75,10 +75,10 @@ struct PolarConnectView: View {
 /// Уеб страница за вход в Polar. Прихваща пренасочването към callback адреса и взема кода от него.
 struct PolarLoginWebView: UIViewRepresentable {
     let url: URL
-    let redirectPrefix: String
-    let onCode: (String) -> Void
+    let redirectURI: String
+    let onCode: (String, String?) -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(redirectPrefix: redirectPrefix, onCode: onCode) }
+    func makeCoordinator() -> Coordinator { Coordinator(redirectURI: redirectURI, onCode: onCode) }
 
     func makeUIView(context: Context) -> WKWebView {
         let view = WKWebView()
@@ -90,25 +90,35 @@ struct PolarLoginWebView: UIViewRepresentable {
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 
     final class Coordinator: NSObject, WKNavigationDelegate {
-        let redirectPrefix: String
-        let onCode: (String) -> Void
+        let redirectURI: String
+        let onCode: (String, String?) -> Void
 
-        init(redirectPrefix: String, onCode: @escaping (String) -> Void) {
-            self.redirectPrefix = redirectPrefix
+        init(redirectURI: String, onCode: @escaping (String, String?) -> Void) {
+            self.redirectURI = redirectURI
             self.onCode = onCode
         }
 
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                      decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             if let url = navigationAction.request.url,
-               url.absoluteString.hasPrefix(redirectPrefix),
-               let code = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-                   .queryItems?.first(where: { $0.name == "code" })?.value {
+               Self.matchesRedirect(url, redirectURI: redirectURI),
+               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+               let code = components.queryItems?.first(where: { $0.name == "code" })?.value {
                 decisionHandler(.cancel)
-                onCode(code)
+                let state = components.queryItems?.first(where: { $0.name == "state" })?.value
+                onCode(code, state)
                 return
             }
             decisionHandler(.allow)
+        }
+
+        private static func matchesRedirect(_ url: URL, redirectURI: String) -> Bool {
+            guard let expected = URLComponents(string: redirectURI),
+                  let actual = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return false }
+            return actual.scheme?.lowercased() == expected.scheme?.lowercased()
+                && actual.host?.lowercased() == expected.host?.lowercased()
+                && actual.port == expected.port
+                && actual.path == expected.path
         }
     }
 }
