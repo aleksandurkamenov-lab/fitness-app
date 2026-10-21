@@ -136,7 +136,11 @@ struct AIChatView: View {
             }
         }
         .sheet(item: $shareItems) { share in
-            ActivityView(items: share.items)
+            ActivityView(items: share.items) { completed in
+                if completed && share.marksWeeklyAnalysis {
+                    lastWeeklyAnalysis = Date.now.timeIntervalSince1970
+                }
+            }
         }
         .sheet(isPresented: $showingSettings) {
             AISettingsView(model: $model)
@@ -188,21 +192,24 @@ extension AIChatView {
         for photo in photos {
             if let image = UIImage(data: photo.data) { items.append(image) }
         }
-        shareItems = ShareItems(items: items)
-        if withPhotos { lastWeeklyAnalysis = Date.now.timeIntervalSince1970 }
+        shareItems = ShareItems(items: items, marksWeeklyAnalysis: withPhotos)
     }
 }
 
 struct ShareItems: Identifiable {
     let id = UUID()
     let items: [Any]
+    let marksWeeklyAnalysis: Bool
 }
 
 struct ActivityView: UIViewControllerRepresentable {
     let items: [Any]
+    let completion: (Bool) -> Void
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        controller.completionWithItemsHandler = { _, completed, _, _ in completion(completed) }
+        return controller
     }
 
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}

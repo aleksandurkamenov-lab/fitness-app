@@ -13,6 +13,7 @@ final class PolarService {
     }
     private(set) var accessToken: String?
     private(set) var polarUserId: String?
+    private var pendingOAuthState: String?
     var statusText: String?
     var output: String = ""
     var isBusy = false
@@ -29,12 +30,16 @@ final class PolarService {
     }
 
     var authorizationURL: URL? {
+        if pendingOAuthState == nil {
+            pendingOAuthState = UUID().uuidString
+        }
         var components = URLComponents(string: "https://flow.polar.com/oauth2/authorization")
         components?.queryItems = [
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "client_id", value: clientId),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
             URLQueryItem(name: "scope", value: "accesslink.read_all"),
+            URLQueryItem(name: "state", value: pendingOAuthState),
         ]
         return components?.url
     }
@@ -51,7 +56,13 @@ final class PolarService {
     // MARK: Вход
 
     /// Размяна на кода от Polar за токен, после регистрация на потребителя (изисква се еднократно).
-    func finishAuthorization(code: String) async {
+    func finishAuthorization(code: String, state: String?) async {
+        guard let expectedState = pendingOAuthState, state == expectedState else {
+            pendingOAuthState = nil
+            statusText = "Входът в Polar не беше потвърден. Опитай отново."
+            return
+        }
+        pendingOAuthState = nil
         isBusy = true
         defer { isBusy = false }
         statusText = "Свързвам…"

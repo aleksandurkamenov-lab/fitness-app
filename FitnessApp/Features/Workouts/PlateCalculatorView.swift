@@ -45,8 +45,14 @@ struct PlateCalculatorView: View {
 
                 let result = Self.perSide(total: weight, bar: barWeight, plates: plates)
                 Section {
-                    if weight <= barWeight {
-                        Text(weight > 0 ? "Само щангата." : "Въведи тежест.")
+                    if weight <= 0 {
+                        Text("Въведи тежест.")
+                            .foregroundStyle(.secondary)
+                    } else if weight < barWeight {
+                        Text("Целта е под теглото на щангата (\(barWeight.short) кг).")
+                            .foregroundStyle(.orange)
+                    } else if weight == barWeight {
+                        Text(barWeight > 0 ? "Само щангата." : "Без щанга.")
                             .foregroundStyle(.secondary)
                     } else {
                         Text(result.plates.map(\.short).joined(separator: " + "))

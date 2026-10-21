@@ -26,7 +26,11 @@ enum FoodSearch {
         var request = URLRequest(url: url)
         request.timeoutInterval = 20
         request.setValue("FitnessApp/1.0 (personal use)", forHTTPHeaderField: "User-Agent")
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let response = response as? HTTPURLResponse,
+              (200..<300).contains(response.statusCode) else {
+            throw FoodSearchError.invalidResponse
+        }
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let products = root["products"] as? [[String: Any]] else { return [] }
         return products.compactMap { product in
@@ -46,4 +50,10 @@ enum FoodSearch {
                               fat: value("fat_100g") ?? 0)
         }
     }
+}
+
+private enum FoodSearchError: LocalizedError {
+    case invalidResponse
+
+    var errorDescription: String? { "Open Food Facts върна неуспешен отговор." }
 }
