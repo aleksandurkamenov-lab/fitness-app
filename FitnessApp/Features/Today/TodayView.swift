@@ -64,12 +64,12 @@ struct TodayView: View {
 
     /// Записва историята на показателите и внася старото тегло от Health.
     private func syncHistory() async {
-        var points: [MetricPoint] = []
-        if health.wasRequested {
-            points += await health.history(days: 90)
-            HistorySync.importWeights(await health.weightHistory(), in: context)
-        }
-        if whoop.isConnected { points += await whoop.history() }
+        async let healthPoints = health.wasRequested ? health.history(days: 90) : []
+        async let weightSamples = health.wasRequested ? health.weightHistory() : []
+        async let whoopPoints = whoop.isConnected ? whoop.history() : []
+        let (points, samples, whoopHistory) = await (healthPoints, weightSamples, whoopPoints)
+        HistorySync.importWeights(samples, in: context)
+        let points = points + whoopHistory
         HistorySync.store(points, in: context)
     }
 

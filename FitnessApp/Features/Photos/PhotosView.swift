@@ -159,12 +159,15 @@ struct PhotosView: View {
         defer { if access { folder.stopAccessingSecurityScopedResource() } }
         let known = knownSources
         let files = PhotoImport.filesInFolder(folder)
+        let legacyCounts = Dictionary(grouping: files, by: { "file:\(folder.lastPathComponent)/\($0.url.lastPathComponent)" })
         var added = 0
         for (index, file) in files.enumerated() {
             progress = "Внасяне \(index + 1) от \(files.count)…"
             await Task.yield()
-            let source = "file:" + folder.lastPathComponent + "/" + file.url.lastPathComponent
-            if known.contains(source) { continue }
+            // Full normalized path avoids collisions between same-named folders/files.
+            let source = "file:" + file.url.standardizedFileURL.path
+            let legacySource = "file:\(folder.lastPathComponent)/\(file.url.lastPathComponent)"
+            if known.contains(source) || (legacyCounts[legacySource]?.count == 1 && known.contains(legacySource)) { continue }
             guard let data = try? Data(contentsOf: file.url),
                   let prepared = PhotoImport.prepare(data, fallbackDate: file.created) else { continue }
             context.insert(ProgressPhoto(date: prepared.date, imageData: prepared.data, thumbData: prepared.thumb,
