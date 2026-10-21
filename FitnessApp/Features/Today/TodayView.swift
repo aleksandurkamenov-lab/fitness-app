@@ -69,8 +69,8 @@ struct TodayView: View {
         async let whoopPoints = whoop.isConnected ? whoop.history() : []
         let (points, samples, whoopHistory) = await (healthPoints, weightSamples, whoopPoints)
         HistorySync.importWeights(samples, in: context)
-        let points = points + whoopHistory
-        HistorySync.store(points, in: context)
+        let combinedPoints = points + whoopHistory
+        HistorySync.store(combinedPoints, in: context)
     }
 
     // MARK: Връзка
