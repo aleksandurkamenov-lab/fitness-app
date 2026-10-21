@@ -69,3 +69,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v65: Health monitor on Today has a "Тегло днес" tile that opens the weight statistics (7/30/90 days).
 - v66: Weight tile renamed with 7-day change, Measurements shows 7-day average and change, weight chart shows only the trend line.
 - v67: Week grid no longer accepts negative weight, rest timer starts only for the current week and is cancelled when leaving the grid.
+- v68: WHOOP response models marked nonisolated (fixes four Swift 6 Decodable warnings).
