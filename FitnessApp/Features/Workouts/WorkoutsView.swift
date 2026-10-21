@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct WorkoutsView: View {
     @Environment(\.modelContext) private var context
@@ -147,6 +148,9 @@ struct MesocycleListView: View {
     @Query(sort: \Mesocycle.startDate, order: .reverse) private var mesocycles: [Mesocycle]
     @State private var showingNewMeso = false
     @State private var importError: String?
+    @State private var pickingFile = false
+    @State private var workbook: XlsxWorkbook?
+    @State private var sheetNames: [String] = []
 
     var body: some View {
         List {
@@ -189,6 +193,11 @@ struct MesocycleListView: View {
                     } label: {
                         Label("Импортирай Meso 22 (от Excel)", systemImage: "square.and.arrow.down")
                     }
+                    Button {
+                        pickingFile = true
+                    } label: {
+                        Label("Импортирай от Excel файл…", systemImage: "doc.badge.plus")
+                    }
                 } label: {
                     Label("Нов мезоцикъл", systemImage: "plus")
                 }
@@ -197,6 +206,31 @@ struct MesocycleListView: View {
         .sheet(isPresented: $showingNewMeso) {
             NewMesocycleSheet()
         }
+        .fileImporter(isPresented: $pickingFile, allowedContentTypes: [UTType(filenameExtension: "xlsx") ?? .data]) { result in
+            openWorkbook(result)
+        }
+        .sheet(isPresented: Binding(get: { workbook != nil }, set: { if !$0 { workbook = nil } })) {
+            NavigationStack {
+                List {
+                    Section {
+                        ForEach(sheetNames, id: \.self) { name in
+                            Button(name) { importSheet(name) }
+                        }
+                    } header: {
+                        Text("Избери мезоцикъл за импорт")
+                    } footer: {
+                        Text("Очаквам формата на треньорския Excel. Импортира се един лист като нов мезоцикъл.")
+                    }
+                }
+                .navigationTitle("Листове")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Отказ") { workbook = nil }
+                    }
+                }
+            }
+        }
         .alert("Импортът не успя", isPresented: Binding(
             get: { importError != nil },
             set: { if !$0 { importError = nil } }
@@ -204,6 +238,31 @@ struct MesocycleListView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(importError ?? "")
+        }
+    }
+
+    private func openWorkbook(_ result: Result<URL, Error>) {
+        do {
+            let url = try result.get()
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            let opened = try XlsxWorkbook(url: url)
+            let names = MesoImporter.mesoSheetNames(in: opened)
+            sheetNames = names.isEmpty ? opened.sheetNames : names.reversed()
+            workbook = opened
+        } catch {
+            importError = error.localizedDescription
+        }
+    }
+
+    private func importSheet(_ name: String) {
+        guard let workbook else { return }
+        do {
+            try MesoImporter.importSheet(named: name, from: workbook, in: context)
+            self.workbook = nil
+        } catch {
+            self.workbook = nil
+            importError = error.localizedDescription
         }
     }
 
