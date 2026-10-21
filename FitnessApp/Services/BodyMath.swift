@@ -130,6 +130,24 @@ enum BodyMath {
         return result
     }
 
+    /// Средно тегло за последните 7 дни и промяна спрямо предишните 7 дни (nil, ако няма данни за сравнение).
+    static func weekSummary(_ entries: [WeightEntry], now: Date = .now) -> (average: Double, change: Double?)? {
+        let week: TimeInterval = 7 * 86_400
+        let current = entries.filter { $0.date >= now.addingTimeInterval(-week) }.map(\.kg)
+        guard !current.isEmpty else { return nil }
+        let average = current.reduce(0, +) / Double(current.count)
+        let previous = entries.filter { $0.date >= now.addingTimeInterval(-2 * week) && $0.date < now.addingTimeInterval(-week) }.map(\.kg)
+        guard !previous.isEmpty else { return (average, nil) }
+        return (average, average - previous.reduce(0, +) / Double(previous.count))
+    }
+
+    /// "+0,3 кг" / "−0,7 кг".
+    static func signedKg(_ value: Double) -> String {
+        let text = abs(value).formatted(.number.precision(.fractionLength(0...1)))
+        if abs(value) < 0.05 { return "0 кг" }
+        return (value > 0 ? "+" : "−") + text + " кг"
+    }
+
     // MARK: Прогноза
 
     /// Приблизителни ккал от тренировки със силови тежести (MET ≈ 5) за последните 28 дни, на седмица.

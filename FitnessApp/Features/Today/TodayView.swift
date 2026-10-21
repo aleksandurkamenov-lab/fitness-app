@@ -236,6 +236,12 @@ struct TodayView: View {
 
     // MARK: Монитор на здравето
 
+    /// Промяна на средното тегло за 7 дни спрямо предишните 7.
+    private var weightNote: String? {
+        guard let change = BodyMath.weekSummary(weights)?.change else { return nil }
+        return "\(BodyMath.signedKg(change)) за 7 дни"
+    }
+
     /// Средно от записите за днес (ако са няколко).
     private var todayWeight: Double? {
         let today = weights.filter { Calendar.current.isDateInToday($0.date) }.map(\.kg)
@@ -265,8 +271,8 @@ struct TodayView: View {
                                missing: "няма данни")
                 }
                 link(.weight) {
-                    MetricTile(title: "Тегло днес", value: todayWeight, unit: "кг", digits: 1,
-                               baseline: nil, missing: "няма запис днес")
+                    MetricTile(title: "Тегло", value: todayWeight, unit: "кг", digits: 1,
+                               baseline: nil, missing: "няма запис днес", note: weightNote)
                 }
                 if let delta = s.skinTempDelta {
                     link(.metric(.skinTemp)) {
@@ -480,6 +486,7 @@ private struct MetricTile: View {
     let baseline: RecoveryMath.Baseline?
     let missing: String
     var signed = false
+    var note: String?
 
     private var status: RecoveryMath.Status? {
         value.flatMap { RecoveryMath.status($0, baseline: baseline) }
@@ -504,6 +511,9 @@ private struct MetricTile: View {
                 }
                 if let status {
                     Text(status.title).font(.caption2.weight(.semibold)).foregroundStyle(statusColor)
+                }
+                if let note {
+                    Text(note).font(.caption2).foregroundStyle(.secondary)
                 }
             } else {
                 Text("–").font(.title2.weight(.bold))
