@@ -65,3 +65,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v61: Prevented invalid food values from the AI coach or manual entry; protected exercise history from deleting exercises in use; request rest-timer notification permission when enabled.
 - v62: Fixed workout deletion (confirm, no crash), safe set editing in templates, calculator body-fat/lean-mass consistency, calibrated activity factor in profile picker, and one thermic factor in forecast.
 - v63: Today no longer reloads Health/WHOOP history on every return to the tab (10 min throttle); WHOOP/Health workouts within 10 minutes are treated as the same workout.
+- v64: Profile sex selector is now a segmented control, so the value no longer shows as "..." after switching tabs.
