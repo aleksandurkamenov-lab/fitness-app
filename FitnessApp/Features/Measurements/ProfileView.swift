@@ -32,6 +32,13 @@ private struct ProfileForm: View {
         ("Висока (6–7 тренировки)", 1.725),
     ]
 
+    /// Стандартните нива плюс текущата стойност, ако е калибрирана от реалния разход.
+    private var activityOptions: [(String, Double)] {
+        activities.contains { $0.1 == profile.activityFactor }
+            ? activities
+            : activities + [("Калибрирана (\(profile.activityFactor.formatted(.number.precision(.fractionLength(0...2)))))", profile.activityFactor)]
+    }
+
     var body: some View {
         Form {
             Section("За мен") {
@@ -48,7 +55,7 @@ private struct ProfileForm: View {
                         .frame(width: 80)
                 }
                 Picker("Активност", selection: $profile.activityFactor) {
-                    ForEach(activities, id: \.1) { Text($0.0).tag($0.1) }
+                    ForEach(activityOptions, id: \.1) { Text($0.0).tag($0.1) }
                 }
             }
 
@@ -216,13 +223,14 @@ struct CalculatorsView: View {
         List {
             if let profile = profiles.first, let kg = weights.last?.kg {
                 let bmi = BodyMath.bmi(kg: kg, cm: profile.heightCm)
-                let navy = latest(.waist).flatMap { waist in
+                let waistValue = latest(.abdomen) ?? latest(.waist)
+                let navy = waistValue.flatMap { waist in
                     latest(.neck).flatMap { neck in
                         BodyMath.navyBodyFat(sex: profile.sex, heightCm: profile.heightCm,
                                              waist: waist, neck: neck, hips: latest(.hips))
                     }
                 }
-                let rfm = latest(.waist).flatMap { BodyMath.rfm(sex: profile.sex, heightCm: profile.heightCm, waist: $0) }
+                let rfm = waistValue.flatMap { BodyMath.rfm(sex: profile.sex, heightCm: profile.heightCm, waist: $0) }
                 let scaleFat = weights.last?.bodyFatPercent
 
                 Section("Тяло") {
@@ -238,7 +246,9 @@ struct CalculatorsView: View {
                     LabeledContent("% мазнини (RFM)", value: value(rfm, "%"))
                     if let scaleFat {
                         LabeledContent("% мазнини (кантар)", value: "\(scaleFat.short) %")
-                        LabeledContent("Постна маса", value: "\((kg * (1 - scaleFat / 100)).short) кг")
+                    }
+                    if profile.bodyFatPercent > 0 {
+                        LabeledContent("Постна маса (\(profile.bodyFatSource))", value: "\((kg * (1 - profile.bodyFatPercent / 100)).short) кг")
                     }
                 }
 

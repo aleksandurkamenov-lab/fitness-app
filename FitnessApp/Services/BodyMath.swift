@@ -188,7 +188,7 @@ enum BodyMath {
     /// Прогноза: приемът от макросите срещу приблизителния разход.
     static func forecast(profile: UserProfile, kg: Double, intake: Double, sessions: [WorkoutSession]) -> Forecast {
         let bmr = bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age, bodyFat: profile.bodyFatPercent)
-        let base = bmr * 1.15
+        let base = bmr * EnergyModel.thermicFactor
         let steps = profile.avgDailySteps * 0.00044 * kg
         let training = trainingKcalPerWeek(sessions: sessions, kg: kg).kcal / 7
         let cardio = profile.weeklyCardioMinutes * 6 * 3.5 * kg / 200 / 7
