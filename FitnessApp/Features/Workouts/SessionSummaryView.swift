@@ -5,6 +5,7 @@ struct SessionSummaryView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Bindable var session: WorkoutSession
+    @State private var confirmingDelete = false
 
     var body: some View {
         List {
@@ -44,12 +45,20 @@ struct SessionSummaryView: View {
 
             Section {
                 Button("Изтрий тренировката", role: .destructive) {
-                    context.delete(session)
-                    dismiss()
+                    confirmingDelete = true
                 }
             }
         }
         .navigationTitle(session.title)
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog("Да изтрия ли тренировката?", isPresented: $confirmingDelete, titleVisibility: .visible) {
+            Button("Изтрий", role: .destructive) {
+                let doomed = session
+                dismiss()
+                context.delete(doomed)
+                try? context.save()
+            }
+            Button("Отказ", role: .cancel) {}
+        }
     }
 }

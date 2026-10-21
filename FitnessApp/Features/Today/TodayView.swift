@@ -7,6 +7,8 @@ struct TodayView: View {
     @State private var health = HealthService()
     @State private var whoop = WhoopService.shared
     @State private var healthFood: [Date: NutritionDay] = [:]
+    /// Кога за последно е зареждано всичко; връщане към таба скоро след това не презарежда.
+    @State private var lastLoad: Date?
     @Query private var profiles: [UserProfile]
     @Query(sort: \FoodEntry.date) private var foods: [FoodEntry]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
@@ -45,13 +47,16 @@ struct TodayView: View {
                 await whoop.load()
                 await syncHistory()
                 healthFood = await health.nutrition(days: 28)
+                lastLoad = .now
             }
             .task {
                 refreshBodyFat()
+                if let lastLoad, Date.now.timeIntervalSince(lastLoad) < 600, health.snapshot != nil { return }
                 if health.wasRequested { await health.load(age: age) }
                 if whoop.isConnected { await whoop.load() }
                 await syncHistory()
                 if health.wasRequested { healthFood = await health.nutrition(days: 28) }
+                if !Task.isCancelled { lastLoad = .now }
             }
         }
     }
@@ -64,13 +69,13 @@ struct TodayView: View {
 
     /// Записва историята на показателите и внася старото тегло от Health.
     private func syncHistory() async {
-        var points: [MetricPoint] = []
-        if health.wasRequested {
-            points += await health.history(days: 90)
-            HistorySync.importWeights(await health.weightHistory(), in: context)
-        }
-        if whoop.isConnected { points += await whoop.history() }
-        HistorySync.store(points, in: context)
+        async let healthPoints = health.wasRequested ? health.history(days: 90) : []
+        async let weightSamples = health.wasRequested ? health.weightHistory() : []
+        async let whoopPoints = whoop.isConnected ? whoop.history() : []
+        let (points, samples, whoopHistory) = await (healthPoints, weightSamples, whoopPoints)
+        HistorySync.importWeights(samples, in: context)
+        let combinedPoints = points + whoopHistory
+        HistorySync.store(combinedPoints, in: context)
     }
 
     // MARK: Връзка
@@ -192,8 +197,11 @@ struct TodayView: View {
         h.sleepSource = "WHOOP"
         h.whoopTotalKcal = w.cycleKcal
         // Тренировки от WHOOP, без повторения с тези от Health със същото начало.
-        let known = Set(h.workouts.map { Int($0.start.timeIntervalSince1970 / 300) })
-        h.workouts += w.workouts.filter { !known.contains(Int($0.start.timeIntervalSince1970 / 300)) }
+        // Начало с разлика под 10 минути се счита за същата тренировка (5-минутни кофи пропускаха двойки около границата).
+        let known = h.workouts.map(\.start)
+        h.workouts += w.workouts.filter { item in
+            !known.contains { abs($0.timeIntervalSince(item.start)) < 600 }
+        }
         return withStoredFallback(h)
     }
 
@@ -228,6 +236,18 @@ struct TodayView: View {
 
     // MARK: Монитор на здравето
 
+    /// Промяна на средното тегло за 7 дни спрямо предишните 7.
+    private var weightNote: String? {
+        guard let change = BodyMath.weekSummary(weights)?.change else { return nil }
+        return "\(BodyMath.signedKg(change)) за 7 дни"
+    }
+
+    /// Средно от записите за днес (ако са няколко).
+    private var todayWeight: Double? {
+        let today = weights.filter { Calendar.current.isDateInToday($0.date) }.map(\.kg)
+        return today.isEmpty ? nil : today.reduce(0, +) / Double(today.count)
+    }
+
     private func healthMonitor(_ s: HealthSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Монитор на здравето").font(.headline)
@@ -249,6 +269,10 @@ struct TodayView: View {
                     MetricTile(title: "SpO₂", value: s.oxygen, unit: "%", digits: 0,
                                baseline: s.oxygenBaseline,
                                missing: "няма данни")
+                }
+                link(.weight) {
+                    MetricTile(title: "Тегло", value: todayWeight, unit: "кг", digits: 1,
+                               baseline: nil, missing: "няма запис днес", note: weightNote)
                 }
                 if let delta = s.skinTempDelta {
                     link(.metric(.skinTemp)) {
@@ -462,6 +486,7 @@ private struct MetricTile: View {
     let baseline: RecoveryMath.Baseline?
     let missing: String
     var signed = false
+    var note: String?
 
     private var status: RecoveryMath.Status? {
         value.flatMap { RecoveryMath.status($0, baseline: baseline) }
@@ -486,6 +511,9 @@ private struct MetricTile: View {
                 }
                 if let status {
                     Text(status.title).font(.caption2.weight(.semibold)).foregroundStyle(statusColor)
+                }
+                if let note {
+                    Text(note).font(.caption2).foregroundStyle(.secondary)
                 }
             } else {
                 Text("–").font(.title2.weight(.bold))

@@ -54,10 +54,10 @@ struct WhoopConnectView: View {
         .sheet(isPresented: $showingLogin) {
             NavigationStack {
                 if let url = whoop.authorizationURL {
-                    PolarLoginWebView(url: url, redirectPrefix: whoop.redirectURI) { code in
+                    PolarLoginWebView(url: url, redirectURI: whoop.redirectURI) { code, state in
                         showingLogin = false
                         Task {
-                            await whoop.finishAuthorization(code: code)
+                            await whoop.finishAuthorization(code: code, state: state)
                             await whoop.load()
                         }
                     }

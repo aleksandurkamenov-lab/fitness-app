@@ -58,3 +58,13 @@ Every change to the app is a numbered version. The current version is shown at t
 - v54: Expected weekly weight change from daily balance (Today card) and per week in the trend screen.
 - v55: Fix strength workouts being counted as cardio in the energy card (Bulgarian name match).
 - v56: Reps accept decimals (0.5, 1.5); removed the old live workout screen (Continue workout, Edit), only the weekly grid remains.
+- v57: Grid 🏆 best row auto-updates from logged sets in any week (new exercises get a best after the first workout; higher kg×reps by 1RM replaces it).
+- v58: Grid shows a 🏆 on each set cell that beats its previous best (per set, not only per week).
+- v59: Fixed folder photo deduplication, weekly AI share tracking, plate-calculator messaging and food-search errors; validated Polar/WHOOP OAuth callbacks and sped up health-history loading.
+- v60: Fixed a compile error in Today health-history synchronization.
+- v61: Prevented invalid food values from the AI coach or manual entry; protected exercise history from deleting exercises in use; request rest-timer notification permission when enabled.
+- v62: Fixed workout deletion (confirm, no crash), safe set editing in templates, calculator body-fat/lean-mass consistency, calibrated activity factor in profile picker, and one thermic factor in forecast.
+- v63: Today no longer reloads Health/WHOOP history on every return to the tab (10 min throttle); WHOOP/Health workouts within 10 minutes are treated as the same workout.
+- v64: Profile sex selector is now a segmented control, so the value no longer shows as "..." after switching tabs.
+- v65: Health monitor on Today has a "Тегло днес" tile that opens the weight statistics (7/30/90 days).
+- v66: Weight tile renamed with 7-day change, Measurements shows 7-day average and change, weight chart shows only the trend line.

@@ -119,8 +119,17 @@ final class HealthService {
 
         var result = HealthSnapshot()
 
-        // Сън
-        if let sleep = try? await sleepSummary(from: nightStart, to: min(nightEnd, now)) {
+        // Независимите заявки започват заедно; прозорецът за средните стойности
+        // се определя след като пристигне обобщението за съня.
+        async let sleepTask = sleepSummary(from: nightStart, to: min(nightEnd, now))
+        async let hrvTask = quantitySamples(.heartRateVariabilitySDNN, unit: .secondUnit(with: .milli), from: monthAgo, to: now)
+        async let rhrTask = quantitySamples(.restingHeartRate, unit: HKUnit.count().unitDivided(by: .minute()), from: monthAgo, to: now)
+        async let respTask = quantitySamples(.respiratoryRate, unit: HKUnit.count().unitDivided(by: .minute()), from: monthAgo, to: now)
+        async let oxygenTask = quantitySamples(.oxygenSaturation, unit: .percent(), from: monthAgo, to: now)
+        async let skinTask = quantitySamples(.appleSleepingWristTemperature, unit: .degreeCelsius(), from: monthAgo, to: now)
+        async let vo2Task = quantitySamples(.vo2Max, unit: HKUnit(from: "ml/(kg*min)"), from: monthAgo, to: now)
+
+        if let sleep = try? await sleepTask {
             result.asleepHours = sleep.asleep
             result.inBedHours = sleep.inBed
             result.sleepStart = sleep.start
@@ -131,42 +140,47 @@ final class HealthService {
         // Показатели за последната нощ и 30-дневни лични норми
         let nightWindow = result.sleepStart.map { ($0, result.sleepEnd ?? now) } ?? (nightStart, min(nightEnd, now))
 
-        let hrv = await quantitySamples(.heartRateVariabilitySDNN, unit: .secondUnit(with: .milli), from: monthAgo, to: now)
+        let hrv = await hrvTask
         result.hrv = average(hrv, in: nightWindow)
         result.hrvBaseline = baseline(hrv, before: startOfDay, calendar: calendar)
 
-        let rhr = await quantitySamples(.restingHeartRate, unit: HKUnit.count().unitDivided(by: .minute()), from: monthAgo, to: now)
+        let rhr = await rhrTask
         result.rhr = rhr.last?.value
         result.rhrBaseline = baseline(rhr, before: startOfDay, calendar: calendar)
 
-        let resp = await quantitySamples(.respiratoryRate, unit: HKUnit.count().unitDivided(by: .minute()), from: monthAgo, to: now)
+        let resp = await respTask
         result.respiratory = average(resp, in: nightWindow)
         result.respiratoryBaseline = baseline(resp, before: startOfDay, calendar: calendar)
 
-        let oxygenFractions = await quantitySamples(.oxygenSaturation, unit: .percent(), from: monthAgo, to: now)
+        let oxygenFractions = await oxygenTask
         let oxygen = oxygenFractions.map { Sample(date: $0.date, value: $0.value * 100) }
         result.oxygen = average(oxygen, in: nightWindow)
         result.oxygenBaseline = baseline(oxygen, before: startOfDay, calendar: calendar)
 
-        let skin = await quantitySamples(.appleSleepingWristTemperature, unit: .degreeCelsius(), from: monthAgo, to: now)
+        let skin = await skinTask
         if let latest = skin.last?.value {
             let past = skin.filter { $0.date < startOfDay }.map(\.value)
             if !past.isEmpty { result.skinTempDelta = latest - past.reduce(0, +) / Double(past.count) }
         }
 
-        let vo2 = await quantitySamples(.vo2Max, unit: HKUnit(from: "ml/(kg*min)"), from: monthAgo, to: now)
+        let vo2 = await vo2Task
         result.vo2Max = vo2.last?.value
 
         // Ден: крачки, калории, пулс, тренировки
-        result.steps = await cumulative(.stepCount, unit: .count(), from: startOfDay, to: now)
-        result.activeKcal = await cumulative(.activeEnergyBurned, unit: .kilocalorie(), from: startOfDay, to: now)
-        result.avgSteps = await dailyAverage(.stepCount, unit: .count(), days: 7, calendar: calendar)
-        result.avgActiveKcal = await dailyAverage(.activeEnergyBurned, unit: .kilocalorie(), days: 7, calendar: calendar)
+        async let stepsTask = cumulative(.stepCount, unit: .count(), from: startOfDay, to: now)
+        async let activeKcalTask = cumulative(.activeEnergyBurned, unit: .kilocalorie(), from: startOfDay, to: now)
+        async let avgStepsTask = dailyAverage(.stepCount, unit: .count(), days: 7, calendar: calendar)
+        async let avgActiveKcalTask = dailyAverage(.activeEnergyBurned, unit: .kilocalorie(), days: 7, calendar: calendar)
+        async let heartTask = quantitySamples(.heartRate, unit: HKUnit.count().unitDivided(by: .minute()), from: startOfDay, to: now)
+        async let workoutsTask = todaysWorkouts(from: startOfDay, to: now)
 
-        let heart = await quantitySamples(.heartRate, unit: HKUnit.count().unitDivided(by: .minute()), from: startOfDay, to: now)
+        result.steps = await stepsTask
+        result.activeKcal = await activeKcalTask
+        result.avgSteps = await avgStepsTask
+        result.avgActiveKcal = await avgActiveKcalTask
+        let heart = await heartTask
         result.heartRates = heart.map { ($0.date, $0.value) }
-
-        result.workouts = await todaysWorkouts(from: startOfDay, to: now)
+        result.workouts = await workoutsTask
 
         snapshot = result
     }
@@ -242,13 +256,10 @@ final class HealthService {
     /// Средно на ден за последните дни (без днес).
     private func dailyAverage(_ identifier: HKQuantityTypeIdentifier, unit: HKUnit, days: Int, calendar: Calendar) async -> Double? {
         let today = calendar.startOfDay(for: .now)
-        var totals: [Double] = []
-        for offset in 1...days {
-            guard let start = calendar.date(byAdding: .day, value: -offset, to: today),
-                  let end = calendar.date(byAdding: .day, value: 1, to: start),
-                  let value = await cumulative(identifier, unit: unit, from: start, to: end), value > 0 else { continue }
-            totals.append(value)
-        }
+        guard days > 0,
+              let from = calendar.date(byAdding: .day, value: -days, to: today) else { return nil }
+        let daily = await dailyTotals(identifier, unit: unit, from: from, to: today)
+        let totals = daily.values.filter { $0 > 0 }
         return totals.isEmpty ? nil : totals.reduce(0, +) / Double(totals.count)
     }
 
@@ -359,10 +370,11 @@ final class HealthService {
         }
         let calendar = Calendar.current
         let from = calendar.date(byAdding: .day, value: -days, to: calendar.startOfDay(for: .now)) ?? .now
-        let kcal = await dailyTotals(.dietaryEnergyConsumed, unit: .kilocalorie(), from: from)
-        let protein = await dailyTotals(.dietaryProtein, unit: .gram(), from: from)
-        let carbs = await dailyTotals(.dietaryCarbohydrates, unit: .gram(), from: from)
-        let fat = await dailyTotals(.dietaryFatTotal, unit: .gram(), from: from)
+        async let kcalTask = dailyTotals(.dietaryEnergyConsumed, unit: .kilocalorie(), from: from)
+        async let proteinTask = dailyTotals(.dietaryProtein, unit: .gram(), from: from)
+        async let carbsTask = dailyTotals(.dietaryCarbohydrates, unit: .gram(), from: from)
+        async let fatTask = dailyTotals(.dietaryFatTotal, unit: .gram(), from: from)
+        let (kcal, protein, carbs, fat) = await (kcalTask, proteinTask, carbsTask, fatTask)
         var result: [Date: NutritionDay] = [:]
         for (day, value) in kcal { result[day, default: NutritionDay()].kcal = value }
         for (day, value) in protein { result[day, default: NutritionDay()].protein = value }
@@ -371,9 +383,10 @@ final class HealthService {
         return result
     }
 
-    private func dailyTotals(_ identifier: HKQuantityTypeIdentifier, unit: HKUnit, from: Date) async -> [Date: Double] {
+    private func dailyTotals(_ identifier: HKQuantityTypeIdentifier, unit: HKUnit, from: Date,
+                             to: Date = .now) async -> [Date: Double] {
         let calendar = Calendar.current
-        let predicate = HKQuery.predicateForSamples(withStart: from, end: .now, options: .strictStartDate)
+        let predicate = HKQuery.predicateForSamples(withStart: from, end: to, options: .strictStartDate)
         let descriptor = HKStatisticsCollectionQueryDescriptor(
             predicate: .quantitySample(type: HKQuantityType(identifier), predicate: predicate),
             options: .cumulativeSum,
@@ -382,7 +395,7 @@ final class HealthService {
         )
         guard let collection = try? await descriptor.result(for: store) else { return [:] }
         var result: [Date: Double] = [:]
-        collection.enumerateStatistics(from: from, to: .now) { statistics, _ in
+        collection.enumerateStatistics(from: from, to: to) { statistics, _ in
             if let value = statistics.sumQuantity()?.doubleValue(for: unit), value > 0 {
                 result[calendar.startOfDay(for: statistics.startDate)] = value
             }

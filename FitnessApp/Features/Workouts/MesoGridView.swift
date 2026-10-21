@@ -81,6 +81,7 @@ struct MesoGridView: View {
                                      onDelete: { context.delete(item) },
                                      onDetail: { detail = GridDetail(order: item.order, week: $0) },
                                      isRecord: { isRecordWeek(item, week: $0) },
+                                     isSetRecord: { isRecordSet(item, week: $0, index: $1) },
                                      sets: { sets(for: item, week: $0) },
                                      volume: { volume(item, week: $0) },
                                      previousWeek: { week in
@@ -142,6 +143,9 @@ struct MesoGridView: View {
                 }
             }
         }
+        .onChange(of: restTimerOn) { _, isOn in
+            if isOn { RestTimer.requestPermission() }
+        }
     }
 
     private var totalCard: some View {
@@ -201,6 +205,25 @@ struct MesoGridView: View {
         }
         guard baseWeight > 0 else { return false }
         return current.contains { $0.weight > baseWeight + 0.001 || $0.estimatedOneRepMax > baseOneRM + 0.001 }
+    }
+
+    /// Рекорд за конкретна серия: 1RM е над най-доброто за тази серия от шаблона и от предишните седмици.
+    private func isRecordSet(_ item: TemplateExercise, week: Int, index: Int) -> Bool {
+        guard let current = sets(for: item, week: week).first(where: { $0.setIndex == index }),
+              current.weight > 0, current.repsValue > 0 else { return false }
+        var base = 0.0
+        let targets = item.targets
+        if index < targets.count, let w = targets[index].bestWeight, let r = targets[index].bestReps {
+            base = WorkoutMath.epley(weight: w, reps: r)
+        }
+        if week > 1 {
+            for earlier in 1..<week {
+                if let entry = sets(for: item, week: earlier).first(where: { $0.setIndex == index }), entry.repsValue > 0 {
+                    base = max(base, entry.estimatedOneRepMax)
+                }
+            }
+        }
+        return base > 0 && current.estimatedOneRepMax > base + 0.001
     }
 
     /// Загряващи серии 40/60/80 % от работната тежест (въведената, от предишната седмица или планираната).
@@ -321,6 +344,7 @@ private struct ExerciseGridCard: View {
     let onDelete: () -> Void
     let onDetail: (Int) -> Void
     let isRecord: (Int) -> Bool
+    let isSetRecord: (Int, Int) -> Bool
     let sets: (Int) -> [SetEntry]
     let volume: (Int) -> Double
     let previousWeek: (Int) -> Int?
@@ -337,10 +361,24 @@ private struct ExerciseGridCard: View {
         return targets[index].rangeText
     }
 
-    private func bestText(_ index: Int) -> String {
+    /// Най-добър резултат за серията: записаният от шаблона или по-добър от въведените в която и да е седмица (по 1RM).
+    private func best(_ index: Int) -> (weight: Double, reps: Double)? {
         let targets = item.targets
-        guard index < targets.count else { return "" }
-        return targets[index].bestText ?? ""
+        var result: (weight: Double, reps: Double)?
+        if index < targets.count, let w = targets[index].bestWeight, let r = targets[index].bestReps { result = (w, r) }
+        for week in 1...max(weeks, 1) {
+            guard let entry = sets(week).first(where: { $0.setIndex == index }),
+                  entry.weight > 0, entry.repsValue > 0 else { continue }
+            if let current = result,
+               WorkoutMath.epley(weight: current.weight, reps: current.reps) >= entry.estimatedOneRepMax - 0.001 { continue }
+            result = (entry.weight, entry.repsValue)
+        }
+        return result
+    }
+
+    private func bestText(_ index: Int) -> String {
+        guard let best = best(index) else { return "" }
+        return "\(best.weight.short)×\(best.reps.short)"
     }
 
     private func totalReps(_ week: Int) -> Double {
@@ -400,7 +438,7 @@ private struct ExerciseGridCard: View {
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                    if item.targets.contains(where: { $0.bestText != nil }) {
+                    if (0..<setCount).contains(where: { best($0) != nil }) {
                         HStack(spacing: 4) {
                             Text("🏆").frame(width: weekWidth)
                             ForEach(0..<setCount, id: \.self) { index in
@@ -433,6 +471,9 @@ private struct ExerciseGridCard: View {
                                          weightHint: hintWeight(hint),
                                          repsHint: hintReps(hint))
                                     .frame(width: cellWidth)
+                                    .overlay(alignment: .topTrailing) {
+                                        if isSetRecord(week, index) { Text("🏆").font(.system(size: 9)).offset(x: 2, y: -6) }
+                                    }
                             }
                             Text(totalReps(week) > 0 ? totalReps(week).short : "–")
                                 .font(.subheadline)
