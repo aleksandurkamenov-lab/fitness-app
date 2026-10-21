@@ -236,6 +236,12 @@ struct TodayView: View {
 
     // MARK: Монитор на здравето
 
+    /// Средно от записите за днес (ако са няколко).
+    private var todayWeight: Double? {
+        let today = weights.filter { Calendar.current.isDateInToday($0.date) }.map(\.kg)
+        return today.isEmpty ? nil : today.reduce(0, +) / Double(today.count)
+    }
+
     private func healthMonitor(_ s: HealthSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Монитор на здравето").font(.headline)
@@ -257,6 +263,10 @@ struct TodayView: View {
                     MetricTile(title: "SpO₂", value: s.oxygen, unit: "%", digits: 0,
                                baseline: s.oxygenBaseline,
                                missing: "няма данни")
+                }
+                link(.weight) {
+                    MetricTile(title: "Тегло днес", value: todayWeight, unit: "кг", digits: 1,
+                               baseline: nil, missing: "няма запис днес")
                 }
                 if let delta = s.skinTempDelta {
                     link(.metric(.skinTemp)) {
