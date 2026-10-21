@@ -129,19 +129,22 @@ enum AIAssistant {
     static func execute(name: String, input: [String: Any], context: ModelContext) -> String {
         switch name {
         case "log_food":
-            let food = (input["name"] as? String) ?? "Храна"
-            let grams = number(input["grams"]) ?? 100
-            let kcal = number(input["kcal"]) ?? 0
-            let protein = number(input["protein"]) ?? 0
-            let carbs = number(input["carbs"]) ?? 0
-            let fat = number(input["fat"]) ?? 0
+            let food = ((input["name"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let grams = number(input["grams"]),
+                  let kcal = number(input["kcal"]),
+                  let protein = number(input["protein"]),
+                  let carbs = number(input["carbs"]),
+                  let fat = number(input["fat"]),
+                  isValidFoodInput(name: food, grams: grams, kcal: kcal, protein: protein, carbs: carbs, fat: fat) else {
+                return "Невалидни данни за храната; нищо не е записано."
+            }
             let meal = Meal(rawValue: (input["meal"] as? String) ?? "") ?? mealByHour()
             context.insert(FoodEntry(date: date(input["date"]), meal: meal, name: food, grams: grams,
                                      kcal: kcal, protein: protein, carbs: carbs, fat: fat))
             let saved = (try? context.fetch(FetchDescriptor<FoodItem>())) ?? []
             if let item = saved.first(where: { $0.name.lowercased() == food.lowercased() }) {
                 item.lastUsed = .now
-            } else if grams > 0 {
+            } else {
                 let factor = 100 / grams
                 let item = FoodItem(name: food, kcalPer100: kcal * factor, proteinPer100: protein * factor,
                                     carbsPer100: carbs * factor, fatPer100: fat * factor, servingG: grams)
@@ -158,6 +161,13 @@ enum AIAssistant {
         default:
             return "Непознато действие"
         }
+    }
+
+    static func isValidFoodInput(name: String, grams: Double, kcal: Double,
+                                 protein: Double, carbs: Double, fat: Double) -> Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && grams.isFinite && grams > 0
+            && [kcal, protein, carbs, fat].allSatisfy { $0.isFinite && $0 >= 0 }
     }
 
     private static func number(_ value: Any?) -> Double? {
