@@ -148,9 +148,10 @@ private struct TemplateExerciseRow: View {
 
     private func minBinding(_ index: Int) -> Binding<Int> {
         Binding(
-            get: { item.targets[index].repMin },
+            get: { item.targets.indices.contains(index) ? item.targets[index].repMin : 0 },
             set: { newValue in
                 var targets = item.targets
+                guard targets.indices.contains(index) else { return }
                 targets[index].repMin = newValue
                 if targets[index].repMax < newValue { targets[index].repMax = newValue }
                 item.targets = targets
@@ -160,9 +161,10 @@ private struct TemplateExerciseRow: View {
 
     private func weightBinding(_ index: Int) -> Binding<Double> {
         Binding(
-            get: { item.targets[index].plannedWeight ?? 0 },
+            get: { item.targets.indices.contains(index) ? (item.targets[index].plannedWeight ?? 0) : 0 },
             set: { newValue in
                 var targets = item.targets
+                guard targets.indices.contains(index) else { return }
                 targets[index].plannedWeight = newValue > 0 ? newValue : nil
                 item.targets = targets
             }
@@ -171,9 +173,10 @@ private struct TemplateExerciseRow: View {
 
     private func maxBinding(_ index: Int) -> Binding<Int> {
         Binding(
-            get: { item.targets[index].repMax },
+            get: { item.targets.indices.contains(index) ? item.targets[index].repMax : 0 },
             set: { newValue in
                 var targets = item.targets
+                guard targets.indices.contains(index) else { return }
                 targets[index].repMax = max(newValue, targets[index].repMin)
                 item.targets = targets
             }
