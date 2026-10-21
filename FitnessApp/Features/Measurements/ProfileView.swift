@@ -42,8 +42,13 @@ private struct ProfileForm: View {
     var body: some View {
         Form {
             Section("За мен") {
-                Picker("Пол", selection: $profile.sex) {
-                    ForEach(Sex.allCases) { Text($0.title).tag($0) }
+                LabeledContent("Пол") {
+                    Picker("Пол", selection: $profile.sex) {
+                        ForEach(Sex.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(maxWidth: 180)
                 }
                 DatePicker("Рождена дата", selection: $profile.birthDate, in: ...Date.now, displayedComponents: .date)
                 HStack {
