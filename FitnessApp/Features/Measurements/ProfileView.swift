@@ -68,6 +68,11 @@ private struct ProfileForm: View {
                 Picker("Цел", selection: $profile.goal) {
                     ForEach(GoalKind.allCases) { Text($0.title).tag($0) }
                 }
+                LabeledContent("Целево тегло (кг, 0 = няма)") {
+                    TextField("0", value: $profile.goalWeightKg, format: .number)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                }
                 if profile.goal == .lose {
                     Picker("Темпо на сваляне", selection: $profile.lossRateKg) {
                         ForEach(rates, id: \.self) { Text("\($0.formatted(.number.precision(.fractionLength(0...2)))) кг седмично").tag($0) }
@@ -102,6 +107,12 @@ private struct ProfileForm: View {
                 Text(profile.variableCalories
                      ? "Тренировъчните дни получават повече калории от въглехидрати, почивните по-малко. Седмичната сума остава същата."
                      : "Еднакви цели всеки ден (линеен прием).")
+            }
+
+            Section("Данни") {
+                NavigationLink("Експорт и внос (Strong/Hevy)") {
+                    DataTransferView()
+                }
             }
 
             Section("Устройства") {

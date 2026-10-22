@@ -6,6 +6,7 @@ import Charts
 struct TrendsView: View {
     @Query(sort: \DailyMetric.day) private var metrics: [DailyMetric]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
+    @Query private var profiles: [UserProfile]
     @State private var rangeDays = 30
 
     private var from: Date {
@@ -33,9 +34,25 @@ struct TrendsView: View {
                 if weightPoints.count >= 2, let last = weightPoints.last {
                     card(title: "Тегло", latest: "\(last.kg.short) кг",
                          detail: "тренд \(last.trend.short) кг") {
-                        WeightChart(points: weightPoints)
+                        WeightChart(points: weightPoints, goalKg: profiles.first?.goalWeightKg)
                     }
                 }
+
+                ActivityStatsCard()
+
+                NavigationLink {
+                    MuscleBalanceView()
+                } label: {
+                    HStack {
+                        Label("Баланс и умора по мускули", systemImage: "figure.strengthtraining.traditional")
+                            .font(.headline)
+                        Spacer()
+                        Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                    }
+                    .padding()
+                    .background(.background, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
 
                 NavigationLink {
                     StrengthProgressView()

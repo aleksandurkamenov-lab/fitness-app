@@ -67,6 +67,8 @@ final class UserProfile {
     var goalRaw: String = GoalKind.maintain.rawValue
     /// Желано темпо в кг на седмица (0.1 / 0.5 / 1).
     var weeklyRateKg: Double = 0.5
+    /// Целево тегло в кг (0 = няма); показва се като линия на графиката.
+    var goalWeightKg: Double = 0
     /// Темпо на сваляне и на качване се пазят отделно (кг на седмица).
     var lossRateKg: Double = 0.5
     var gainRateKg: Double = 0.5
