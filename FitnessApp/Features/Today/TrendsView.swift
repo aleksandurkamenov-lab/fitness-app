@@ -31,10 +31,15 @@ struct TrendsView: View {
                 .pickerStyle(.segmented)
 
                 if weightPoints.count >= 2, let last = weightPoints.last {
-                    card(title: "Тегло", latest: "\(last.kg.short) кг",
-                         detail: "тренд \(last.trend.short) кг") {
-                        WeightChart(points: weightPoints)
+                    NavigationLink {
+                        MetricDetailView(target: .weight)
+                    } label: {
+                        card(title: "Тегло", latest: "\(last.kg.short) кг",
+                             detail: "тренд \(last.trend.short) кг") {
+                            WeightChart(points: weightPoints)
+                        }
                     }
+                    .buttonStyle(.plain)
                 }
 
                 NavigationLink {
@@ -55,6 +60,9 @@ struct TrendsView: View {
                     let data = series(kind)
                     if data.count >= 2, let last = data.last {
                         let average = data.map(\.value).reduce(0, +) / Double(data.count)
+                        NavigationLink {
+                            MetricDetailView(target: .metric(kind))
+                        } label: {
                         card(title: kind.title,
                              latest: "\(format(last.value, kind)) \(kind.unit)",
                              detail: "средно \(format(average, kind))") {
@@ -72,6 +80,8 @@ struct TrendsView: View {
                             .padding(.top, 24)
                             .frame(height: 164)
                         }
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
 

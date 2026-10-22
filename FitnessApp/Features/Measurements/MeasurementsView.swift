@@ -72,6 +72,11 @@ struct MeasurementsView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    NavigationLink {
+                        MetricDetailView(target: .weight)
+                    } label: {
+                        Label("Тенденция: седмица / месец / 6 месеца", systemImage: "chart.line.uptrend.xyaxis")
+                    }
                     Button {
                         showingAddWeight = true
                     } label: {
