@@ -61,7 +61,7 @@ struct WorkoutsView: View {
 
                 Section {
                 } footer: {
-                    Text("Версия v66")
+                    Text("Версия v67")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -187,7 +187,7 @@ struct MesocycleListView: View {
                     Button {
                         importMeso()
                     } label: {
-                        Label("Импортирай Meso 22 (от Excel)", systemImage: "square.and.arrow.down")
+                        Label("Импортирай примерен мезоцикъл", systemImage: "square.and.arrow.down")
                     }
                 } label: {
                     Label("Нов мезоцикъл", systemImage: "plus")

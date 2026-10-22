@@ -93,7 +93,7 @@ def convert(path):
                 "sets": sets,
             })
         workouts.append({"name": ws.cell(6, start).value.strip(), "exercises": exercises})
-    return {"name": "Meso 22 Upper/Lower", "weeks": 4, "workouts": workouts}
+    return {"name": "Примерен мезоцикъл", "weeks": 4, "workouts": workouts}
 
 
 if __name__ == "__main__":
