@@ -71,3 +71,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v67: Week grid no longer accepts negative weight, rest timer starts only for the current week and is cancelled when leaving the grid.
 - v68: WHOOP response models marked nonisolated (fixes four Swift 6 Decodable warnings).
 - v69: Inspired by openGym: activity stats (week/month counts, week streak, 30-day weight, 12-month heatmap), muscle balance by sets and per-muscle readiness, goal weight line on weight charts, JSON backup export and Strong/Hevy CSV import.
+- v70: Larger built-in exercise library (about 60 more exercises, added once, no duplicates) and heatmap counts grid workouts as 45 minutes.

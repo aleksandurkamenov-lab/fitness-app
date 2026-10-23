@@ -23,7 +23,10 @@ struct RootTabView: View {
                 PhotosView()
             }
         }
-        .onAppear { ExerciseLibrary.seedIfNeeded(context) }
+        .onAppear {
+            ExerciseLibrary.seedIfNeeded(context)
+            ExerciseLibrary.addExtrasIfNeeded(context)
+        }
     }
 }
 

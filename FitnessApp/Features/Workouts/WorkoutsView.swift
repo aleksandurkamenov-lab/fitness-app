@@ -61,7 +61,7 @@ struct WorkoutsView: View {
 
                 Section {
                 } footer: {
-                    Text("Версия v69")
+                    Text("Версия v70")
                         .frame(maxWidth: .infinity)
                 }
             }

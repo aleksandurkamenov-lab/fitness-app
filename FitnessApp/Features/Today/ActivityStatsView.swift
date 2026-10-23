@@ -57,7 +57,8 @@ struct ActivityStatsCard: View {
     private var minutesByDay: [Date: Double] {
         var result: [Date: Double] = [:]
         for session in finished {
-            let minutes = session.finishedAt.map { max($0.timeIntervalSince(session.date) / 60, 10) } ?? 45
+            // Тренировките от седмичната решетка имат край = начало, затова под 10 мин се брои 45.
+            let minutes = session.finishedAt.map { $0.timeIntervalSince(session.date) >= 600 ? $0.timeIntervalSince(session.date) / 60 : 45 } ?? 45
             result[calendar.startOfDay(for: session.date), default: 0] += min(minutes, 180)
         }
         return result
