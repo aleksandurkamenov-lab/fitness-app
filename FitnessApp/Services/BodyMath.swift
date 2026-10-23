@@ -44,8 +44,8 @@ enum BodyMath {
     static func bodyFatEstimate(profile: UserProfile, weights: [WeightEntry],
                                 measurements: [MeasurementEntry], scans: [BodyScan] = []) -> (percent: Double, source: String)? {
         if profile.manualBodyFat >= 4 { return (profile.manualBodyFat, "ръчно") }
-        // DEXA/InBody до 12 месеца назад: безмастната маса оттогава се мени с ~25% от промяната на теглото.
-        let yearAgo = Date.now.addingTimeInterval(-365 * 86_400)
+        // DEXA/InBody до 24 месеца назад: безмастната маса оттогава се мени с ~25% от промяната на теглото.
+        let yearAgo = Date.now.addingTimeInterval(-730 * 86_400)
         if let scan = scans.filter({ $0.date >= yearAgo && $0.fatFreeKg > 0 && $0.weightKg > 0 }).max(by: { $0.date < $1.date }) {
             let current = weekSummary(weights)?.average ?? weights.last?.kg ?? scan.weightKg
             let fatFree = scan.fatFreeKg + 0.25 * (current - scan.weightKg)

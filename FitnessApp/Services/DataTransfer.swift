@@ -43,6 +43,18 @@ enum DataTransfer {
         return url
     }
 
+    /// Еднократно добавя DEXA сканирането на потребителя от 2025 г. (94 кг, 18 % мазнини, 74 кг постна маса).
+    static func seedUserDexaIfNeeded(in context: ModelContext) {
+        let key = "seedDexa2025"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        var components = DateComponents()
+        components.year = 2025; components.month = 11; components.day = 1
+        let date = Calendar.current.date(from: components) ?? .now
+        context.insert(BodyScan(date: date, weightKg: 94, bodyFatPercent: 18, leanMassKg: 74, kind: "DEXA"))
+        try? context.save()
+        UserDefaults.standard.set(true, forKey: key)
+    }
+
     // MARK: - CSV (Strong, Hevy)
 
     /// Разбира CSV с кавички; връща редове от полета.
