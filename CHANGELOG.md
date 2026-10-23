@@ -76,3 +76,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v72: Energy screens show BMR (base metabolic rate) explicitly, "total daily expenditure" instead of the unclear "with activity" label, digestion (~10%) as its own row on Today; Activity card moved to the top of Trends.
 - v73: DEXA/InBody scans (Calculators) drive body fat and BMR (fat-free mass adjusted by 25% of weight change, 7-day average weight); heatmap is its own card with a legend; energy trend chart shows one selectable line (BMR / total / real) with a short tap label.
 - v74: Adds the user's 2025 DEXA scan once on launch; DEXA/InBody scans count for up to 24 months.
+- v75: Reps fields in the workout grid now accept both comma and dot (e.g. 8,5), same as kg.
