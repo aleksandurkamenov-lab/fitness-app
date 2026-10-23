@@ -24,6 +24,8 @@ struct TrendsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                ActivityStatsCard()
+
                 Picker("Период", selection: $rangeDays) {
                     Text("7 дни").tag(7)
                     Text("30 дни").tag(30)
@@ -37,8 +39,6 @@ struct TrendsView: View {
                         WeightChart(points: weightPoints, goalKg: profiles.first?.goalWeightKg)
                     }
                 }
-
-                ActivityStatsCard()
 
                 NavigationLink {
                     MuscleBalanceView()

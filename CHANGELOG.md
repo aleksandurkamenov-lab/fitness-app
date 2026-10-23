@@ -73,3 +73,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v69: Inspired by openGym: activity stats (week/month counts, week streak, 30-day weight, 12-month heatmap), muscle balance by sets and per-muscle readiness, goal weight line on weight charts, JSON backup export and Strong/Hevy CSV import.
 - v70: Activity heatmap counts workouts logged from the week grid as 45 minutes, so colors are not all the lightest shade.
 - v71: Heatmap uses real workout and cardio minutes from WHOOP and Apple Health (new daily metric, up to 12 months from Health), falling back to app-logged workouts.
+- v72: Energy screens show BMR (base metabolic rate) explicitly, "total daily expenditure" instead of the unclear "with activity" label, digestion (~10%) as its own row on Today; Activity card moved to the top of Trends.
