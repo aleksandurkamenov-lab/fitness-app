@@ -121,6 +121,8 @@ struct MesoGridView: View {
         .safeAreaInset(edge: .bottom) {
             if timer.endDate != nil { RestTimerBar(timer: timer) }
         }
+        // Таймерът живее само докато екранът е отворен; без лента известието не бива да остава.
+        .onDisappear { timer.stop() }
         .sheet(item: $detail) { target in
             if let item = template.sortedItems.first(where: { $0.order == target.order }) {
                 WeekDetailSheet(item: item, week: target.week,
@@ -281,8 +283,9 @@ struct MesoGridView: View {
         let weight = Binding<Double>(
             get: { existing()?.weight ?? 0 },
             set: { newValue in
-                guard newValue > 0 || existing() != nil else { return }
-                ensureSet(item, week: week, index: index).weight = newValue
+                let value = max(newValue, 0)
+                guard value > 0 || existing() != nil else { return }
+                ensureSet(item, week: week, index: index).weight = value
             }
         )
         let reps = Binding<Double?>(
@@ -292,7 +295,9 @@ struct MesoGridView: View {
                 let set = ensureSet(item, week: week, index: index)
                 set.repsValue = newValue ?? 0
                 set.isDone = set.repsValue > 0
-                if restTimerOn && set.repsValue > 0 { timer.start(seconds: item.restSeconds) }
+                if restTimerOn && set.repsValue > 0 && week == (template.mesocycle?.currentWeek ?? 1) {
+                    timer.start(seconds: item.restSeconds)
+                }
             }
         )
         return (weight, reps)
@@ -510,8 +515,7 @@ private struct GridCell: View {
                 .frame(width: 38, height: 32)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
             Text("×").font(.caption2).foregroundStyle(.secondary)
-            TextField(repsHint, value: binding.reps, format: .number)
-                .keyboardType(.decimalPad)
+            OptionalDecimalField(placeholder: repsHint, value: binding.reps)
                 .multilineTextAlignment(.center)
                 .frame(width: 30, height: 32)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
@@ -628,8 +632,7 @@ private struct DetailSetRow: View {
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.roundedBorder)
                 Text("×").foregroundStyle(.secondary)
-                TextField("повт.", value: repsBinding, format: .number)
-                    .keyboardType(.decimalPad)
+                OptionalDecimalField(placeholder: "повт.", value: repsBinding)
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.roundedBorder)
             }

@@ -3,13 +3,13 @@ import Observation
 
 // MARK: Модели на отговорите на WHOOP API v2 (само полетата, които ползваме)
 
-private struct WhoopPage<T: Decodable>: Decodable {
+nonisolated private struct WhoopPage<T: Decodable>: Decodable {
     let records: [T]
     let next_token: String?
 }
 
-private struct WhoopRecovery: Decodable {
-    struct Score: Decodable {
+nonisolated private struct WhoopRecovery: Decodable {
+    nonisolated struct Score: Decodable {
         let recovery_score: Double?
         let resting_heart_rate: Double?
         let hrv_rmssd_milli: Double?
@@ -22,14 +22,14 @@ private struct WhoopRecovery: Decodable {
     let score: Score?
 }
 
-private struct WhoopSleep: Decodable {
-    struct Stage: Decodable {
+nonisolated private struct WhoopSleep: Decodable {
+    nonisolated struct Stage: Decodable {
         let total_in_bed_time_milli: Double?
         let total_light_sleep_time_milli: Double?
         let total_slow_wave_sleep_time_milli: Double?
         let total_rem_sleep_time_milli: Double?
     }
-    struct Score: Decodable {
+    nonisolated struct Score: Decodable {
         let stage_summary: Stage?
         let respiratory_rate: Double?
         let sleep_performance_percentage: Double?
@@ -42,8 +42,8 @@ private struct WhoopSleep: Decodable {
     let score: Score?
 }
 
-private struct WhoopCycle: Decodable {
-    struct Score: Decodable {
+nonisolated private struct WhoopCycle: Decodable {
+    nonisolated struct Score: Decodable {
         let strain: Double?
         let kilojoule: Double?
         let average_heart_rate: Double?
@@ -53,8 +53,8 @@ private struct WhoopCycle: Decodable {
     let score: Score?
 }
 
-private struct WhoopWorkout: Decodable {
-    struct Score: Decodable {
+nonisolated private struct WhoopWorkout: Decodable {
+    nonisolated struct Score: Decodable {
         let strain: Double?
         let kilojoule: Double?
     }
@@ -411,6 +411,15 @@ final class WhoopService {
         for record in await allRecords("/v2/cycle", pages: 4, as: WhoopCycle.self)
         where record.score_state == "SCORED" {
             add(.strain, Self.date(record.start), record.score?.strain)
+        }
+        // Минути тренировки и кардио по дни (около 250 тренировки назад).
+        var workoutMinutes: [Date: Double] = [:]
+        for record in await allRecords("/v2/activity/workout", pages: 10, as: WhoopWorkout.self) {
+            guard let start = Self.date(record.start), let end = Self.date(record.end) else { continue }
+            workoutMinutes[HistorySync.dayStart(start), default: 0] += end.timeIntervalSince(start) / 60
+        }
+        for (day, minutes) in workoutMinutes {
+            add(.workoutMinutes, day, minutes)
         }
         return points
     }
