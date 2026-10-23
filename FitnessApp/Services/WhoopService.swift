@@ -412,6 +412,15 @@ final class WhoopService {
         where record.score_state == "SCORED" {
             add(.strain, Self.date(record.start), record.score?.strain)
         }
+        // Минути тренировки и кардио по дни (около 250 тренировки назад).
+        var workoutMinutes: [Date: Double] = [:]
+        for record in await allRecords("/v2/activity/workout", pages: 10, as: WhoopWorkout.self) {
+            guard let start = Self.date(record.start), let end = Self.date(record.end) else { continue }
+            workoutMinutes[HistorySync.dayStart(start), default: 0] += end.timeIntervalSince(start) / 60
+        }
+        for (day, minutes) in workoutMinutes {
+            add(.workoutMinutes, day, minutes)
+        }
         return points
     }
 }

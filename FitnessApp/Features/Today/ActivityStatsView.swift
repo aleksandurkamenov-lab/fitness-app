@@ -6,6 +6,7 @@ import Charts
 struct ActivityStatsCard: View {
     @Query private var sessions: [WorkoutSession]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
+    @Query private var metrics: [DailyMetric]
 
     private let weekCount = 53
 
@@ -53,13 +54,16 @@ struct ActivityStatsCard: View {
         return BodyMath.signedKg(last.kg - first.kg)
     }
 
-    /// Минути тренировка по дни; без край на тренировката се брои 45 мин.
+    /// Минути тренировка и кардио по дни: от WHOOP/Health, а където няма такива, от записаните в приложението (45 мин).
     private var minutesByDay: [Date: Double] {
         var result: [Date: Double] = [:]
         for session in finished {
-            // Тренировките от седмичната решетка имат край = начало, затова под 10 мин се брои 45.
+            // Тренировките от седмичната решетка нямат реално начало и край, затова се брои 45 мин.
             let minutes = session.finishedAt.map { $0.timeIntervalSince(session.date) >= 600 ? $0.timeIntervalSince(session.date) / 60 : 45 } ?? 45
             result[calendar.startOfDay(for: session.date), default: 0] += min(minutes, 180)
+        }
+        for point in MetricSeries.series(.workoutMinutes, in: metrics, from: .distantPast) where point.value > 0 {
+            result[calendar.startOfDay(for: point.day)] = point.value
         }
         return result
     }
@@ -87,7 +91,7 @@ struct ActivityStatsCard: View {
                     tile("Тегло 30 дни", weightChange30, "scalemass")
                 }
             }
-            Text("Последни 12 месеца, по време на тренировка")
+            Text("Последни 12 месеца, минути тренировка и кардио (WHOOP/Health)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             heatmap

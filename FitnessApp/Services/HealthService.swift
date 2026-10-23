@@ -358,6 +358,17 @@ final class HealthService {
         add(.steps, await dailyTotals(.stepCount, unit: .count(), from: from))
         add(.activeKcal, await dailyTotals(.activeEnergyBurned, unit: .kilocalorie(), from: from))
         add(.sleepHours, await sleepHoursByDay(from: from))
+
+        // Минути тренировки и кардио по дни (до 12 месеца назад, за heatmap-а).
+        let workoutFrom = calendar.date(byAdding: .day, value: -365, to: today) ?? from
+        let predicate = HKQuery.predicateForSamples(withStart: workoutFrom, end: .now, options: [])
+        let descriptor = HKSampleQueryDescriptor(predicates: [.workout(predicate)], sortDescriptors: [SortDescriptor(\.startDate)])
+        let workouts = (try? await descriptor.result(for: store)) ?? []
+        var workoutMinutes: [Date: Double] = [:]
+        for workout in workouts {
+            workoutMinutes[calendar.startOfDay(for: workout.startDate), default: 0] += workout.duration / 60
+        }
+        add(.workoutMinutes, workoutMinutes)
         return points
     }
 
