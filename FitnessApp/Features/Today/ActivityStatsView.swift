@@ -79,6 +79,13 @@ struct ActivityStatsCard: View {
     }
 
     var body: some View {
+        VStack(spacing: 16) {
+            tilesCard
+            heatmapCard
+        }
+    }
+
+    private var tilesCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Активност").font(.headline)
             Grid(horizontalSpacing: 12, verticalSpacing: 12) {
@@ -91,10 +98,25 @@ struct ActivityStatsCard: View {
                     tile("Тегло 30 дни", weightChange30, "scalemass")
                 }
             }
-            Text("Последни 12 месеца, минути тренировка и кардио (WHOOP/Health)")
+        }
+        .padding()
+        .background(.background, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var heatmapCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Тренировки по дни").font(.headline)
+            Text("12 месеца, минути тренировка и кардио от WHOOP/Health")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             heatmap
+            HStack(spacing: 4) {
+                Text("по-малко").font(.caption2).foregroundStyle(.secondary)
+                ForEach([0.0, 20, 45, 75, 100], id: \.self) { minutes in
+                    RoundedRectangle(cornerRadius: 1.5).fill(color(minutes)).frame(width: 10, height: 10)
+                }
+                Text("над 90 мин").font(.caption2).foregroundStyle(.secondary)
+            }
         }
         .padding()
         .background(.background, in: RoundedRectangle(cornerRadius: 16))

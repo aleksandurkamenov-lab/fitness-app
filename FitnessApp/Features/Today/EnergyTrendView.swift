@@ -10,6 +10,8 @@ struct EnergyTrendView: View {
     @Query(sort: \FoodEntry.date) private var foods: [FoodEntry]
     @Query private var metrics: [DailyMetric]
     @State private var showingApply = false
+    /// Коя линия се показва: 0 BMR, 1 общ разход, 2 реален.
+    @State private var line = 0
     /// Храна от Apple Health (напр. MyFitnessPal), събира се с записаната в приложението.
     var healthFood: [Date: NutritionDay] = [:]
 
@@ -45,6 +47,20 @@ struct EnergyTrendView: View {
     }
 
     private var latest: EnergyModel.WeekPoint? { weeks.last }
+
+    private struct LinePoint: Identifiable {
+        let date: Date
+        let value: Double
+        var id: Date { date }
+    }
+
+    private func lineValue(_ week: EnergyModel.WeekPoint) -> Double? {
+        switch line {
+        case 0: week.bmr
+        case 1: week.device ?? week.formula
+        default: week.real
+        }
+    }
 
     private var latestReal: Double? { weeks.reversed().compactMap(\.real).first }
     private var latestFormula: Double? { weeks.reversed().compactMap(\.formula).first }
@@ -129,32 +145,29 @@ struct EnergyTrendView: View {
 
             Section {
                 if weeks.contains(where: { $0.bmr != nil }) {
-                    Chart {
-                        ForEach(weeks) { week in
-                            if let value = week.bmr {
-                                LineMark(x: .value("Седмица", week.weekStart), y: .value("ккал", value),
-                                         series: .value("Метод", "BMR"))
-                                    .foregroundStyle(by: .value("Метод", "BMR"))
-                            }
-                            if let value = week.device ?? week.formula {
-                                LineMark(x: .value("Седмица", week.weekStart), y: .value("ккал", value),
-                                         series: .value("Метод", "Общ"))
-                                    .foregroundStyle(by: .value("Метод", "Общ"))
-                            }
-                            if let value = week.real {
-                                LineMark(x: .value("Седмица", week.weekStart), y: .value("ккал", value),
-                                         series: .value("Метод", "Реален"))
-                                    .foregroundStyle(by: .value("Метод", "Реален"))
-                            }
-                        }
+                    Picker("Линия", selection: $line) {
+                        Text("BMR").tag(0)
+                        Text("Общ").tag(1)
+                        Text("Реален").tag(2)
                     }
-                    .chartYScale(domain: .automatic(includesZero: false))
-                    .chartScrub(weeks.map {
-                        ScrubPoint(date: $0.weekStart, value: $0.device ?? $0.formula ?? $0.real ?? 0,
-                                   text: "Седмица от \(scrubDate($0.weekStart)): " + valuesText($0))
-                    })
-                    .padding(.top, 24)
-                    .frame(height: 230)
+                    .pickerStyle(.segmented)
+                    let points = weeks.compactMap { week in lineValue(week).map { LinePoint(date: week.weekStart, value: $0) } }
+                    if points.isEmpty {
+                        Text("Още няма данни за тази линия.").foregroundStyle(.secondary)
+                    } else {
+                        Chart(points) { point in
+                            LineMark(x: .value("Седмица", point.date), y: .value("ккал", point.value))
+                                .interpolationMethod(.catmullRom)
+                            PointMark(x: .value("Седмица", point.date), y: .value("ккал", point.value))
+                                .symbolSize(20)
+                        }
+                        .chartYScale(domain: .automatic(includesZero: false))
+                        .chartScrub(points.map {
+                            ScrubPoint(date: $0.date, value: $0.value, text: "\(scrubDate($0.date)): \(Int($0.value.rounded())) ккал")
+                        })
+                        .padding(.top, 24)
+                        .frame(height: 230)
+                    }
                 } else {
                     Text("Попълни профила и въведи тегло, за да се появи графиката.")
                         .foregroundStyle(.secondary)

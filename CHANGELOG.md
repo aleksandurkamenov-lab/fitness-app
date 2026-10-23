@@ -74,3 +74,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v70: Activity heatmap counts workouts logged from the week grid as 45 minutes, so colors are not all the lightest shade.
 - v71: Heatmap uses real workout and cardio minutes from WHOOP and Apple Health (new daily metric, up to 12 months from Health), falling back to app-logged workouts.
 - v72: Energy screens show BMR (base metabolic rate) explicitly, "total daily expenditure" instead of the unclear "with activity" label, digestion (~10%) as its own row on Today; Activity card moved to the top of Trends.
+- v73: DEXA/InBody scans (Calculators) drive body fat and BMR (fat-free mass adjusted by 25% of weight change, 7-day average weight); heatmap is its own card with a legend; energy trend chart shows one selectable line (BMR / total / real) with a short tap label.

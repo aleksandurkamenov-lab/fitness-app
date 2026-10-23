@@ -144,3 +144,28 @@ final class MeasurementEntry {
 
     var kind: MeasurementKind { MeasurementKind(rawValue: kindRaw) ?? .waist }
 }
+
+/// Измерване на състава на тялото (DEXA, InBody): тегло, % мазнини и/или постна маса към дата.
+@Model
+final class BodyScan {
+    var date: Date = Date.now
+    var weightKg: Double = 0
+    var bodyFatPercent: Double = 0
+    /// Постна маса от доклада (без мазнините); ползва се, ако няма % мазнини.
+    var leanMassKg: Double = 0
+    var kind: String = "DEXA"
+
+    init(date: Date = .now, weightKg: Double, bodyFatPercent: Double, leanMassKg: Double = 0, kind: String = "DEXA") {
+        self.date = date
+        self.weightKg = weightKg
+        self.bodyFatPercent = bodyFatPercent
+        self.leanMassKg = leanMassKg
+        self.kind = kind
+    }
+
+    /// Безмастна маса в кг: от теглото и %, иначе въведената постна маса.
+    var fatFreeKg: Double {
+        if bodyFatPercent > 0 && weightKg > 0 { return weightKg * (1 - bodyFatPercent / 100) }
+        return leanMassKg
+    }
+}

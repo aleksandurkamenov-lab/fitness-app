@@ -226,6 +226,7 @@ struct CalculatorsView: View {
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
     @Query(sort: \MeasurementEntry.date) private var measurements: [MeasurementEntry]
     @Query private var sessions: [WorkoutSession]
+    @Query private var scans: [BodyScan]
 
     private func latest(_ kind: MeasurementKind) -> Double? {
         measurements.last { $0.kind == kind }?.cm
@@ -251,6 +252,11 @@ struct CalculatorsView: View {
 
                 Section("Тяло") {
                     LabeledContent("ИТМ", value: value(bmi, ""))
+                    NavigationLink {
+                        BodyScansView()
+                    } label: {
+                        LabeledContent("DEXA / InBody", value: "\(scans.count) записа")
+                    }
                     LabeledContent("% мазнини (US Navy)", value: value(navy, "%"))
                     LabeledContent("% мазнини ръчно (0 = автоматично)") {
                         DecimalField(placeholder: "0", value: Binding(get: { profile.manualBodyFat }, set: {
