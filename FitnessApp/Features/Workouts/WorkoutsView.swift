@@ -75,7 +75,7 @@ struct WorkoutsView: View {
 
                 Section {
                 } footer: {
-                    Text("Версия v75")
+                    Text("Версия v76")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -89,15 +89,6 @@ struct WorkoutsView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(importError ?? "")
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    NavigationLink {
-                        ExerciseLibraryView()
-                    } label: {
-                        Label("Упражнения", systemImage: "list.bullet")
-                    }
-                }
             }
         }
     }

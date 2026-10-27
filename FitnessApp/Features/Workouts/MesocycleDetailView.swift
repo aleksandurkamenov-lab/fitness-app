@@ -3,6 +3,8 @@ import SwiftData
 
 struct MesocycleDetailView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var confirmingDelete = false
     @Bindable var mesocycle: Mesocycle
     @State private var createdName: String?
 
@@ -44,6 +46,14 @@ struct MesocycleDetailView: View {
             }
 
             Section {
+                Button(role: .destructive) {
+                    confirmingDelete = true
+                } label: {
+                    Label("Изтрий мезоцикъла", systemImage: "trash")
+                }
+            }
+
+            Section {
                 Button {
                     createdName = WorkoutService.continueMesocycle(mesocycle, in: context).name
                 } label: {
@@ -56,6 +66,14 @@ struct MesocycleDetailView: View {
         }
         .navigationTitle(mesocycle.name)
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog("Да изтрия ли мезоцикъла?", isPresented: $confirmingDelete, titleVisibility: .visible) {
+            Button("Изтрий", role: .destructive) {
+                context.delete(mesocycle)
+                dismiss()
+            }
+        } message: {
+            Text("Изтриват се тренировките и упражненията в него. Вече записаните тренировки в историята остават.")
+        }
         .safeAreaInset(edge: .bottom) {
             if let created = createdName {
                 Text("Създаден е „\(created)“ в списъка с мезоцикли.")
