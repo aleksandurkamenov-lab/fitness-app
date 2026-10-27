@@ -6,6 +6,8 @@ struct WorkoutsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Mesocycle.startDate, order: .reverse) private var mesocycles: [Mesocycle]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
+    @State private var pickingFile = false
+    @State private var importError: String?
 
     /// Текущият мезоцикъл е най-новият по начална дата.
     private var current: Mesocycle? { mesocycles.first }
@@ -44,6 +46,11 @@ struct WorkoutsView: View {
                     } label: {
                         Label("Мезоцикли и сплит", systemImage: "square.stack.3d.up")
                     }
+                    Button {
+                        pickingFile = true
+                    } label: {
+                        Label("Импортирай от Excel файл", systemImage: "doc.badge.plus")
+                    }
                 }
 
                 Section("История") {
@@ -68,6 +75,15 @@ struct WorkoutsView: View {
             }
             .navigationTitle("Тренировки")
             .profileButton()
+            .excelImport(isPresented: $pickingFile, error: $importError)
+            .alert("Импортът не успя", isPresented: Binding(
+                get: { importError != nil },
+                set: { if !$0 { importError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(importError ?? "")
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     NavigationLink {
@@ -149,8 +165,6 @@ struct MesocycleListView: View {
     @State private var showingNewMeso = false
     @State private var importError: String?
     @State private var pickingFile = false
-    @State private var workbook: XlsxWorkbook?
-    @State private var sheetNames: [String] = []
 
     var body: some View {
         List {
@@ -206,31 +220,7 @@ struct MesocycleListView: View {
         .sheet(isPresented: $showingNewMeso) {
             NewMesocycleSheet()
         }
-        .fileImporter(isPresented: $pickingFile, allowedContentTypes: [UTType(filenameExtension: "xlsx") ?? .data]) { result in
-            openWorkbook(result)
-        }
-        .sheet(isPresented: Binding(get: { workbook != nil }, set: { if !$0 { workbook = nil } })) {
-            NavigationStack {
-                List {
-                    Section {
-                        ForEach(sheetNames, id: \.self) { name in
-                            Button(name) { importSheet(name) }
-                        }
-                    } header: {
-                        Text("Избери мезоцикъл за импорт")
-                    } footer: {
-                        Text("Очаквам формата на треньорския Excel. Импортира се един лист като нов мезоцикъл.")
-                    }
-                }
-                .navigationTitle("Листове")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Отказ") { workbook = nil }
-                    }
-                }
-            }
-        }
+        .excelImport(isPresented: $pickingFile, error: $importError)
         .alert("Импортът не успя", isPresented: Binding(
             get: { importError != nil },
             set: { if !$0 { importError = nil } }
@@ -239,6 +229,52 @@ struct MesocycleListView: View {
         } message: {
             Text(importError ?? "")
         }
+    }
+
+    private func importMeso() {
+        do {
+            try MesoImporter.importBundledMeso(in: context)
+        } catch {
+            importError = error.localizedDescription
+        }
+    }
+}
+
+/// Избор на .xlsx файл, избор на лист и импорт като нов мезоцикъл.
+private struct ExcelImportModifier: ViewModifier {
+    @Environment(\.modelContext) private var context
+    @Binding var isPresented: Bool
+    @Binding var error: String?
+    @State private var workbook: XlsxWorkbook?
+    @State private var sheetNames: [String] = []
+
+    func body(content: Content) -> some View {
+        content
+            .fileImporter(isPresented: $isPresented, allowedContentTypes: [UTType(filenameExtension: "xlsx") ?? .data]) { result in
+                openWorkbook(result)
+            }
+            .sheet(isPresented: Binding(get: { workbook != nil }, set: { if !$0 { workbook = nil } })) {
+                NavigationStack {
+                    List {
+                        Section {
+                            ForEach(sheetNames, id: \.self) { name in
+                                Button(name) { importSheet(name) }
+                            }
+                        } header: {
+                            Text("Избери мезоцикъл за импорт")
+                        } footer: {
+                            Text("Очаквам формата на треньорския Excel. Импортира се един лист като нов мезоцикъл.")
+                        }
+                    }
+                    .navigationTitle("Листове")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Отказ") { workbook = nil }
+                        }
+                    }
+                }
+            }
     }
 
     private func openWorkbook(_ result: Result<URL, Error>) {
@@ -251,7 +287,7 @@ struct MesocycleListView: View {
             sheetNames = names.isEmpty ? opened.sheetNames : names.reversed()
             workbook = opened
         } catch {
-            importError = error.localizedDescription
+            error = error.localizedDescription
         }
     }
 
@@ -262,15 +298,13 @@ struct MesocycleListView: View {
             self.workbook = nil
         } catch {
             self.workbook = nil
-            importError = error.localizedDescription
+            error = error.localizedDescription
         }
     }
+}
 
-    private func importMeso() {
-        do {
-            try MesoImporter.importBundledMeso(in: context)
-        } catch {
-            importError = error.localizedDescription
-        }
+extension View {
+    func excelImport(isPresented: Binding<Bool>, error: Binding<String?>) -> some View {
+        modifier(ExcelImportModifier(isPresented: isPresented, error: error))
     }
 }
