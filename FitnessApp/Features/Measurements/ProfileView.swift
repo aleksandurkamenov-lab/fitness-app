@@ -68,6 +68,11 @@ private struct ProfileForm: View {
                 Picker("Цел", selection: $profile.goal) {
                     ForEach(GoalKind.allCases) { Text($0.title).tag($0) }
                 }
+                LabeledContent("Целево тегло (кг, 0 = няма)") {
+                    TextField("0", value: $profile.goalWeightKg, format: .number)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                }
                 if profile.goal == .lose {
                     Picker("Темпо на сваляне", selection: $profile.lossRateKg) {
                         ForEach(rates, id: \.self) { Text("\($0.formatted(.number.precision(.fractionLength(0...2)))) кг седмично").tag($0) }
@@ -102,6 +107,12 @@ private struct ProfileForm: View {
                 Text(profile.variableCalories
                      ? "Тренировъчните дни получават повече калории от въглехидрати, почивните по-малко. Седмичната сума остава същата."
                      : "Еднакви цели всеки ден (линеен прием).")
+            }
+
+            Section("Данни") {
+                NavigationLink("Експорт и внос (Strong/Hevy)") {
+                    DataTransferView()
+                }
             }
 
             Section("Устройства") {
@@ -215,6 +226,7 @@ struct CalculatorsView: View {
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
     @Query(sort: \MeasurementEntry.date) private var measurements: [MeasurementEntry]
     @Query private var sessions: [WorkoutSession]
+    @Query private var scans: [BodyScan]
 
     private func latest(_ kind: MeasurementKind) -> Double? {
         measurements.last { $0.kind == kind }?.cm
@@ -240,6 +252,11 @@ struct CalculatorsView: View {
 
                 Section("Тяло") {
                     LabeledContent("ИТМ", value: value(bmi, ""))
+                    NavigationLink {
+                        BodyScansView()
+                    } label: {
+                        LabeledContent("DEXA / InBody", value: "\(scans.count) записа")
+                    }
                     LabeledContent("% мазнини (US Navy)", value: value(navy, "%"))
                     LabeledContent("% мазнини ръчно (0 = автоматично)") {
                         DecimalField(placeholder: "0", value: Binding(get: { profile.manualBodyFat }, set: {

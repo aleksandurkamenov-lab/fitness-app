@@ -68,3 +68,11 @@ Every change to the app is a numbered version. The current version is shown at t
 - v64: Profile sex selector is now a segmented control, so the value no longer shows as "..." after switching tabs.
 - v65: Health monitor on Today has a "Тегло днес" tile that opens the weight statistics (7/30/90 days).
 - v66: Weight tile renamed with 7-day change, Measurements shows 7-day average and change, weight chart shows only the trend line.
+- v67: Week grid no longer accepts negative weight, rest timer starts only for the current week and is cancelled when leaving the grid.
+- v68: WHOOP response models marked nonisolated (fixes four Swift 6 Decodable warnings).
+- v69: Inspired by openGym: activity stats (week/month counts, week streak, 30-day weight, 12-month heatmap), muscle balance by sets and per-muscle readiness, goal weight line on weight charts, JSON backup export and Strong/Hevy CSV import.
+- v70: Activity heatmap counts workouts logged from the week grid as 45 minutes, so colors are not all the lightest shade.
+- v71: Heatmap uses real workout and cardio minutes from WHOOP and Apple Health (new daily metric, up to 12 months from Health), falling back to app-logged workouts.
+- v72: Energy screens show BMR (base metabolic rate) explicitly, "total daily expenditure" instead of the unclear "with activity" label, digestion (~10%) as its own row on Today; Activity card moved to the top of Trends.
+- v73: DEXA/InBody scans (Calculators) drive body fat and BMR (fat-free mass adjusted by 25% of weight change, 7-day average weight); heatmap is its own card with a legend; energy trend chart shows one selectable line (BMR / total / real) with a short tap label.
+- v74: Adds the user's 2025 DEXA scan once on launch; DEXA/InBody scans count for up to 24 months.

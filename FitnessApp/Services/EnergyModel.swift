@@ -14,6 +14,8 @@ enum EnergyModel {
         let weekStart: Date
         var kg: Double?
         var intake: Double?
+        /// Базов обмен (BMR): разход в пълен покой за 24 ч.
+        var bmr: Double?
         var formula: Double?
         var device: Double?
         var real: Double?
@@ -84,6 +86,7 @@ enum EnergyModel {
 
             if let kg = referenceKg {
                 let bmr = BodyMath.bmr(sex: params.sex, kg: kg, cm: params.heightCm, age: params.age, bodyFat: params.bodyFat)
+                point.bmr = bmr
                 point.formula = BodyMath.tdee(bmr: bmr, activity: params.activityFactor)
                 let active = activeByDay.filter { $0.key >= start && $0.key < lastDay && $0.value > 0 }
                 if active.count >= 3 {

@@ -3,7 +3,7 @@ import SwiftData
 
 /// Показатели, за които пазим дневна история и рисуваме графики.
 enum MetricKind: String, CaseIterable, Identifiable {
-    case recovery, sleepPerformance, sleepHours, hrv, rhr, respiratory, spo2, strain, steps, activeKcal, skinTemp
+    case recovery, sleepPerformance, sleepHours, hrv, rhr, respiratory, spo2, strain, steps, activeKcal, skinTemp, workoutMinutes
 
     var id: String { rawValue }
 
@@ -20,6 +20,7 @@ enum MetricKind: String, CaseIterable, Identifiable {
         case .steps: "Крачки"
         case .activeKcal: "Активни калории"
         case .skinTemp: "Температура на кожата"
+        case .workoutMinutes: "Тренировки и кардио"
         }
     }
 
@@ -34,6 +35,7 @@ enum MetricKind: String, CaseIterable, Identifiable {
         case .steps: ""
         case .activeKcal: "ккал"
         case .skinTemp: "°C"
+        case .workoutMinutes: "мин"
         }
     }
 
