@@ -339,7 +339,7 @@ private struct ExcelImportModifier: ViewModifier {
             sheetNames = names.isEmpty ? opened.sheetNames : names.reversed()
             workbook = opened
         } catch {
-            error = error.localizedDescription
+            self.error = error.localizedDescription
         }
     }
 
@@ -350,7 +350,7 @@ private struct ExcelImportModifier: ViewModifier {
             self.workbook = nil
         } catch {
             self.workbook = nil
-            error = error.localizedDescription
+            self.error = error.localizedDescription
         }
     }
 }
