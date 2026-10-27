@@ -5,6 +5,9 @@ struct MesocycleDetailView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingDelete = false
+    @State private var renaming: WorkoutTemplate?
+    @State private var newName = ""
+    @State private var showingRename = false
     @Bindable var mesocycle: Mesocycle
     @State private var createdName: String?
 
@@ -20,15 +23,25 @@ struct MesocycleDetailView: View {
 
             Section("Тренировки") {
                 ForEach(mesocycle.sortedTemplates) { template in
-                    NavigationLink {
-                        MesoGridView(template: template)
-                    } label: {
-                        VStack(alignment: .leading) {
-                            Text(template.name).font(.headline)
-                            Text("\(template.items.count) упражнения")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                    HStack {
+                        NavigationLink {
+                            MesoGridView(template: template)
+                        } label: {
+                            VStack(alignment: .leading) {
+                                Text(template.name).font(.headline)
+                                Text("\(template.items.count) упражнения")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                        Button {
+                            newName = template.name
+                            renaming = template
+                            showingRename = true
+                        } label: {
+                            Image(systemName: "pencil")
+                        }
+                        .buttonStyle(.borderless)
                     }
                 }
                 .onDelete { offsets in
@@ -66,6 +79,14 @@ struct MesocycleDetailView: View {
         }
         .navigationTitle(mesocycle.name)
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Преименувай тренировката", isPresented: $showingRename) {
+            TextField("Име", text: $newName)
+            Button("Отказ", role: .cancel) {}
+            Button("Запази") {
+                let trimmed = newName.trimmingCharacters(in: .whitespaces)
+                if let renaming, !trimmed.isEmpty { renaming.name = trimmed }
+            }
+        }
         .confirmationDialog("Да изтрия ли мезоцикъла?", isPresented: $confirmingDelete, titleVisibility: .visible) {
             Button("Изтрий", role: .destructive) {
                 context.delete(mesocycle)
