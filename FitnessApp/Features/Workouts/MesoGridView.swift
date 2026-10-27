@@ -404,9 +404,7 @@ private struct ExerciseGridCard: View {
         VStack(alignment: .leading, spacing: 8) {
             if isEditing {
                 HStack {
-                    if let exercise = item.exercise {
-                        ExerciseNameField(exercise: exercise)
-                    }
+                    ExerciseNameField(item: item)
                     Button(role: .destructive, action: onDelete) {
                         Image(systemName: "trash")
                     }
@@ -542,14 +540,45 @@ private struct DeltaText: View {
     }
 }
 
-/// Преименуване на упражнението (променя името и в библиотеката).
+/// Преименуване на упражнението само в тази тренировка: ако същото упражнение се ползва и другаде, не се пипа, а се взема/създава упражнение с новото име.
 private struct ExerciseNameField: View {
-    @Bindable var exercise: Exercise
+    @Environment(\.modelContext) private var context
+    @Query private var exercises: [Exercise]
+    @Query private var items: [TemplateExercise]
+    let item: TemplateExercise
+    @State private var text = ""
+    @FocusState private var focused: Bool
 
     var body: some View {
-        TextField("Име на упражнението", text: $exercise.name)
+        TextField("Име на упражнението", text: $text)
             .font(.headline)
             .textFieldStyle(.roundedBorder)
+            .focused($focused)
+            .onAppear { text = item.exercise?.name ?? "" }
+            .onSubmit(commit)
+            .onChange(of: focused) { _, isFocused in
+                if !isFocused { commit() }
+            }
+    }
+
+    private func commit() {
+        let name = text.trimmingCharacters(in: .whitespaces)
+        guard let current = item.exercise else { return }
+        guard !name.isEmpty else {
+            text = current.name
+            return
+        }
+        guard name != current.name else { return }
+        let usedElsewhere = items.contains { $0.exercise === current && $0 !== item }
+        if !usedElsewhere {
+            current.name = name
+        } else if let existing = exercises.first(where: { $0.name == name }) {
+            item.exercise = existing
+        } else {
+            let copy = Exercise(name: name, primary: current.primaryMuscle, secondary: current.secondaryMuscles, notes: current.notes, isCustom: true)
+            context.insert(copy)
+            item.exercise = copy
+        }
     }
 }
 

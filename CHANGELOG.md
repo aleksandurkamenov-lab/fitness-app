@@ -79,3 +79,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v75: Import a mesocycle from a coach .xlsx file or a Google Sheets link (Workouts tab buttons); pick a sheet.
 - v76: Removed the Exercises button from the Workouts tab; a mesocycle (e.g. imported from Excel) can be deleted from its detail screen with confirmation.
 - v77: Workouts of a mesocycle can be renamed (pencil button in the mesocycle screen).
+- v78: Renaming an exercise in the week grid only changes that workout's exercise (no longer renames it everywhere it is shared).
