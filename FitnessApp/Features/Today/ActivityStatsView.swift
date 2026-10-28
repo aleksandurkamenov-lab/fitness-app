@@ -68,6 +68,53 @@ struct ActivityStatsCard: View {
         return result
     }
 
+    private func strengthCount(from start: Date, to end: Date) -> Int {
+        finished.filter { $0.date >= start && $0.date < end }.count
+    }
+
+    private var last7Count: Int {
+        strengthCount(from: calendar.date(byAdding: .day, value: -7, to: .now) ?? .distantPast, to: .distantFuture)
+    }
+
+    private var last30Count: Int {
+        strengthCount(from: calendar.date(byAdding: .day, value: -30, to: .now) ?? .distantPast, to: .distantFuture)
+    }
+
+    /// Последните 6 календарни седмици (пон–нед), най-новата първа.
+    private var weeklyCounts: [(start: Date, end: Date, count: Int)] {
+        let current = weekStart(.now)
+        return (0..<6).compactMap { offset in
+            guard let start = calendar.date(byAdding: .weekOfYear, value: -offset, to: current),
+                  let end = calendar.date(byAdding: .weekOfYear, value: 1, to: start) else { return nil }
+            return (start, end, strengthCount(from: start, to: end))
+        }
+    }
+
+    private var strengthSummary: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Силови тренировки").font(.subheadline.bold())
+            HStack(spacing: 12) {
+                tile("Последни 7 дни", "\(last7Count)", "figure.strengthtraining.traditional")
+                tile("Последни 30 дни", "\(last30Count)", "calendar")
+            }
+            Text("Цел: минимум 3–4 седмично (пон–нед)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ForEach(weeklyCounts, id: \.start) { week in
+                let lastDay = calendar.date(byAdding: .day, value: -1, to: week.end) ?? week.end
+                let isCurrent = week.start == weekStart(.now)
+                HStack {
+                    Text("\(week.start.formatted(.dateTime.day().month(.twoDigits))) – \(lastDay.formatted(.dateTime.day().month(.twoDigits)))" + (isCurrent ? " (тази)" : ""))
+                        .font(.callout)
+                    Spacer()
+                    Text("\(week.count)").font(.callout.bold())
+                    Image(systemName: week.count >= 4 ? "checkmark.circle.fill" : week.count >= 3 ? "checkmark.circle" : isCurrent ? "clock" : "xmark.circle")
+                        .foregroundStyle(week.count >= 3 ? Color.green : isCurrent ? Color.secondary : Color.red)
+                }
+            }
+        }
+    }
+
     private func color(_ minutes: Double) -> Color {
         switch minutes {
         case ..<1: Color.secondary.opacity(0.15)
@@ -109,6 +156,7 @@ struct ActivityStatsCard: View {
             Text("12 месеца, минути тренировка и кардио от WHOOP/Health")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            strengthSummary
             heatmap
             HStack(spacing: 4) {
                 Text("по-малко").font(.caption2).foregroundStyle(.secondary)
