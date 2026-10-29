@@ -23,13 +23,12 @@ struct ActivityStatsCard: View {
     }
 
     private var thisWeekCount: Int {
-        let start = weekStart(.now)
-        return finished.filter { $0.date >= start }.count
+        strengthCount(from: weekStart(.now), to: .distantFuture)
     }
 
     private var thisMonthCount: Int {
         guard let start = calendar.dateInterval(of: .month, for: .now)?.start else { return 0 }
-        return finished.filter { $0.date >= start }.count
+        return strengthCount(from: start, to: .distantFuture)
     }
 
     /// Поредни седмици с поне една тренировка; текущата седмица не прекъсва серията, ако още е празна.
@@ -68,16 +67,25 @@ struct ActivityStatsCard: View {
         return result
     }
 
+    /// Дни с тренировка: записана в приложението или (≥30 мин) от WHOOP/Health, когато не е записвана в приложението.
+    private var trainingDays: Set<Date> {
+        var days = Set(finished.filter { !$0.sets.isEmpty }.map { calendar.startOfDay(for: $0.date) })
+        for point in MetricSeries.series(.workoutMinutes, in: metrics, from: .distantPast) where point.value >= 30 {
+            days.insert(calendar.startOfDay(for: point.day))
+        }
+        return days
+    }
+
     private func strengthCount(from start: Date, to end: Date) -> Int {
-        finished.filter { $0.date >= start && $0.date < end }.count
+        trainingDays.filter { $0 >= calendar.startOfDay(for: start) && $0 < end }.count
     }
 
     private var last7Count: Int {
-        strengthCount(from: calendar.date(byAdding: .day, value: -7, to: .now) ?? .distantPast, to: .distantFuture)
+        strengthCount(from: calendar.date(byAdding: .day, value: -6, to: .now) ?? .distantPast, to: .distantFuture)
     }
 
     private var last30Count: Int {
-        strengthCount(from: calendar.date(byAdding: .day, value: -30, to: .now) ?? .distantPast, to: .distantFuture)
+        strengthCount(from: calendar.date(byAdding: .day, value: -29, to: .now) ?? .distantPast, to: .distantFuture)
     }
 
     /// Последните 6 календарни седмици (пон–нед), най-новата първа.
@@ -97,7 +105,7 @@ struct ActivityStatsCard: View {
                 tile("Последни 7 дни", "\(last7Count)", "figure.strengthtraining.traditional")
                 tile("Последни 30 дни", "\(last30Count)", "calendar")
             }
-            Text("Цел: минимум 3–4 седмично (пон–нед)")
+            Text("Цел: минимум 3–4 седмично (пон–нед). Брои дни с тренировка от приложението и от WHOOP/Health (над 30 мин, може да включва кардио).")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             ForEach(weeklyCounts, id: \.start) { week in

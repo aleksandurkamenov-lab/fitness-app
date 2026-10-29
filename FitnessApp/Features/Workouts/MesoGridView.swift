@@ -308,9 +308,7 @@ struct MesoGridView: View {
         let fresh = (try? context.fetch(FetchDescriptor<WorkoutSession>())) ?? []
         let mine = fresh.filter { $0.template?.persistentModelID == template.persistentModelID }
         if let found = pick(from: mine, week: week) { return found }
-        let start = template.mesocycle?.startDate ?? .now
-        let planned = Calendar.current.date(byAdding: .day, value: (week - 1) * 7, to: start) ?? .now
-        let session = WorkoutSession(date: min(planned, .now), week: week, template: template)
+        let session = WorkoutSession(date: .now, week: week, template: template)
         session.finishedAt = session.date
         context.insert(session)
         return session

@@ -82,3 +82,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v78: Renaming an exercise in the week grid only changes that workout's exercise (no longer renames it everywhere it is shared).
 - v79: Trends → workouts by day: strength workout counts for the last 7 and 30 days, plus the last 6 calendar weeks (Mon–Sun) with a check when the 3–4 per week target is reached.
 - v80: Reps fields in the workout grid now accept both comma and dot (e.g. 8,5), same as kg.
+- v81: Trends workout counts also use WHOOP/Health workout days (30+ min) and sessions logged in the grid are dated on the day they are first logged, so weeks no longer show 0 after real workouts.
