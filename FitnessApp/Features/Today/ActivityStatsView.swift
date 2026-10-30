@@ -111,7 +111,17 @@ struct ActivityStatsCard: View {
 
     private var strengthSummary: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Силови тренировки").font(.subheadline.bold())
+            NavigationLink {
+                TrainingDaysView(strength: strengthByDay, cardio: cardioByDay)
+            } label: {
+                HStack {
+                    Text("Силови тренировки").font(.subheadline.bold())
+                    Spacer()
+                    Text("по дни").font(.caption).foregroundStyle(.secondary)
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .buttonStyle(.plain)
             Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                 GridRow {
                     tile("Силови, 7 дни", "\(strengthCount(from: daysAgo(6), to: .distantFuture))", "figure.strengthtraining.traditional")
@@ -334,5 +344,60 @@ struct MuscleBalanceView: View {
         case ..<72: return (ago, .orange)
         default: return (ago, .green)
         }
+    }
+}
+
+
+/// Списък по дни: кои дни са силови и кои кардио (за избран период).
+struct TrainingDaysView: View {
+    let strength: [Date: Int]
+    let cardio: [Date: Int]
+    @State private var days = 30
+
+    private var rows: [(day: Date, strength: Int, cardio: Int)] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        return (0..<days).compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { return nil }
+            let s = strength[day] ?? 0
+            let c = cardio[day] ?? 0
+            return s + c > 0 ? (day, s, c) : nil
+        }
+    }
+
+    var body: some View {
+        List {
+            Section {
+                Picker("Период", selection: $days) {
+                    Text("Месец").tag(30)
+                    Text("3 месеца").tag(90)
+                    Text("Година").tag(365)
+                }
+                .pickerStyle(.segmented)
+            } footer: {
+                Text("Силови: \(rows.map(\.strength).reduce(0, +)) · Кардио: \(rows.map(\.cardio).reduce(0, +))")
+            }
+            Section {
+                ForEach(rows, id: \.day) { row in
+                    HStack {
+                        Text(row.day.formatted(.dateTime.weekday(.abbreviated).day().month(.twoDigits)))
+                        Spacer()
+                        if row.strength > 0 {
+                            Label("Силова\(row.strength > 1 ? " ×\(row.strength)" : "")", systemImage: "figure.strengthtraining.traditional")
+                                .foregroundStyle(.green)
+                        }
+                        if row.cardio > 0 {
+                            Label("Кардио\(row.cardio > 1 ? " ×\(row.cardio)" : "")", systemImage: "figure.run")
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                    .font(.callout)
+                }
+            } header: {
+                Text("Дни с тренировка")
+            }
+        }
+        .navigationTitle("Тренировки по дни")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
