@@ -80,3 +80,10 @@ Every change to the app is a numbered version. The current version is shown at t
 - v76: Removed the Exercises button from the Workouts tab; a mesocycle (e.g. imported from Excel) can be deleted from its detail screen with confirmation.
 - v77: Workouts of a mesocycle can be renamed (pencil button in the mesocycle screen).
 - v78: Renaming an exercise in the week grid only changes that workout's exercise (no longer renames it everywhere it is shared).
+- v79: Trends → workouts by day: strength workout counts for the last 7 and 30 days, plus the last 6 calendar weeks (Mon–Sun) with a check when the 3–4 per week target is reached.
+- v80: Reps fields in the workout grid now accept both comma and dot (e.g. 8,5), same as kg.
+- v81: Trends workout counts also use WHOOP/Health workout days (30+ min) and sessions logged in the grid are dated on the day they are first logged, so weeks no longer show 0 after real workouts.
+- v82: Trends counts strength and cardio sessions separately (7 days, 30 days, per Mon–Sun week) from the WHOOP/Health workout type; unknown types under 35 min count as cardio.
+- v83: Trends → "Силови тренировки" opens a day-by-day list showing strength and cardio days.
+- v84: The day-by-day screen is a month calendar (strength = green dot, cardio = orange dot, month switcher) with a list below; the "This week" and "This month" tiles open it too.
+- v85: Strength counts come from WHOOP/Health; workouts logged in the grid are used only for weeks without device data, at most one per day (old grid sessions carried the mesocycle week start date, giving "strength x3").

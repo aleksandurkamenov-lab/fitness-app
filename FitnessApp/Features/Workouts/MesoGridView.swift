@@ -308,9 +308,7 @@ struct MesoGridView: View {
         let fresh = (try? context.fetch(FetchDescriptor<WorkoutSession>())) ?? []
         let mine = fresh.filter { $0.template?.persistentModelID == template.persistentModelID }
         if let found = pick(from: mine, week: week) { return found }
-        let start = template.mesocycle?.startDate ?? .now
-        let planned = Calendar.current.date(byAdding: .day, value: (week - 1) * 7, to: start) ?? .now
-        let session = WorkoutSession(date: min(planned, .now), week: week, template: template)
+        let session = WorkoutSession(date: .now, week: week, template: template)
         session.finishedAt = session.date
         context.insert(session)
         return session
@@ -513,8 +511,7 @@ private struct GridCell: View {
                 .frame(width: 38, height: 32)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
             Text("×").font(.caption2).foregroundStyle(.secondary)
-            TextField(repsHint, value: binding.reps, format: .number)
-                .keyboardType(.decimalPad)
+            OptionalDecimalField(placeholder: repsHint, value: binding.reps)
                 .multilineTextAlignment(.center)
                 .frame(width: 30, height: 32)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
@@ -662,8 +659,7 @@ private struct DetailSetRow: View {
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.roundedBorder)
                 Text("×").foregroundStyle(.secondary)
-                TextField("повт.", value: repsBinding, format: .number)
-                    .keyboardType(.decimalPad)
+                OptionalDecimalField(placeholder: "повт.", value: repsBinding)
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.roundedBorder)
             }

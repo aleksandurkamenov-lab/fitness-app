@@ -68,7 +68,7 @@ struct TrendsView: View {
                 }
                 .buttonStyle(.plain)
 
-                ForEach(MetricKind.allCases) { kind in
+                ForEach(MetricKind.allCases.filter { $0 != .strengthSessions && $0 != .cardioSessions }) { kind in
                     let data = series(kind)
                     if data.count >= 2, let last = data.last {
                         let average = data.map(\.value).reduce(0, +) / Double(data.count)

@@ -23,13 +23,12 @@ struct ActivityStatsCard: View {
     }
 
     private var thisWeekCount: Int {
-        let start = weekStart(.now)
-        return finished.filter { $0.date >= start }.count
+        strengthCount(from: weekStart(.now), to: .distantFuture)
     }
 
     private var thisMonthCount: Int {
         guard let start = calendar.dateInterval(of: .month, for: .now)?.start else { return 0 }
-        return finished.filter { $0.date >= start }.count
+        return strengthCount(from: start, to: .distantFuture)
     }
 
     /// Поредни седмици с поне една тренировка; текущата седмица не прекъсва серията, ако още е празна.
@@ -68,6 +67,95 @@ struct ActivityStatsCard: View {
         return result
     }
 
+    /// Силови сесии по дни: от WHOOP/Health. Записите от решетката се ползват само за седмици без данни от устройство
+    /// (старите са с дата от началото на седмицата на мезоцикъла, затова най-много една на ден).
+    private var strengthByDay: [Date: Int] {
+        var result: [Date: Int] = [:]
+        var deviceWeeks = Set<Date>()
+        for kind in [MetricKind.strengthSessions, .cardioSessions] {
+            for point in MetricSeries.series(kind, in: metrics, from: .distantPast) where point.value > 0 {
+                deviceWeeks.insert(weekStart(point.day))
+            }
+        }
+        for point in MetricSeries.series(.strengthSessions, in: metrics, from: .distantPast) {
+            result[calendar.startOfDay(for: point.day)] = Int(point.value)
+        }
+        for session in finished where !session.sets.isEmpty && !deviceWeeks.contains(weekStart(session.date)) {
+            result[calendar.startOfDay(for: session.date)] = 1
+        }
+        return result
+    }
+
+    private var cardioByDay: [Date: Int] {
+        var result: [Date: Int] = [:]
+        for point in MetricSeries.series(.cardioSessions, in: metrics, from: .distantPast) {
+            result[calendar.startOfDay(for: point.day)] = Int(point.value)
+        }
+        return result
+    }
+
+    private func count(_ byDay: [Date: Int], from start: Date, to end: Date) -> Int {
+        let from = calendar.startOfDay(for: start)
+        return byDay.filter { $0.key >= from && $0.key < end }.values.reduce(0, +)
+    }
+
+    private func strengthCount(from start: Date, to end: Date) -> Int { count(strengthByDay, from: start, to: end) }
+
+    private func daysAgo(_ days: Int) -> Date { calendar.date(byAdding: .day, value: -days, to: .now) ?? .distantPast }
+
+    /// Последните 6 календарни седмици (пон–нед), най-новата първа.
+    private var weeklyCounts: [(start: Date, end: Date, strength: Int, cardio: Int)] {
+        let current = weekStart(.now)
+        let strength = strengthByDay
+        let cardio = cardioByDay
+        return (0..<6).compactMap { offset in
+            guard let start = calendar.date(byAdding: .weekOfYear, value: -offset, to: current),
+                  let end = calendar.date(byAdding: .weekOfYear, value: 1, to: start) else { return nil }
+            return (start, end, count(strength, from: start, to: end), count(cardio, from: start, to: end))
+        }
+    }
+
+    private var strengthSummary: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            NavigationLink {
+                TrainingDaysView(strength: strengthByDay, cardio: cardioByDay)
+            } label: {
+                HStack {
+                    Text("Силови тренировки").font(.subheadline.bold())
+                    Spacer()
+                    Text("по дни").font(.caption).foregroundStyle(.secondary)
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .buttonStyle(.plain)
+            Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+                GridRow {
+                    tile("Силови, 7 дни", "\(strengthCount(from: daysAgo(6), to: .distantFuture))", "figure.strengthtraining.traditional")
+                    tile("Силови, 30 дни", "\(strengthCount(from: daysAgo(29), to: .distantFuture))", "calendar")
+                }
+                GridRow {
+                    tile("Кардио, 7 дни", "\(count(cardioByDay, from: daysAgo(6), to: .distantFuture))", "figure.run")
+                    tile("Кардио, 30 дни", "\(count(cardioByDay, from: daysAgo(29), to: .distantFuture))", "calendar")
+                }
+            }
+            Text("Цел: минимум 3–4 силови седмично (пон–нед). Силова/кардио се определя по вида в WHOOP/Health, а при неясен вид: под 35 мин е кардио.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ForEach(weeklyCounts, id: \.start) { week in
+                let lastDay = calendar.date(byAdding: .day, value: -1, to: week.end) ?? week.end
+                let isCurrent = week.start == weekStart(.now)
+                HStack {
+                    Text("\(week.start.formatted(.dateTime.day().month(.twoDigits))) – \(lastDay.formatted(.dateTime.day().month(.twoDigits)))" + (isCurrent ? " (тази)" : ""))
+                        .font(.callout)
+                    Spacer()
+                    Text("силови \(week.strength) · кардио \(week.cardio)").font(.callout.bold())
+                    Image(systemName: week.strength >= 4 ? "checkmark.circle.fill" : week.strength >= 3 ? "checkmark.circle" : isCurrent ? "clock" : "xmark.circle")
+                        .foregroundStyle(week.strength >= 3 ? Color.green : isCurrent ? Color.secondary : Color.red)
+                }
+            }
+        }
+    }
+
     private func color(_ minutes: Double) -> Color {
         switch minutes {
         case ..<1: Color.secondary.opacity(0.15)
@@ -90,14 +178,19 @@ struct ActivityStatsCard: View {
             Text("Активност").font(.headline)
             Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                 GridRow {
-                    tile("Тази седмица", "\(thisWeekCount)", "figure.strengthtraining.traditional")
-                    tile("Този месец", "\(thisMonthCount)", "calendar")
+                    NavigationLink { TrainingDaysView(strength: strengthByDay, cardio: cardioByDay) } label: {
+                        tile("Тази седмица", "\(thisWeekCount)", "figure.strengthtraining.traditional")
+                    }
+                    NavigationLink { TrainingDaysView(strength: strengthByDay, cardio: cardioByDay) } label: {
+                        tile("Този месец", "\(thisMonthCount)", "calendar")
+                    }
                 }
                 GridRow {
                     tile("Серия седмици", "\(weekStreak)", "flame")
                     tile("Тегло 30 дни", weightChange30, "scalemass")
                 }
             }
+            .buttonStyle(.plain)
         }
         .padding()
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
@@ -109,6 +202,7 @@ struct ActivityStatsCard: View {
             Text("12 месеца, минути тренировка и кардио от WHOOP/Health")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            strengthSummary
             heatmap
             HStack(spacing: 4) {
                 Text("по-малко").font(.caption2).foregroundStyle(.secondary)
@@ -261,5 +355,107 @@ struct MuscleBalanceView: View {
         case ..<72: return (ago, .orange)
         default: return (ago, .green)
         }
+    }
+}
+
+
+/// Календар по месеци: кои дни са силови (зелено) и кои кардио (оранжево).
+struct TrainingDaysView: View {
+    let strength: [Date: Int]
+    let cardio: [Date: Int]
+    @State private var month = Date.now
+
+    private var calendar: Calendar {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2
+        return calendar
+    }
+
+    private var monthStart: Date { calendar.dateInterval(of: .month, for: month)?.start ?? month }
+
+    /// Празни клетки до първия ден (седмицата започва от понеделник), после дните на месеца.
+    private var cells: [Date?] {
+        guard let range = calendar.range(of: .day, in: .month, for: monthStart) else { return [] }
+        let weekday = calendar.component(.weekday, from: monthStart)
+        let blanks = (weekday - calendar.firstWeekday + 7) % 7
+        let days = range.compactMap { calendar.date(byAdding: .day, value: $0 - 1, to: monthStart) }
+        return Array(repeating: nil, count: blanks) + days
+    }
+
+    private var monthDays: [Date] { cells.compactMap { $0 }.filter { (strength[$0] ?? 0) + (cardio[$0] ?? 0) > 0 } }
+
+    private func change(_ months: Int) {
+        month = calendar.date(byAdding: .month, value: months, to: monthStart) ?? month
+    }
+
+    var body: some View {
+        List {
+            Section {
+                HStack {
+                    Button { change(-1) } label: { Image(systemName: "chevron.left") }
+                    Spacer()
+                    Text(monthStart.formatted(.dateTime.month(.wide).year())).font(.headline)
+                    Spacer()
+                    Button { change(1) } label: { Image(systemName: "chevron.right") }
+                }
+                .buttonStyle(.borderless)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 6) {
+                    ForEach(["пн", "вт", "ср", "чт", "пт", "сб", "нд"], id: \.self) { name in
+                        Text(name).font(.caption2).foregroundStyle(.secondary)
+                    }
+                    ForEach(Array(cells.enumerated()), id: \.offset) { _, day in
+                        if let day {
+                            dayCell(day)
+                        } else {
+                            Color.clear.frame(height: 40)
+                        }
+                    }
+                }
+                HStack(spacing: 12) {
+                    Label("Силова", systemImage: "circle.fill").foregroundStyle(.green)
+                    Label("Кардио", systemImage: "circle.fill").foregroundStyle(.orange)
+                }
+                .font(.caption)
+            } footer: {
+                Text("Силови: \(monthDays.map { strength[$0] ?? 0 }.reduce(0, +)) · Кардио: \(monthDays.map { cardio[$0] ?? 0 }.reduce(0, +))")
+            }
+            Section {
+                ForEach(monthDays.reversed(), id: \.self) { day in
+                    HStack {
+                        Text(day.formatted(.dateTime.weekday(.abbreviated).day().month(.twoDigits)))
+                        Spacer()
+                        if let count = strength[day], count > 0 {
+                            Label("Силова\(count > 1 ? " ×\(count)" : "")", systemImage: "figure.strengthtraining.traditional")
+                                .foregroundStyle(.green)
+                        }
+                        if let count = cardio[day], count > 0 {
+                            Label("Кардио\(count > 1 ? " ×\(count)" : "")", systemImage: "figure.run")
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                    .font(.callout)
+                }
+            } header: {
+                Text("Дни с тренировка")
+            }
+        }
+        .navigationTitle("Тренировки по дни")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func dayCell(_ day: Date) -> some View {
+        let hasStrength = (strength[day] ?? 0) > 0
+        let hasCardio = (cardio[day] ?? 0) > 0
+        return VStack(spacing: 3) {
+            Text("\(calendar.component(.day, from: day))")
+                .font(.callout)
+                .foregroundStyle(calendar.isDateInToday(day) ? Color.accentColor : Color.primary)
+            HStack(spacing: 3) {
+                Circle().fill(hasStrength ? Color.green : Color.clear).frame(width: 7, height: 7)
+                Circle().fill(hasCardio ? Color.orange : Color.clear).frame(width: 7, height: 7)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 40)
+        .background((hasStrength || hasCardio) ? Color.secondary.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
     }
 }
