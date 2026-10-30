@@ -67,15 +67,21 @@ struct ActivityStatsCard: View {
         return result
     }
 
-    /// Силови сесии по дни: най-много от приложението и от WHOOP/Health (за да не се броят два пъти).
+    /// Силови сесии по дни: от WHOOP/Health. Записите от решетката се ползват само за седмици без данни от устройство
+    /// (старите са с дата от началото на седмицата на мезоцикъла, затова най-много една на ден).
     private var strengthByDay: [Date: Int] {
         var result: [Date: Int] = [:]
-        for session in finished where !session.sets.isEmpty {
-            result[calendar.startOfDay(for: session.date), default: 0] += 1
+        var deviceWeeks = Set<Date>()
+        for kind in [MetricKind.strengthSessions, .cardioSessions] {
+            for point in MetricSeries.series(kind, in: metrics, from: .distantPast) where point.value > 0 {
+                deviceWeeks.insert(weekStart(point.day))
+            }
         }
         for point in MetricSeries.series(.strengthSessions, in: metrics, from: .distantPast) {
-            let day = calendar.startOfDay(for: point.day)
-            result[day] = max(result[day] ?? 0, Int(point.value))
+            result[calendar.startOfDay(for: point.day)] = Int(point.value)
+        }
+        for session in finished where !session.sets.isEmpty && !deviceWeeks.contains(weekStart(session.date)) {
+            result[calendar.startOfDay(for: session.date)] = 1
         }
         return result
     }
