@@ -67,45 +67,62 @@ struct ActivityStatsCard: View {
         return result
     }
 
-    /// Дни с тренировка: записана в приложението или (≥30 мин) от WHOOP/Health, когато не е записвана в приложението.
-    private var trainingDays: Set<Date> {
-        var days = Set(finished.filter { !$0.sets.isEmpty }.map { calendar.startOfDay(for: $0.date) })
-        for point in MetricSeries.series(.workoutMinutes, in: metrics, from: .distantPast) where point.value >= 30 {
-            days.insert(calendar.startOfDay(for: point.day))
+    /// Силови сесии по дни: най-много от приложението и от WHOOP/Health (за да не се броят два пъти).
+    private var strengthByDay: [Date: Int] {
+        var result: [Date: Int] = [:]
+        for session in finished where !session.sets.isEmpty {
+            result[calendar.startOfDay(for: session.date), default: 0] += 1
         }
-        return days
+        for point in MetricSeries.series(.strengthSessions, in: metrics, from: .distantPast) {
+            let day = calendar.startOfDay(for: point.day)
+            result[day] = max(result[day] ?? 0, Int(point.value))
+        }
+        return result
     }
 
-    private func strengthCount(from start: Date, to end: Date) -> Int {
-        trainingDays.filter { $0 >= calendar.startOfDay(for: start) && $0 < end }.count
+    private var cardioByDay: [Date: Int] {
+        var result: [Date: Int] = [:]
+        for point in MetricSeries.series(.cardioSessions, in: metrics, from: .distantPast) {
+            result[calendar.startOfDay(for: point.day)] = Int(point.value)
+        }
+        return result
     }
 
-    private var last7Count: Int {
-        strengthCount(from: calendar.date(byAdding: .day, value: -6, to: .now) ?? .distantPast, to: .distantFuture)
+    private func count(_ byDay: [Date: Int], from start: Date, to end: Date) -> Int {
+        let from = calendar.startOfDay(for: start)
+        return byDay.filter { $0.key >= from && $0.key < end }.values.reduce(0, +)
     }
 
-    private var last30Count: Int {
-        strengthCount(from: calendar.date(byAdding: .day, value: -29, to: .now) ?? .distantPast, to: .distantFuture)
-    }
+    private func strengthCount(from start: Date, to end: Date) -> Int { count(strengthByDay, from: start, to: end) }
+
+    private func daysAgo(_ days: Int) -> Date { calendar.date(byAdding: .day, value: -days, to: .now) ?? .distantPast }
 
     /// Последните 6 календарни седмици (пон–нед), най-новата първа.
-    private var weeklyCounts: [(start: Date, end: Date, count: Int)] {
+    private var weeklyCounts: [(start: Date, end: Date, strength: Int, cardio: Int)] {
         let current = weekStart(.now)
+        let strength = strengthByDay
+        let cardio = cardioByDay
         return (0..<6).compactMap { offset in
             guard let start = calendar.date(byAdding: .weekOfYear, value: -offset, to: current),
                   let end = calendar.date(byAdding: .weekOfYear, value: 1, to: start) else { return nil }
-            return (start, end, strengthCount(from: start, to: end))
+            return (start, end, count(strength, from: start, to: end), count(cardio, from: start, to: end))
         }
     }
 
     private var strengthSummary: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Силови тренировки").font(.subheadline.bold())
-            HStack(spacing: 12) {
-                tile("Последни 7 дни", "\(last7Count)", "figure.strengthtraining.traditional")
-                tile("Последни 30 дни", "\(last30Count)", "calendar")
+            Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+                GridRow {
+                    tile("Силови, 7 дни", "\(strengthCount(from: daysAgo(6), to: .distantFuture))", "figure.strengthtraining.traditional")
+                    tile("Силови, 30 дни", "\(strengthCount(from: daysAgo(29), to: .distantFuture))", "calendar")
+                }
+                GridRow {
+                    tile("Кардио, 7 дни", "\(count(cardioByDay, from: daysAgo(6), to: .distantFuture))", "figure.run")
+                    tile("Кардио, 30 дни", "\(count(cardioByDay, from: daysAgo(29), to: .distantFuture))", "calendar")
+                }
             }
-            Text("Цел: минимум 3–4 седмично (пон–нед). Брои дни с тренировка от приложението и от WHOOP/Health (над 30 мин, може да включва кардио).")
+            Text("Цел: минимум 3–4 силови седмично (пон–нед). Силова/кардио се определя по вида в WHOOP/Health, а при неясен вид: под 35 мин е кардио.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             ForEach(weeklyCounts, id: \.start) { week in
@@ -115,9 +132,9 @@ struct ActivityStatsCard: View {
                     Text("\(week.start.formatted(.dateTime.day().month(.twoDigits))) – \(lastDay.formatted(.dateTime.day().month(.twoDigits)))" + (isCurrent ? " (тази)" : ""))
                         .font(.callout)
                     Spacer()
-                    Text("\(week.count)").font(.callout.bold())
-                    Image(systemName: week.count >= 4 ? "checkmark.circle.fill" : week.count >= 3 ? "checkmark.circle" : isCurrent ? "clock" : "xmark.circle")
-                        .foregroundStyle(week.count >= 3 ? Color.green : isCurrent ? Color.secondary : Color.red)
+                    Text("силови \(week.strength) · кардио \(week.cardio)").font(.callout.bold())
+                    Image(systemName: week.strength >= 4 ? "checkmark.circle.fill" : week.strength >= 3 ? "checkmark.circle" : isCurrent ? "clock" : "xmark.circle")
+                        .foregroundStyle(week.strength >= 3 ? Color.green : isCurrent ? Color.secondary : Color.red)
                 }
             }
         }
