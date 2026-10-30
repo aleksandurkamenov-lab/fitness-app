@@ -172,14 +172,19 @@ struct ActivityStatsCard: View {
             Text("Активност").font(.headline)
             Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                 GridRow {
-                    tile("Тази седмица", "\(thisWeekCount)", "figure.strengthtraining.traditional")
-                    tile("Този месец", "\(thisMonthCount)", "calendar")
+                    NavigationLink { TrainingDaysView(strength: strengthByDay, cardio: cardioByDay) } label: {
+                        tile("Тази седмица", "\(thisWeekCount)", "figure.strengthtraining.traditional")
+                    }
+                    NavigationLink { TrainingDaysView(strength: strengthByDay, cardio: cardioByDay) } label: {
+                        tile("Този месец", "\(thisMonthCount)", "calendar")
+                    }
                 }
                 GridRow {
                     tile("Серия седмици", "\(weekStreak)", "flame")
                     tile("Тегло 30 дни", weightChange30, "scalemass")
                 }
             }
+            .buttonStyle(.plain)
         }
         .padding()
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
@@ -348,46 +353,77 @@ struct MuscleBalanceView: View {
 }
 
 
-/// Списък по дни: кои дни са силови и кои кардио (за избран период).
+/// Календар по месеци: кои дни са силови (зелено) и кои кардио (оранжево).
 struct TrainingDaysView: View {
     let strength: [Date: Int]
     let cardio: [Date: Int]
-    @State private var days = 30
+    @State private var month = Date.now
 
-    private var rows: [(day: Date, strength: Int, cardio: Int)] {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: .now)
-        return (0..<days).compactMap { offset in
-            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { return nil }
-            let s = strength[day] ?? 0
-            let c = cardio[day] ?? 0
-            return s + c > 0 ? (day, s, c) : nil
-        }
+    private var calendar: Calendar {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2
+        return calendar
+    }
+
+    private var monthStart: Date { calendar.dateInterval(of: .month, for: month)?.start ?? month }
+
+    /// Празни клетки до първия ден (седмицата започва от понеделник), после дните на месеца.
+    private var cells: [Date?] {
+        guard let range = calendar.range(of: .day, in: .month, for: monthStart) else { return [] }
+        let weekday = calendar.component(.weekday, from: monthStart)
+        let blanks = (weekday - calendar.firstWeekday + 7) % 7
+        let days = range.compactMap { calendar.date(byAdding: .day, value: $0 - 1, to: monthStart) }
+        return Array(repeating: nil, count: blanks) + days
+    }
+
+    private var monthDays: [Date] { cells.compactMap { $0 }.filter { (strength[$0] ?? 0) + (cardio[$0] ?? 0) > 0 } }
+
+    private func change(_ months: Int) {
+        month = calendar.date(byAdding: .month, value: months, to: monthStart) ?? month
     }
 
     var body: some View {
         List {
             Section {
-                Picker("Период", selection: $days) {
-                    Text("Месец").tag(30)
-                    Text("3 месеца").tag(90)
-                    Text("Година").tag(365)
+                HStack {
+                    Button { change(-1) } label: { Image(systemName: "chevron.left") }
+                    Spacer()
+                    Text(monthStart.formatted(.dateTime.month(.wide).year())).font(.headline)
+                    Spacer()
+                    Button { change(1) } label: { Image(systemName: "chevron.right") }
                 }
-                .pickerStyle(.segmented)
+                .buttonStyle(.borderless)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 6) {
+                    ForEach(["пн", "вт", "ср", "чт", "пт", "сб", "нд"], id: \.self) { name in
+                        Text(name).font(.caption2).foregroundStyle(.secondary)
+                    }
+                    ForEach(Array(cells.enumerated()), id: \.offset) { _, day in
+                        if let day {
+                            dayCell(day)
+                        } else {
+                            Color.clear.frame(height: 40)
+                        }
+                    }
+                }
+                HStack(spacing: 12) {
+                    Label("Силова", systemImage: "circle.fill").foregroundStyle(.green)
+                    Label("Кардио", systemImage: "circle.fill").foregroundStyle(.orange)
+                }
+                .font(.caption)
             } footer: {
-                Text("Силови: \(rows.map(\.strength).reduce(0, +)) · Кардио: \(rows.map(\.cardio).reduce(0, +))")
+                Text("Силови: \(monthDays.map { strength[$0] ?? 0 }.reduce(0, +)) · Кардио: \(monthDays.map { cardio[$0] ?? 0 }.reduce(0, +))")
             }
             Section {
-                ForEach(rows, id: \.day) { row in
+                ForEach(monthDays.reversed(), id: \.self) { day in
                     HStack {
-                        Text(row.day.formatted(.dateTime.weekday(.abbreviated).day().month(.twoDigits)))
+                        Text(day.formatted(.dateTime.weekday(.abbreviated).day().month(.twoDigits)))
                         Spacer()
-                        if row.strength > 0 {
-                            Label("Силова\(row.strength > 1 ? " ×\(row.strength)" : "")", systemImage: "figure.strengthtraining.traditional")
+                        if let count = strength[day], count > 0 {
+                            Label("Силова\(count > 1 ? " ×\(count)" : "")", systemImage: "figure.strengthtraining.traditional")
                                 .foregroundStyle(.green)
                         }
-                        if row.cardio > 0 {
-                            Label("Кардио\(row.cardio > 1 ? " ×\(row.cardio)" : "")", systemImage: "figure.run")
+                        if let count = cardio[day], count > 0 {
+                            Label("Кардио\(count > 1 ? " ×\(count)" : "")", systemImage: "figure.run")
                                 .foregroundStyle(.orange)
                         }
                     }
@@ -399,5 +435,21 @@ struct TrainingDaysView: View {
         }
         .navigationTitle("Тренировки по дни")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func dayCell(_ day: Date) -> some View {
+        let hasStrength = (strength[day] ?? 0) > 0
+        let hasCardio = (cardio[day] ?? 0) > 0
+        return VStack(spacing: 3) {
+            Text("\(calendar.component(.day, from: day))")
+                .font(.callout)
+                .foregroundStyle(calendar.isDateInToday(day) ? Color.accentColor : Color.primary)
+            HStack(spacing: 3) {
+                Circle().fill(hasStrength ? Color.green : Color.clear).frame(width: 7, height: 7)
+                Circle().fill(hasCardio ? Color.orange : Color.clear).frame(width: 7, height: 7)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 40)
+        .background((hasStrength || hasCardio) ? Color.secondary.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
     }
 }

@@ -84,4 +84,5 @@ Every change to the app is a numbered version. The current version is shown at t
 - v80: Reps fields in the workout grid now accept both comma and dot (e.g. 8,5), same as kg.
 - v81: Trends workout counts also use WHOOP/Health workout days (30+ min) and sessions logged in the grid are dated on the day they are first logged, so weeks no longer show 0 after real workouts.
 - v82: Trends counts strength and cardio sessions separately (7 days, 30 days, per Mon–Sun week) from the WHOOP/Health workout type; unknown types under 35 min count as cardio.
-- v83: Trends → "Силови тренировки" opens a day-by-day list (month / 3 months / year) showing strength and cardio days.
+- v83: Trends → "Силови тренировки" opens a day-by-day list showing strength and cardio days.
+- v84: The day-by-day screen is a month calendar (strength = green dot, cardio = orange dot, month switcher) with a list below; the "This week" and "This month" tiles open it too.
