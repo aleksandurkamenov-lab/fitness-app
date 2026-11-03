@@ -164,10 +164,10 @@ final class CloudService {
         UserDefaults.standard.set(lastUpload, forKey: "cloud.lastUpload")
     }
 
-    /// Качва снимка, ако е минал поне час (или принудително).
+    /// Качва снимка, ако са минали поне 15 минути (или принудително).
     func syncIfNeeded(context: ModelContext, force: Bool = false) async {
         guard isSignedIn, !busy else { return }
-        if !force, let lastUpload, Date.now.timeIntervalSince(lastUpload) < 3600 { return }
+        if !force, let lastUpload, Date.now.timeIntervalSince(lastUpload) < 900 { return }
         busy = true
         defer { busy = false }
         do { try await uploadSnapshot(CloudSnapshotBuilder.build(context: context, name: email)) } catch {}

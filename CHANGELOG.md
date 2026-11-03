@@ -88,3 +88,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v84: The day-by-day screen is a month calendar (strength = green dot, cardio = orange dot, month switcher) with a list below; the "This week" and "This month" tiles open it too.
 - v85: Strength counts come from WHOOP/Health; workouts logged in the grid are used only for weeks without device data, at most one per day (old grid sessions carried the mesocycle week start date, giving "strength x3").
 - v86: Cloud (Supabase, project preset): sign in from Profile → Облак и треньор, hourly upload of weight/measurements/workouts/food/metrics, link to a coach by code, and a coach view of each client's progress (read-only).
+- v87: Cloud data is uploaded every time the app goes to the background (and at most every 15 min on open), so the coach dashboard shows fresh profile, weight and workouts.
