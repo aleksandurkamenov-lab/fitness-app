@@ -115,6 +115,12 @@ private struct ProfileForm: View {
                 }
             }
 
+            Section("Облак") {
+                NavigationLink("Облак и треньор") {
+                    CloudView()
+                }
+            }
+
             Section("Устройства") {
                 NavigationLink("WHOOP") {
                     WhoopConnectView()

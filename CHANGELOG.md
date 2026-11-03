@@ -87,3 +87,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v83: Trends → "Силови тренировки" opens a day-by-day list showing strength and cardio days.
 - v84: The day-by-day screen is a month calendar (strength = green dot, cardio = orange dot, month switcher) with a list below; the "This week" and "This month" tiles open it too.
 - v85: Strength counts come from WHOOP/Health; workouts logged in the grid are used only for weeks without device data, at most one per day (old grid sessions carried the mesocycle week start date, giving "strength x3").
+- v86: Cloud (Supabase): sign in from Profile → Облак и треньор, hourly upload of weight/measurements/workouts/food/metrics, link to a coach by code, and a coach view of each client's progress (read-only).
