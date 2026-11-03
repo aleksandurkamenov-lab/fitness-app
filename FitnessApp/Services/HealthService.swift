@@ -358,6 +358,32 @@ final class HealthService {
         add(.steps, await dailyTotals(.stepCount, unit: .count(), from: from))
         add(.activeKcal, await dailyTotals(.activeEnergyBurned, unit: .kilocalorie(), from: from))
         add(.sleepHours, await sleepHoursByDay(from: from))
+
+        // Минути тренировки и кардио по дни (до 12 месеца назад, за heatmap-а).
+        let workoutFrom = calendar.date(byAdding: .day, value: -365, to: today) ?? from
+        let predicate = HKQuery.predicateForSamples(withStart: workoutFrom, end: .now, options: [])
+        let descriptor = HKSampleQueryDescriptor(predicates: [.workout(predicate)], sortDescriptors: [SortDescriptor(\.startDate)])
+        let workouts = (try? await descriptor.result(for: store)) ?? []
+        var workoutMinutes: [Date: Double] = [:]
+        var strengthSessions: [Date: Double] = [:]
+        var cardioSessions: [Date: Double] = [:]
+        for workout in workouts {
+            let day = calendar.startOfDay(for: workout.startDate)
+            let minutes = workout.duration / 60
+            workoutMinutes[day, default: 0] += minutes
+            let isStrength: Bool
+            switch workout.workoutActivityType {
+            case .traditionalStrengthTraining, .functionalStrengthTraining: isStrength = true
+            case .running, .walking, .cycling, .swimming, .highIntensityIntervalTraining, .rowing, .elliptical,
+                 .stairClimbing, .hiking, .jumpRope, .cardioDance, .kickboxing, .boxing, .mixedCardio:
+                isStrength = false
+            default: isStrength = minutes >= 35
+            }
+            if isStrength { strengthSessions[day, default: 0] += 1 } else { cardioSessions[day, default: 0] += 1 }
+        }
+        add(.workoutMinutes, workoutMinutes)
+        add(.strengthSessions, strengthSessions)
+        add(.cardioSessions, cardioSessions)
         return points
     }
 

@@ -33,3 +33,16 @@ struct DecimalField: View {
         value > 0 ? value.short : ""
     }
 }
+
+/// Същото поле за по избор число (повторения): празно = nil, приема и запетая, и точка.
+struct OptionalDecimalField: View {
+    let placeholder: String
+    @Binding var value: Double?
+
+    var body: some View {
+        DecimalField(placeholder: placeholder, value: Binding(
+            get: { value ?? 0 },
+            set: { value = $0 > 0 ? $0 : nil }
+        ))
+    }
+}

@@ -121,6 +121,8 @@ struct MesoGridView: View {
         .safeAreaInset(edge: .bottom) {
             if timer.endDate != nil { RestTimerBar(timer: timer) }
         }
+        // Таймерът живее само докато екранът е отворен; без лента известието не бива да остава.
+        .onDisappear { timer.stop() }
         .sheet(item: $detail) { target in
             if let item = template.sortedItems.first(where: { $0.order == target.order }) {
                 WeekDetailSheet(item: item, week: target.week,
@@ -281,8 +283,9 @@ struct MesoGridView: View {
         let weight = Binding<Double>(
             get: { existing()?.weight ?? 0 },
             set: { newValue in
-                guard newValue > 0 || existing() != nil else { return }
-                ensureSet(item, week: week, index: index).weight = newValue
+                let value = max(newValue, 0)
+                guard value > 0 || existing() != nil else { return }
+                ensureSet(item, week: week, index: index).weight = value
             }
         )
         let reps = Binding<Double?>(
@@ -292,7 +295,9 @@ struct MesoGridView: View {
                 let set = ensureSet(item, week: week, index: index)
                 set.repsValue = newValue ?? 0
                 set.isDone = set.repsValue > 0
-                if restTimerOn && set.repsValue > 0 { timer.start(seconds: item.restSeconds) }
+                if restTimerOn && set.repsValue > 0 && week == (template.mesocycle?.currentWeek ?? 1) {
+                    timer.start(seconds: item.restSeconds)
+                }
             }
         )
         return (weight, reps)
@@ -303,9 +308,7 @@ struct MesoGridView: View {
         let fresh = (try? context.fetch(FetchDescriptor<WorkoutSession>())) ?? []
         let mine = fresh.filter { $0.template?.persistentModelID == template.persistentModelID }
         if let found = pick(from: mine, week: week) { return found }
-        let start = template.mesocycle?.startDate ?? .now
-        let planned = Calendar.current.date(byAdding: .day, value: (week - 1) * 7, to: start) ?? .now
-        let session = WorkoutSession(date: min(planned, .now), week: week, template: template)
+        let session = WorkoutSession(date: .now, week: week, template: template)
         session.finishedAt = session.date
         context.insert(session)
         return session
@@ -399,9 +402,7 @@ private struct ExerciseGridCard: View {
         VStack(alignment: .leading, spacing: 8) {
             if isEditing {
                 HStack {
-                    if let exercise = item.exercise {
-                        ExerciseNameField(exercise: exercise)
-                    }
+                    ExerciseNameField(item: item)
                     Button(role: .destructive, action: onDelete) {
                         Image(systemName: "trash")
                     }
@@ -510,8 +511,7 @@ private struct GridCell: View {
                 .frame(width: 38, height: 32)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
             Text("×").font(.caption2).foregroundStyle(.secondary)
-            TextField(repsHint, value: binding.reps, format: .number)
-                .keyboardType(.decimalPad)
+            OptionalDecimalField(placeholder: repsHint, value: binding.reps)
                 .multilineTextAlignment(.center)
                 .frame(width: 30, height: 32)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
@@ -537,14 +537,45 @@ private struct DeltaText: View {
     }
 }
 
-/// Преименуване на упражнението (променя името и в библиотеката).
+/// Преименуване на упражнението само в тази тренировка: ако същото упражнение се ползва и другаде, не се пипа, а се взема/създава упражнение с новото име.
 private struct ExerciseNameField: View {
-    @Bindable var exercise: Exercise
+    @Environment(\.modelContext) private var context
+    @Query private var exercises: [Exercise]
+    @Query private var items: [TemplateExercise]
+    let item: TemplateExercise
+    @State private var text = ""
+    @FocusState private var focused: Bool
 
     var body: some View {
-        TextField("Име на упражнението", text: $exercise.name)
+        TextField("Име на упражнението", text: $text)
             .font(.headline)
             .textFieldStyle(.roundedBorder)
+            .focused($focused)
+            .onAppear { text = item.exercise?.name ?? "" }
+            .onSubmit(commit)
+            .onChange(of: focused) { _, isFocused in
+                if !isFocused { commit() }
+            }
+    }
+
+    private func commit() {
+        let name = text.trimmingCharacters(in: .whitespaces)
+        guard let current = item.exercise else { return }
+        guard !name.isEmpty else {
+            text = current.name
+            return
+        }
+        guard name != current.name else { return }
+        let usedElsewhere = items.contains { $0.exercise === current && $0 !== item }
+        if !usedElsewhere {
+            current.name = name
+        } else if let existing = exercises.first(where: { $0.name == name }) {
+            item.exercise = existing
+        } else {
+            let copy = Exercise(name: name, primary: current.primaryMuscle, secondary: current.secondaryMuscles, notes: current.notes, isCustom: true)
+            context.insert(copy)
+            item.exercise = copy
+        }
     }
 }
 
@@ -628,8 +659,7 @@ private struct DetailSetRow: View {
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.roundedBorder)
                 Text("×").foregroundStyle(.secondary)
-                TextField("повт.", value: repsBinding, format: .number)
-                    .keyboardType(.decimalPad)
+                OptionalDecimalField(placeholder: "повт.", value: repsBinding)
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.roundedBorder)
             }

@@ -351,11 +351,13 @@ struct TodayView: View {
                 let parts = energyParts(s, profile: profile, kg: kg)
                 let base = parts.base, strength = parts.strength, cardio = parts.cardio, activity = parts.activity
                 let total = base + strength + cardio + activity
-                energyRow("Дневен разход (базов)", base)
+                let bmr = base / EnergyModel.thermicFactor
+                energyRow("Базов обмен (BMR)", bmr)
+                energyRow("Храносмилане (~10%)", base - bmr, prefix: "+")
                 energyRow("Тренировка", strength, prefix: "+")
                 energyRow("Кардио", cardio, prefix: "+")
                 energyRow("Активност / крачки", activity, prefix: "+")
-                energyRow("Краен дневен разход", total, bold: true)
+                energyRow("Общ разход за деня", total, bold: true)
                 energyRow("Прием (храна и Apple Health)", intake)
                 HStack {
                     let value = Int((intake - total).rounded())
@@ -373,7 +375,7 @@ struct TodayView: View {
                         .monospacedDigit()
                 }
                 .font(.subheadline)
-                Text("Базовият разход е по профила (BMR + ~10% за храненето, ориентировъчно). Без активни калории от часовник крачките се превръщат в калории по теглото. Тренировка, кардио и крачки идват от Apple Health и WHOOP за днес. Приемът е от записаната храна и Apple Health.")
+                Text("Базов обмен (BMR): калориите за 24 ч в пълен покой, по профила. Храносмилането добавя ~10%. Без активни калории от часовник крачките се превръщат в калории по теглото. Тренировка, кардио и крачки идват от Apple Health и WHOOP за днес. Приемът е от записаната храна и Apple Health.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 NavigationLink {

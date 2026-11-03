@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 /// Калкулатори за тяло и хранене. Всички стойности са ориентировъчни, не са медицински съвет.
 enum BodyMath {
@@ -41,8 +42,18 @@ enum BodyMath {
 
     /// Най-добра оценка на % мазнини: ръчно зададен, иначе средно от US Navy (врат, корем) и RFM (корем, ръст), иначе кантар (неточен).
     static func bodyFatEstimate(profile: UserProfile, weights: [WeightEntry],
-                                measurements: [MeasurementEntry]) -> (percent: Double, source: String)? {
+                                measurements: [MeasurementEntry], scans: [BodyScan] = []) -> (percent: Double, source: String)? {
         if profile.manualBodyFat >= 4 { return (profile.manualBodyFat, "ръчно") }
+        // DEXA/InBody до 24 месеца назад: безмастната маса оттогава се мени с ~25% от промяната на теглото.
+        let yearAgo = Date.now.addingTimeInterval(-730 * 86_400)
+        if let scan = scans.filter({ $0.date >= yearAgo && $0.fatFreeKg > 0 && $0.weightKg > 0 }).max(by: { $0.date < $1.date }) {
+            let current = weekSummary(weights)?.average ?? weights.last?.kg ?? scan.weightKg
+            let fatFree = scan.fatFreeKg + 0.25 * (current - scan.weightKg)
+            let percent = (1 - fatFree / current) * 100
+            if percent >= 4 && percent <= 55 {
+                return (percent, "\(scan.kind) \(scan.date.formatted(.dateTime.day().month(.abbreviated).year())) + тегло")
+            }
+        }
         func latest(_ kind: MeasurementKind) -> Double? {
             measurements.sorted { $0.date < $1.date }.last { $0.kind == kind && !$0.isFlexed && $0.cm > 0 }?.cm
         }
@@ -68,7 +79,8 @@ enum BodyMath {
 
     /// Записва оценката в профила, за да я ползват калкулаторите за разход.
     static func refreshBodyFat(profile: UserProfile, weights: [WeightEntry], measurements: [MeasurementEntry]) {
-        let estimate = bodyFatEstimate(profile: profile, weights: weights, measurements: measurements)
+        let scans = (try? profile.modelContext?.fetch(FetchDescriptor<BodyScan>())) ?? []
+        let estimate = bodyFatEstimate(profile: profile, weights: weights, measurements: measurements, scans: scans)
         let percent = estimate?.percent ?? 0
         let source = estimate?.source ?? ""
         if abs(profile.bodyFatPercent - percent) > 0.01 { profile.bodyFatPercent = percent }

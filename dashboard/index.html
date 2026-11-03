@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Треньорски дашборд</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#16181d;--muted:#6b7280;--line:#e5e7eb;--accent:#2563eb;--good:#16a34a;--bad:#dc2626}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#171a21;--text:#e8eaee;--muted:#9aa1ad;--line:#262b35;--accent:#5b8cff;--good:#3fbf6b;--bad:#f06363}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:2}
+header h1{font-size:18px;margin:0;flex:1}
+button,select,input{font:inherit;color:inherit}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+input,select{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+main{max-width:1300px;margin:0 auto;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.login{max-width:360px;margin:12vh auto}.login input{margin-bottom:10px}.login button{width:100%}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:600;font-size:13px}tbody tr{cursor:pointer}tbody tr:hover{background:rgba(127,127,127,.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}.tile .l{color:var(--muted);font-size:13px}.tile .v{font-size:22px;font-weight:650}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:800px){.two{grid-template-columns:1fr}}
+.muted{color:var(--muted)}.up{color:var(--bad)}.down{color:var(--good)}h2{font-size:16px;margin:0 0 10px}
+.chart{position:relative;height:240px}details{border-bottom:1px solid var(--line);padding:8px 0}summary{cursor:pointer}
+.scroll{overflow-x:auto}
+.stat{margin-top:8px;font-size:13px}
+.avg:empty{display:none}
+.avgs{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}.avgs span b{color:var(--accent)}.avg{margin-left:auto;font-size:15px;font-weight:650;color:var(--accent);background:rgba(37,99,235,.1);padding:3px 10px;border-radius:8px}
+.card h2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.chart canvas{cursor:crosshair}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.cal-h{color:var(--muted);font-size:12px;text-align:center}
+.cal-d{border:1px solid var(--line);border-radius:10px;min-height:54px;padding:6px;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between}
+.cal-d:hover{background:rgba(127,127,127,.08)}.cal-d.today{border-color:var(--accent)}.cal-d.has span:first-child{font-weight:650}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:3px}.dot.s{background:#16a34a}.dot.c{background:#f59e0b}.err{color:var(--bad);margin-top:8px}.foot{color:var(--muted);font-size:12px;text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<header><h1 id="title">Треньорски дашборд</h1><span id="who" class="muted"></span><button id="refresh" class="ghost" hidden>Обнови</button><button id="out" class="ghost" hidden>Изход</button></header>
+<main id="app"></main>
+<div class="foot">Стойностите са ориентировъчни, не е медицински съвет.</div>
+<script>
+const URL_ = "https://zdhdvxslolwelbpezjvp.supabase.co";
+const KEY = "sb_publishable_y8Ztcv8gr3fkLRWbv2Hfdg_BWj9r5UQ";
+const METRICS = {recovery:"Възстановяване %",hrv:"HRV (мс)",rhr:"Пулс в покой",sleepHours:"Сън (ч)",steps:"Крачки",strain:"Натоварване",activeKcal:"Активни ккал"};
+const MEAS = {waist:"Талия",abdomen:"Корем",neck:"Врат",chest:"Гърди",arm:"Ръка",thigh:"Бедро",calf:"Прасец",hips:"Ханш"};
+const $ = s => document.querySelector(s), app = $("#app");
+let token = null, me = null, people = [], snaps = {}, charts = [];
+const store = { get:k=>{try{return localStorage.getItem(k)}catch(e){return null}}, set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}} };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const n = (v, d=1) => v == null || isNaN(v) ? "–" : Number(v).toLocaleString("bg-BG",{maximumFractionDigits:d});
+
+async function api(path, opts={}) {
+  const headers = {apikey: KEY, "Content-Type":"application/json"};
+  if (token) headers.Authorization = "Bearer " + token;
+  const r = await fetch(URL_ + path, {...opts, headers});
+  const t = await r.text();
+  if (!r.ok) {
+    let m = t; try { const j = JSON.parse(t); m = j.msg || j.error_description || j.message || t; } catch(e) {}
+    if (/invalid login credentials/i.test(m)) m = "Грешен имейл или парола (" + m + ")";
+    else if (/not confirmed/i.test(m)) m = "Имейлът не е потвърден в Supabase (" + m + ")";
+    throw new Error("Грешка " + r.status + ": " + String(m).slice(0,200));
+  }
+  return t ? JSON.parse(t) : null;
+}
+async function auth(body, grant) {
+  token = null;
+  const s = await api("/auth/v1/token?grant_type=" + grant, {method:"POST", body: JSON.stringify(body)});
+  token = s.access_token; me = s.user; store.set("fd.refresh", s.refresh_token);
+}
+
+function loginView(msg, email) {
+  $("#out").hidden = $("#refresh").hidden = true; $("#who").textContent = "";
+  app.innerHTML = `<div class="card login"><h2>Вход</h2><p class="muted">Същият имейл и парола като в приложението.</p>
+  <input id="em" type="email" placeholder="Имейл" autocomplete="username" value="${esc(email||"")}"><input id="pw" type="password" placeholder="Парола" autocomplete="current-password">
+
+  <button id="go">Влез</button><div class="err">${esc(msg||"")}</div></div>`;
+  const go = async () => { try { await auth({email:$("#em").value.trim(), password:$("#pw").value}, "password"); await load(); } catch(e) { const em = $("#em").value; loginView(e.message, em); $("#pw").focus(); } };
+  $("#go").onclick = go; $("#pw").onkeydown = e => { if (e.key === "Enter") go(); };
+}
+
+async function load() {
+  app.innerHTML = `<div class="card muted">Зареждане…</div>`;
+  const [profiles, rows] = await Promise.all([
+    api("/rest/v1/profiles?select=id,display_name,code,coach_id"),
+    api("/rest/v1/snapshots?select=user_id,updated_at,data")]);
+  people = profiles; snaps = {}; rows.forEach(r => snaps[r.user_id] = r);
+  $("#who").textContent = me.email; $("#out").hidden = $("#refresh").hidden = false;
+  overview();
+}
+
+const nameOf = p => p.display_name || snaps[p.id]?.data?.name || ("Клиент " + p.code);
+function lastN(arr, days) { const c = new Date(Date.now() - days*864e5).toISOString().slice(0,10); return (arr||[]).filter(x => x.d >= c); }
+function metricLast(s, k) { const m = (s.metrics||[]).filter(x => x.k === k).sort((a,b)=>a.d<b.d?-1:1); return m.length ? m[m.length-1].v : null; }
+function avg(a) { return a.length ? a.reduce((x,y)=>x+y,0)/a.length : null; }
+function weightTrend(s) {
+  const w = s.weights || []; if (!w.length) return [null, null];
+  const last = w[w.length-1].kg, ago = lastN(w, 8)[0];
+  return [last, ago && ago !== w[w.length-1] ? last - ago.kg : null];
+}
+
+function overview() {
+  destroyCharts(); $("#title").textContent = "Треньорски дашборд";
+  const list = [...people].sort((a,b) => (a.id === me.id) - (b.id === me.id) || nameOf(a).localeCompare(nameOf(b)));
+  const rows = list.map(p => {
+    const r = snaps[p.id], s = r?.data || {};
+    const [w, dw] = weightTrend(s);
+    const kcal = avg(lastN(s.food, 7).map(f => f.kcal));
+    const wk = lastN(s.workouts, 7).length;
+    const upd = r ? new Date(r.updated_at) : null;
+    const stale = upd && Date.now() - upd > 3*864e5;
+    return `<tr data-id="${p.id}"><td><b>${esc(nameOf(p))}</b>${p.id===me.id?' <span class="muted">(аз)</span>':''}</td>
+      <td class="${stale?'up':''}">${upd ? upd.toLocaleString("bg-BG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "няма данни"}</td>
+      <td>${n(w)} кг</td><td class="${dw>0?'up':dw<0?'down':''}">${dw==null?"–":(dw>0?"+":"")+n(dw)}</td>
+      <td>${n(kcal,0)}</td><td>${wk}</td><td>${n(metricLast(s,"recovery"),0)}</td><td>${n(metricLast(s,"sleepHours"))}</td></tr>`;
+  }).join("");
+  app.innerHTML = `<div class="card"><h2>Клиенти (${list.filter(p=>p.id!==me.id).length})</h2><div class="scroll"><table>
+    <thead><tr><th>Име</th><th>Обновено</th><th>Тегло</th><th>7 дни</th><th>Ккал/ден (7д)</th><th>Тренировки (7д)</th><th>Възст. %</th><th>Сън ч</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <p class="muted">Червено „Обновено“ = клиентът не е отварял приложението 3+ дни. Натисни ред за подробности.</p></div>`;
+  app.querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => detail(tr.dataset.id));
+}
+
+function destroyCharts() { charts.forEach(c => c.destroy()); charts = []; }
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const PAL = ["#2563eb","#f59e0b","#16a34a","#db2777","#7c3aed"];
+const fmtD = d => d ? d.slice(8,10) + "." + d.slice(5,7) + (d.slice(0,4) !== String(new Date().getFullYear()) ? "." + d.slice(2,4) : "") : "";
+const shift = (d, days) => { const t = new Date(d + "T12:00:00"); t.setDate(t.getDate() + days); return t.toISOString().slice(0,10); };
+const today = () => new Date().toISOString().slice(0,10);
+const weekOf = d => { const t = new Date(d + "T12:00:00"); t.setDate(t.getDate() - (t.getDay() + 6) % 7); return t.toISOString().slice(0,10); };
+const e1rm = (w, r) => !w || !r ? 0 : r <= 1 ? w : w * (1 + r / 30);
+const sum = a => a.reduce((x,y)=>x+y,0);
+const sign = (v, d=1) => v == null || isNaN(v) ? "–" : (v > 0 ? "+" : "") + n(v, d);
+
+// Плъгин: показва избрания с мишката участък.
+const selPlugin = { id:"sel", afterDraw(c) { const s = c.$sel; if (!s) return; const {top, bottom} = c.chartArea, x = Math.min(s.a, s.b), w = Math.abs(s.b - s.a);
+  c.ctx.save(); c.ctx.fillStyle = "rgba(37,99,235,.15)"; c.ctx.fillRect(x, top, w, bottom - top); c.ctx.restore(); } };
+
+function mk(el, type, labels, datasets, extra={}) {
+  if (!el) return;
+  if (typeof Chart === "undefined") { el.parentNode.innerHTML = '<p class="muted">Графиките не се заредиха (няма интернет).</p>'; return; }
+  const grid = css("--line"), txt = css("--muted");
+  const scales = { x:{ticks:{color:txt, maxTicksLimit:9, callback(v){ return fmtD(this.getLabelForValue(v)); }}, grid:{color:grid}}, y:{ticks:{color:txt}, grid:{color:grid}}, ...(extra.scales||{}) };
+  const c = new Chart(el, {type, data:{labels, datasets: datasets.map((d,i)=>({borderColor:PAL[i], backgroundColor: type==="bar"&&!d.type ? PAL[i]+"99" : PAL[i], pointRadius: labels.length > 60 ? 0 : 2, tension:.25, spanGaps:true, ...d}))},
+    options:{responsive:true, maintainAspectRatio:false, animation:false, interaction:{mode:"index", intersect:false},
+      plugins:{legend:{display: true, labels:{color:txt, boxWidth:12}}, tooltip:{callbacks:{title: it => it[0] ? fmtD(it[0].label) + (extra.week ? " (седмица)" : "") : ""}}}, scales}, plugins:[selPlugin]});
+  charts.push(c);
+  // Влачене с мишката = избор на период.
+  const idx = px => { const i = Math.round(c.scales.x.getValueForPixel(px)); return labels[Math.max(0, Math.min(labels.length - 1, i))]; };
+  el.onmousedown = e => { c.$sel = {a:e.offsetX, b:e.offsetX}; };
+  el.onmousemove = e => { if (c.$sel) { c.$sel.b = e.offsetX; c.draw(); } };
+  el.onmouseup = e => { const s = c.$sel; c.$sel = null; if (!s || Math.abs(s.b - s.a) < 8) { c.draw(); return; }
+    let a = idx(Math.min(s.a, s.b)), b = idx(Math.max(s.a, s.b)); if (extra.week) b = shift(b, 6); setRange(a, b); };
+  el.onmouseleave = () => { if (c.$sel) { c.$sel = null; c.draw(); } };
+  el.ondblclick = () => setRange(null, null);
+}
+
+let cur = null;
+function setRange(from, to) { cur.from = from; cur.to = to; render(); }
+const inR = d => (!cur.from || d >= cur.from) && (!cur.to || d <= cur.to);
+
+function detail(id) {
+  const p = people.find(x => x.id === id), r = snaps[id];
+  destroyCharts(); $("#title").textContent = nameOf(p);
+  if (!r) { app.innerHTML = `<button class="ghost" id="back">← Назад</button><div class="card" style="margin-top:12px">Клиентът още не е качил данни.</div>`; $("#back").onclick = overview; return; }
+  const s = r.data, counts = {};
+  (s.workouts||[]).forEach(w => w.lifts.forEach(l => counts[l.name] = (counts[l.name]||0) + 1));
+  const lifts = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
+  cur = {id, s, from: shift(today(), -89), to: null, metric:"recovery", lift: lifts[0] || "", lifts, volMode:"all"};
+  render();
+}
+
+function render() {
+  destroyCharts();
+  const s = cur.s, p = people.find(x => x.id === cur.id);
+  const W = (s.weights||[]).filter(x => inR(x.d)), F = (s.food||[]).filter(x => inR(x.d)), K = (s.workouts||[]).filter(x => inR(x.d));
+  const M = (s.metrics||[]).filter(x => inR(x.d)), MS = (s.measures||[]).filter(x => inR(x.d));
+  const first = W[0], last = W[W.length-1];
+  const days = first && last ? (new Date(last.d) - new Date(first.d)) / 864e5 : 0;
+  const dW = first && last && first !== last ? last.kg - first.kg : null;
+  const mAvg = k => { const seen = new Set(); return avg(M.filter(m => m.k === k && !seen.has(m.d) && seen.add(m.d)).map(m => m.v)); };
+  const span = cur.from ? Math.max(1, ((cur.to ? new Date(cur.to) : new Date()) - new Date(cur.from)) / 864e5 + 1) : Math.max(7, days);
+  const vol = sum(K.map(w => w.volume)), sets = sum(K.map(w => w.sets));
+  const goal = {lose:"Сваляне",maintain:"Поддръжка",gain:"Качване"}[s.goal] || "–";
+  const tile = (l, v, sub="", cls="muted") => `<div class="tile"><div class="l">${l}</div><div class="v">${v}</div><div class="${cls}">${sub}</div></div>`;
+
+  // Мерки: първа и последна стойност в периода за всяка мярка.
+  const mm = {};
+  MS.forEach(m => { const k = m.k + (m.side?"|"+m.side:"") + (m.flex?"|flex":""); (mm[k] = mm[k] || []).push(m); });
+  const mRows = Object.values(mm).map(a => { const f = a[0], l = a[a.length-1];
+    return `<tr><td>${MEAS[l.k]||l.k}${l.side?" ("+(l.side==="left"?"л":"д")+")":""}${l.flex?" стегнато":""}</td><td>${n(l.cm)}</td><td class="${l.cm-f.cm>0?'up':l.cm-f.cm<0?'down':''}">${a.length>1?sign(l.cm-f.cm):"–"}</td><td class="muted">${fmtD(l.d)}</td></tr>`; }).join("");
+
+  const btn = (label, days) => { const from = days ? shift(today(), -(days-1)) : null; const on = cur.from === from && !cur.to;
+    return `<button class="${on?'':'ghost'}" data-from="${from||""}">${label}</button>`; };
+  app.innerHTML = `<button class="ghost" id="back">← Всички клиенти</button>
+  <div class="card" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <b>Период:</b> ${btn("7 дни",7)}${btn("30 дни",30)}${btn("90 дни",90)}${btn("6 мес.",182)}${btn("1 год.",365)}${btn("Всичко",0)}
+    <span class="muted" style="margin-left:auto">${cur.from ? fmtD(cur.from) : "началото"} – ${cur.to ? fmtD(cur.to) : "днес"} · влачи с мишката по графика за избор, двоен клик = всичко</span>
+  </div>
+  <div class="grid">
+    ${tile("Тегло (последно)", last ? n(last.kg)+" кг" : "–", dW==null ? goal : sign(dW)+" кг за периода", dW>0?"up":dW<0?"down":"muted")}
+    ${tile("Темпо", days >= 6 && dW != null ? sign(dW / days * 7, 2) + " кг/седм." : "–", "цел: " + goal)}
+    ${tile("Калории (ср./ден)", n(avg(F.map(f=>f.kcal)),0), F.length + " дни записани")}
+    ${tile("Макроси (ср./ден)", `${n(avg(F.map(f=>f.p)),0)} / ${n(avg(F.map(f=>f.c)),0)} / ${n(avg(F.map(f=>f.f)),0)}`, "белтък / въгл. / мазн. г")}
+    <div class="tile" id="wkTile" style="cursor:pointer" title="Към календара">${`<div class="l">Тренировки ›</div><div class="v">${K.length}</div><div class="muted">${n(K.length / span * 7)} на седмица</div>`}</div>
+    ${tile("Обем", n(vol/1000) + " т", sets + " работни серии")}
+    ${tile("Възстановяване", n(mAvg("recovery"),0) + "%", "HRV " + n(mAvg("hrv"),0) + " мс · пулс " + n(mAvg("rhr"),0))}
+    ${tile("Сън / крачки", n(mAvg("sleepHours")) + " ч", n(mAvg("steps"),0) + " крачки/ден")}
+  </div>
+  <div class="card avgs"><b>Средно за периода:</b>
+    <span>Тегло <b>${n(avg(W.map(x=>x.kg)))} кг</b></span><span>Пулс в покой <b>${n(mAvg("rhr"),0)}</b></span><span>HRV <b>${n(mAvg("hrv"),0)} мс</b></span>
+    <span>Възстановяване <b>${n(mAvg("recovery"),0)}%</b></span><span>Сън <b>${n(mAvg("sleepHours"))} ч</b></span><span>Крачки <b>${n(mAvg("steps"),0)}</b></span>
+    <span>Ккал <b>${n(avg(F.map(f=>f.kcal)),0)}</b></span><span>Белтък <b>${n(avg(F.map(f=>f.p)),0)} г</b></span></div>
+  <div class="two">
+    <div class="card"><h2>Тегло <span class="avg" id="cwa"></span></h2><div class="chart"><canvas id="cw"></canvas></div><div id="cws" class="muted stat"></div></div>
+    <div class="card"><h2 style="display:flex;gap:10px;align-items:center">Показател <select id="mk" style="width:auto">${Object.entries(METRICS).map(([k,v])=>`<option value="${k}" ${k===cur.metric?"selected":""}>${v}</option>`).join("")}</select> <span class="avg" id="cma"></span></h2><div class="chart"><canvas id="cm"></canvas></div><div id="cms" class="muted stat"></div></div>
+    <div class="card"><h2>Калории и белтък <span class="avg" id="cfa"></span></h2><div class="chart"><canvas id="cf"></canvas></div><div id="cfs" class="muted stat"></div></div>
+    <div class="card"><h2>Обем по седмици <select id="vm" style="width:auto;margin-left:8px"><option value="all">всички упражнения</option><option value="lift" ${cur.volMode==="lift"?"selected":""}>само избраното упражнение</option></select> <span class="avg" id="cva"></span></h2><div class="chart"><canvas id="cv"></canvas></div><div id="cvs" class="muted stat"></div></div>
+  </div>
+  <div class="card" id="calCard"><h2 style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">Календар на тренировките
+    <button class="ghost" id="calPrev">‹</button><span id="calTitle"></span><button class="ghost" id="calNext">›</button>
+    <span class="muted" style="font-weight:400;font-size:13px;margin-left:auto"><span class="dot s"></span> силова &nbsp; <span class="dot c"></span> кардио</span></h2>
+    <div id="cal"></div><div id="calDay" class="muted" style="margin-top:8px"></div></div>
+  <div class="card"><h2 style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">Силов прогрес <select id="lf" style="width:auto">${cur.lifts.map(l=>`<option ${l===cur.lift?"selected":""}>${esc(l)}</option>`).join("") || "<option>Няма упражнения</option>"}</select>
+    <span class="muted" style="font-weight:400;font-size:13px">най-тежка серия, ориентировъчен 1ПМ (Epley) и обем на упражнението</span></h2>
+    <div class="chart" style="height:300px"><canvas id="cs"></canvas></div><div id="liftStats" class="muted" style="margin-top:8px"></div></div>
+  <div class="two">
+    <div class="card"><h2>Мерки в периода</h2><div class="scroll"><table><thead><tr><th>Мярка</th><th>см</th><th>Промяна</th><th>Дата</th></tr></thead><tbody>${mRows || '<tr><td colspan="4" class="muted">Няма мерки в периода</td></tr>'}</tbody></table></div></div>
+    <div class="card"><h2>Хранене по дни</h2><div class="scroll" style="max-height:320px;overflow-y:auto"><table><thead><tr><th>Ден</th><th>Ккал</th><th>Б</th><th>В</th><th>М</th></tr></thead><tbody>${
+      F.slice().reverse().map(f=>`<tr><td>${fmtD(f.d)}</td><td>${n(f.kcal,0)}</td><td>${n(f.p,0)}</td><td>${n(f.c,0)}</td><td>${n(f.f,0)}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Няма данни</td></tr>'}</tbody></table></div></div>
+  </div>
+  <div class="card"><h2>Тренировки в периода (${K.length})</h2>${
+    K.slice().reverse().map(w=>`<details><summary><b>${fmtD(w.d)}</b> · ${esc(w.title)} <span class="muted">· ${w.sets} серии · ${n(w.volume,0)} кг обем</span></summary>${
+      w.lifts.map(l=>`<div style="margin:6px 0 0 16px"><b>${esc(l.name)}</b> <span class="muted">${l.sets.map(x=>n(x[0])+"×"+n(x[1])).join("  ")}</span></div>`).join("")}</details>`).join("") || '<p class="muted">Няма тренировки в периода</p>'
+  }</div>`;
+
+  $("#back").onclick = overview;
+  app.querySelectorAll("[data-from]").forEach(b => b.onclick = () => setRange(b.dataset.from || null, null));
+  $("#mk").onchange = e => { cur.metric = e.target.value; render(); };
+  $("#lf").onchange = e => { cur.lift = e.target.value; render(); };
+  $("#vm").onchange = e => { cur.volMode = e.target.value; render(); };
+
+  // Тегло + 7-дневна средна.
+  mk($("#cw"), "line", W.map(x=>x.d), [
+    {label:"Тегло кг", data:W.map(x=>x.kg), borderWidth:1, pointRadius: W.length > 60 ? 0 : 2, borderColor:PAL[0]+"88"},
+    {label:"Средно 7 дни", data:W.map(x => avg(W.filter(y => y.d <= x.d && y.d > shift(x.d,-7)).map(y=>y.kg))), pointRadius:0, borderWidth:2.5},
+    {label:"Средно " + n(avg(W.map(x=>x.kg)), 1), data:W.map(x=>x.kg).map(()=>avg(W.map(x=>x.kg))), borderDash:[6,5], pointRadius:0, borderWidth:1.5, borderColor:"#9ca3af", backgroundColor:"#9ca3af", yAxisID:"y", type:"line"}]);
+
+  const seen = new Set(), MP = M.filter(m => m.k === cur.metric).sort((a,b)=>a.d<b.d?-1:1).filter(m => !seen.has(m.d) && seen.add(m.d));
+  mk($("#cm"), "line", MP.map(x=>x.d), [{label:METRICS[cur.metric], data:MP.map(x=>x.v)}, {label:"Средно " + n(avg(MP.map(x=>x.v)), 1), data:MP.map(x=>x.v).map(()=>avg(MP.map(x=>x.v))), borderDash:[6,5], pointRadius:0, borderWidth:1.5, borderColor:"#9ca3af", backgroundColor:"#9ca3af", yAxisID:"y", type:"line"}]);
+
+  mk($("#cf"), "bar", F.map(x=>x.d), [{label:"Ккал", data:F.map(x=>Math.round(x.kcal)), yAxisID:"y"},
+    {type:"line", label:"Белтък г", data:F.map(x=>Math.round(x.p)), yAxisID:"y1", pointRadius:2}, {label:"Средно " + n(avg(F.map(x=>x.kcal)), 1), data:F.map(x=>x.kcal).map(()=>avg(F.map(x=>x.kcal))), borderDash:[6,5], pointRadius:0, borderWidth:1.5, borderColor:"#9ca3af", backgroundColor:"#9ca3af", yAxisID:"y", type:"line"}],
+    {scales:{y1:{position:"right", grid:{display:false}, ticks:{color:css("--muted")}}}});
+
+  // Обем по седмици.
+  const wk = {};
+  K.forEach(w => { const k = weekOf(w.d); wk[k] = wk[k] || {v:0, s:0};
+    if (cur.volMode === "lift") { const l = w.lifts.find(l => l.name === cur.lift); if (l) { wk[k].v += sum(l.sets.map(x=>x[0]*x[1])); wk[k].s += l.sets.length; } }
+    else { wk[k].v += w.volume; wk[k].s += w.sets; } });
+  const wks = Object.keys(wk).sort();
+  mk($("#cv"), "bar", wks, [{label:"Обем кг", data:wks.map(k=>Math.round(wk[k].v)), yAxisID:"y"},
+    {type:"line", label:"Серии", data:wks.map(k=>wk[k].s), yAxisID:"y1", pointRadius:3}, {label:"Средно " + n(avg(wks.map(k=>wk[k].v)), 1), data:wks.map(k=>wk[k].v).map(()=>avg(wks.map(k=>wk[k].v))), borderDash:[6,5], pointRadius:0, borderWidth:1.5, borderColor:"#9ca3af", backgroundColor:"#9ca3af", yAxisID:"y", type:"line"}],
+    {week:true, scales:{y1:{position:"right", grid:{display:false}, ticks:{color:css("--muted")}}}});
+
+  // Силов прогрес за избраното упражнение.
+  const LP = K.map(w => { const l = w.lifts.find(l => l.name === cur.lift); if (!l || !l.sets.length) return null;
+    const top = l.sets.reduce((a,b) => b[0] > a[0] || (b[0] === a[0] && b[1] > a[1]) ? b : a);
+    return {d:w.d, top, e:Math.max(...l.sets.map(x => e1rm(x[0], x[1]))), v:sum(l.sets.map(x=>x[0]*x[1]))}; }).filter(Boolean);
+  mk($("#cs"), "line", LP.map(x=>x.d), [
+    {label:"Най-тежка серия кг", data:LP.map(x=>x.top[0]), yAxisID:"y"},
+    {label:"1ПМ ориент. кг", data:LP.map(x=>Math.round(x.e*10)/10), yAxisID:"y", borderDash:[5,4]},
+    {type:"bar", label:"Обем кг", data:LP.map(x=>Math.round(x.v)), yAxisID:"y1", backgroundColor:PAL[2]+"55", borderColor:PAL[2]}, {label:"Средна тежест " + n(avg(LP.map(x=>x.top[0])), 1), data:LP.map(x=>x.top[0]).map(()=>avg(LP.map(x=>x.top[0]))), borderDash:[6,5], pointRadius:0, borderWidth:1.5, borderColor:"#9ca3af", backgroundColor:"#9ca3af", yAxisID:"y", type:"line"}],
+    {scales:{y1:{position:"right", grid:{display:false}, ticks:{color:css("--muted")}}}});
+  if (LP.length) {
+    const a = LP[0], b = LP[LP.length-1], best = LP.reduce((x,y) => y.e > x.e ? y : x);
+    $("#liftStats").innerHTML = `${LP.length} тренировки · първа: ${n(a.top[0])}×${n(a.top[1])} (${fmtD(a.d)}) → последна: ${n(b.top[0])}×${n(b.top[1])} (${fmtD(b.d)}) · 1ПМ ${sign(b.e - a.e)} кг (${a.e ? sign((b.e/a.e-1)*100,0) : "–"}%) · рекорд 1ПМ ${n(best.e)} кг на ${fmtD(best.d)}`;
+  } else $("#liftStats").textContent = "Няма серии за това упражнение в периода.";
+  const rng = (cur.from ? fmtD(cur.from) : "началото") + " – " + (cur.to ? fmtD(cur.to) : "днес");
+  const stat = (id, html) => { const el = $("#" + id); if (el) el.innerHTML = `<b>${rng}:</b> ` + html; };
+  const kgs = W.map(x=>x.kg);
+  stat("cws", W.length ? `от ${n(W[0].kg)} до ${n(W[W.length-1].kg)} кг (<span class="${dW>0?'up':dW<0?'down':''}">${sign(dW)} кг</span>) · средно ${n(avg(kgs))} · мин ${n(Math.min(...kgs))} · макс ${n(Math.max(...kgs))}` : "няма тегло");
+  const mv = MP.map(x=>x.v);
+  stat("cms", mv.length ? `средно ${n(avg(mv))} · мин ${n(Math.min(...mv))} · макс ${n(Math.max(...mv))} · ${mv.length} дни` : "няма данни");
+  stat("cfs", F.length ? `средно ${n(avg(F.map(f=>f.kcal)),0)} ккал и ${n(avg(F.map(f=>f.p)),0)} г белтък на ден · ${F.length} дни` : "няма записано хранене");
+  stat("cvs", wks.length ? `общо ${n(sum(wks.map(k=>wk[k].v))/1000)} т · средно ${n(avg(wks.map(k=>wk[k].v))/1000)} т и ${n(avg(wks.map(k=>wk[k].s)),0)} серии на седмица` : "няма тренировки");
+  const UNIT = {recovery:"%",hrv:" мс",rhr:" уд/мин",sleepHours:" ч",steps:" крачки",strain:"",activeKcal:" ккал"};
+  const A = (id, txt) => { const el = $("#" + id); if (el) el.textContent = txt; };
+  A("cwa", kgs.length ? "средно " + n(avg(kgs)) + " кг" : "");
+  A("cma", mv.length ? "средно " + n(avg(mv), cur.metric === "sleepHours" ? 1 : 0) + UNIT[cur.metric] : "");
+  A("cfa", F.length ? "средно " + n(avg(F.map(f=>f.kcal)),0) + " ккал · " + n(avg(F.map(f=>f.p)),0) + " г белтък" : "");
+  A("cva", wks.length ? "средно " + n(avg(wks.map(k=>wk[k].v))/1000) + " т/седм." : "");
+  $("#wkTile").onclick = () => $("#calCard").scrollIntoView({behavior:"smooth"});
+  drawCal();
+}
+
+function calDays() {
+  const s = cur.s, days = {};
+  const add = (d, k, txt) => { const x = days[d] = days[d] || {s:0, c:0, items:[]}; x[k]++; if (txt) x.items.push(txt); };
+  (s.workouts||[]).forEach(w => add(w.d, "s", `💪 ${w.title} · ${w.sets} серии · ${n(w.volume,0)} кг`));
+  const byDay = {};
+  (s.metrics||[]).forEach(m => { if (m.k === "strengthSessions" || m.k === "cardioSessions") { const k = m.d + m.k; byDay[k] = Math.max(byDay[k]||0, m.v); } });
+  Object.entries(byDay).forEach(([k, v]) => { if (v <= 0) return; const d = k.slice(0,10), kind = k.slice(10);
+    const x = days[d] = days[d] || {s:0, c:0, items:[]};
+    if (kind === "strengthSessions") { x.s = Math.max(x.s, v); if (!x.items.some(t => t.startsWith("💪"))) x.items.push(`💪 силова (часовник) ×${v}`); }
+    else { x.c = Math.max(x.c, v); x.items.push(`🏃 кардио ×${v}`); } });
+  (s.metrics||[]).forEach(m => { if (m.k === "workoutMinutes" && days[m.d] && m.v > 0 && !days[m.d].min) { days[m.d].min = m.v; days[m.d].items.push(`⏱ ${n(m.v,0)} мин общо`); } });
+  return days;
+}
+
+function drawCal() {
+  if (!cur.calMonth) cur.calMonth = today().slice(0,7);
+  const days = calDays(), [y, mo] = cur.calMonth.split("-").map(Number);
+  const first = new Date(y, mo-1, 1), nDays = new Date(y, mo, 0).getDate(), lead = (first.getDay() + 6) % 7;
+  $("#calTitle").textContent = first.toLocaleDateString("bg-BG", {month:"long", year:"numeric"});
+  let html = '<div class="cal">' + ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"].map(d => `<div class="cal-h">${d}</div>`).join("");
+  for (let i = 0; i < lead; i++) html += "<div></div>";
+  let sCount = 0, cCount = 0;
+  for (let dd = 1; dd <= nDays; dd++) {
+    const d = `${y}-${String(mo).padStart(2,"0")}-${String(dd).padStart(2,"0")}`, x = days[d];
+    if (x?.s) sCount++; if (x?.c) cCount++;
+    html += `<div class="cal-d${d === today() ? " today" : ""}${x ? " has" : ""}" data-d="${d}"><span>${dd}</span><div>${x?.s ? '<span class="dot s"></span>' : ""}${x?.c ? '<span class="dot c"></span>' : ""}</div></div>`;
+  }
+  $("#cal").innerHTML = html + "</div>";
+  $("#calDay").textContent = `Този месец: ${sCount} дни със силова, ${cCount} дни с кардио. Натисни ден за подробности.`;
+  $("#cal").querySelectorAll(".cal-d").forEach(el => el.onclick = () => { const x = days[el.dataset.d];
+    $("#calDay").innerHTML = `<b>${fmtD(el.dataset.d)}</b>: ` + (x ? x.items.map(esc).join(" · ") : "почивка"); });
+  const step = k => { const t = new Date(y, mo-1+k, 1); cur.calMonth = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}`; drawCal(); };
+  $("#calPrev").onclick = () => step(-1); $("#calNext").onclick = () => step(1);
+}
+
+$("#out").onclick = () => { store.set("fd.refresh", null); token = me = null; loginView(); };
+$("#refresh").onclick = () => load().catch(e => loginView(e.message));
+(async () => {
+  const rt = store.get("fd.refresh");
+  if (!rt) return loginView();
+  try { await auth({refresh_token: rt}, "refresh_token"); await load(); } catch(e) { store.set("fd.refresh", null); loginView(); }
+})();
+</script>
+</body>
+</html>

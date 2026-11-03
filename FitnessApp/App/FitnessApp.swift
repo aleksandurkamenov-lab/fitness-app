@@ -16,6 +16,7 @@ struct FitnessApp: App {
             SetEntry.self,
             UserProfile.self,
             WeightEntry.self,
+            BodyScan.self,
             MeasurementEntry.self,
             DailyMetric.self,
             FoodItem.self,

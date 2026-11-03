@@ -4,6 +4,7 @@ import Charts
 
 struct MeasurementsView: View {
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
+    @Query private var profiles: [UserProfile]
     @Query(sort: \MeasurementEntry.date) private var measurements: [MeasurementEntry]
     @State private var showingAddWeight = false
     @State private var rangeDays = 30
@@ -46,6 +47,9 @@ struct MeasurementsView: View {
                 Section("Тегло") {
                     if let last = trend.last {
                         LabeledContent("Последно", value: "\(last.kg.short) кг")
+                        if let goal = profiles.first?.goalWeightKg, goal > 0 {
+                            LabeledContent("До целта \(goal.short) кг", value: BodyMath.signedKg(goal - last.trend))
+                        }
                         if let week = BodyMath.weekSummary(weights) {
                             LabeledContent("Средно (7 дни)", value: "\(week.average.short) кг")
                             if let change = week.change {
@@ -65,7 +69,7 @@ struct MeasurementsView: View {
                         }
                         .pickerStyle(.segmented)
                         if visible.count >= 2 {
-                            WeightChart(points: visible)
+                            WeightChart(points: visible, goalKg: profiles.first?.goalWeightKg)
                         } else {
                             Text("Няма достатъчно записи за този период.")
                                 .font(.caption)
@@ -121,8 +125,12 @@ struct MeasurementsView: View {
 
 struct WeightChart: View {
     let allPoints: [BodyMath.TrendPoint]
+    let goalKg: Double?
 
-    init(points: [BodyMath.TrendPoint]) { allPoints = points }
+    init(points: [BodyMath.TrendPoint], goalKg: Double? = nil) {
+        allPoints = points
+        self.goalKg = (goalKg ?? 0) > 0 ? goalKg : nil
+    }
 
     /// Най-много ~150 точки в графиката, за да не се претоварва.
     private var points: [BodyMath.TrendPoint] {
@@ -138,6 +146,14 @@ struct WeightChart: View {
             LineMark(x: .value("Дата", point.date), y: .value("Тренд", point.trend))
                 .foregroundStyle(Color.accentColor)
                 .interpolationMethod(.catmullRom)
+            if let goalKg {
+                RuleMark(y: .value("Цел", goalKg))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                    .foregroundStyle(.green)
+                    .annotation(position: .top, alignment: .trailing) {
+                        Text("Цел \(goalKg.short) кг").font(.caption2).foregroundStyle(.green)
+                    }
+            }
         }
         .chartYScale(domain: .automatic(includesZero: false))
         .chartScrub(points.map {

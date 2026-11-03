@@ -3,7 +3,7 @@ import SwiftData
 
 /// Показатели, за които пазим дневна история и рисуваме графики.
 enum MetricKind: String, CaseIterable, Identifiable {
-    case recovery, sleepPerformance, sleepHours, hrv, rhr, respiratory, spo2, strain, steps, activeKcal, skinTemp
+    case recovery, sleepPerformance, sleepHours, hrv, rhr, respiratory, spo2, strain, steps, activeKcal, skinTemp, workoutMinutes, strengthSessions, cardioSessions
 
     var id: String { rawValue }
 
@@ -20,6 +20,9 @@ enum MetricKind: String, CaseIterable, Identifiable {
         case .steps: "Крачки"
         case .activeKcal: "Активни калории"
         case .skinTemp: "Температура на кожата"
+        case .workoutMinutes: "Тренировки и кардио"
+        case .strengthSessions: "Силови сесии"
+        case .cardioSessions: "Кардио сесии"
         }
     }
 
@@ -34,6 +37,8 @@ enum MetricKind: String, CaseIterable, Identifiable {
         case .steps: ""
         case .activeKcal: "ккал"
         case .skinTemp: "°C"
+        case .workoutMinutes: "мин"
+        case .strengthSessions, .cardioSessions: ""
         }
     }
 
@@ -46,6 +51,18 @@ enum MetricKind: String, CaseIterable, Identifiable {
 
     /// Крачките и калориите са по-точни от часовника/телефона (Health), останалото от WHOOP.
     var preferHealth: Bool { self == .steps || self == .activeKcal }
+}
+
+/// Силова или кардио сесия: по името на спорта; непознатите и по-късите от 35 мин са кардио, останалите силови.
+enum SessionKindRule {
+    static func isStrength(sport: String?, minutes: Double) -> Bool {
+        let name = (sport ?? "").lowercased()
+        let strength = ["weight", "strength", "powerlift", "functional", "crossfit", "gym", "силов"]
+        if strength.contains(where: { name.contains($0) }) { return true }
+        let cardio = ["run", "walk", "cycl", "bik", "swim", "row", "elliptic", "hiit", "cardio", "stair", "hik", "ski", "spin", "jog", "dance", "boxing", "kickbox", "treadmill", "assault"]
+        if cardio.contains(where: { name.contains($0) }) { return false }
+        return minutes >= 35
+    }
 }
 
 enum MetricSource: String {

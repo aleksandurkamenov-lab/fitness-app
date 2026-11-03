@@ -10,6 +10,8 @@ struct EnergyTrendView: View {
     @Query(sort: \FoodEntry.date) private var foods: [FoodEntry]
     @Query private var metrics: [DailyMetric]
     @State private var showingApply = false
+    /// Коя линия се показва: 0 BMR, 1 общ разход, 2 реален.
+    @State private var line = 0
     /// Храна от Apple Health (напр. MyFitnessPal), събира се с записаната в приложението.
     var healthFood: [Date: NutritionDay] = [:]
 
@@ -46,8 +48,23 @@ struct EnergyTrendView: View {
 
     private var latest: EnergyModel.WeekPoint? { weeks.last }
 
+    private struct LinePoint: Identifiable {
+        let date: Date
+        let value: Double
+        var id: Date { date }
+    }
+
+    private func lineValue(_ week: EnergyModel.WeekPoint) -> Double? {
+        switch line {
+        case 0: week.bmr
+        case 1: week.device ?? week.formula
+        default: week.real
+        }
+    }
+
     private var latestReal: Double? { weeks.reversed().compactMap(\.real).first }
     private var latestFormula: Double? { weeks.reversed().compactMap(\.formula).first }
+    private var latestBMR: Double? { weeks.reversed().compactMap(\.bmr).first }
     private var latestDevice: Double? { weeks.reversed().compactMap(\.device).first }
 
     private func text(_ value: Double?) -> String {
@@ -90,7 +107,7 @@ struct EnergyTrendView: View {
     }
 
     private func valuesText(_ week: EnergyModel.WeekPoint) -> String {
-        var result = "разход \(text(week.formula)) · с активност \(text(week.device))"
+        var result = "BMR \(text(week.bmr)) · общ \(text(week.device ?? week.formula))"
         if let real = week.real { result += " · реален \(text(real))" }
         return result
     }
@@ -98,18 +115,18 @@ struct EnergyTrendView: View {
     var body: some View {
         List {
             Section {
-                LabeledContent("Дневен енергиен разход", value: text(latestFormula))
-                LabeledContent("Енергиен разход с активността", value: text(latestDevice))
-                if let real = latestReal, let formula = latestFormula, formula > 0 {
-                    LabeledContent("Реален (тегло и прием)", value: text(real))
-                    let percent = (real - formula) / formula * 100
-                    LabeledContent("Реален спрямо дневния разход",
+                LabeledContent("Базов обмен (BMR)", value: text(latestBMR))
+                LabeledContent("Общ разход за деня", value: text(latestDevice ?? latestFormula))
+                if let real = latestReal, let total = latestDevice ?? latestFormula, total > 0 {
+                    LabeledContent("Реален (по тегло и храна)", value: text(real))
+                    let percent = (real - total) / total * 100
+                    LabeledContent("Реален спрямо общия",
                                    value: "\(percent >= 0 ? "+" : "")\(percent.formatted(.number.precision(.fractionLength(0)))) %")
                 }
             } header: {
                 Text("Сега")
             } footer: {
-                Text("Дневен енергиен разход: BMR (по постната маса, ако има % мазнини) × коефициент на активност. С активността: базов обмен + активни калории от Apple Health, с ~10% термичен ефект. Реален разход (по теглото и записаната храна) се показва, когато има поне 10 дни със записана храна и редовно тегло. Ориентировъчно.")
+                Text("Базов обмен (BMR): колко калории гориш за 24 ч в пълен покой (по постната маса, ако има % мазнини). Общ разход: BMR + движение и тренировки (активни калории от часовника/телефона) + ~10% за храносмилане; ако няма активни калории, BMR × коефициента на активност от профила. Реален: изчислен от промяната на теглото и записаната храна, след поне 10 дни с храна и редовно тегло. Средно на ден за седмицата. Ориентировъчно, не е медицински съвет.")
             }
 
             if let real = latestReal, let profile = profiles.first, let kg = weights.last?.kg {
@@ -127,39 +144,36 @@ struct EnergyTrendView: View {
             }
 
             Section {
-                if weeks.contains(where: { $0.formula != nil }) {
-                    Chart {
-                        ForEach(weeks) { week in
-                            if let value = week.formula {
-                                LineMark(x: .value("Седмица", week.weekStart), y: .value("ккал", value),
-                                         series: .value("Метод", "Дневен разход"))
-                                    .foregroundStyle(by: .value("Метод", "Дневен разход"))
-                            }
-                            if let value = week.device {
-                                LineMark(x: .value("Седмица", week.weekStart), y: .value("ккал", value),
-                                         series: .value("Метод", "С активност"))
-                                    .foregroundStyle(by: .value("Метод", "С активност"))
-                            }
-                            if let value = week.real {
-                                LineMark(x: .value("Седмица", week.weekStart), y: .value("ккал", value),
-                                         series: .value("Метод", "Реален"))
-                                    .foregroundStyle(by: .value("Метод", "Реален"))
-                            }
-                        }
+                if weeks.contains(where: { $0.bmr != nil }) {
+                    Picker("Линия", selection: $line) {
+                        Text("BMR").tag(0)
+                        Text("Общ").tag(1)
+                        Text("Реален").tag(2)
                     }
-                    .chartYScale(domain: .automatic(includesZero: false))
-                    .chartScrub(weeks.map {
-                        ScrubPoint(date: $0.weekStart, value: $0.formula ?? $0.device ?? $0.real ?? 0,
-                                   text: "Седмица от \(scrubDate($0.weekStart)): " + valuesText($0))
-                    })
-                    .padding(.top, 24)
-                    .frame(height: 230)
+                    .pickerStyle(.segmented)
+                    let points = weeks.compactMap { week in lineValue(week).map { LinePoint(date: week.weekStart, value: $0) } }
+                    if points.isEmpty {
+                        Text("Още няма данни за тази линия.").foregroundStyle(.secondary)
+                    } else {
+                        Chart(points) { point in
+                            LineMark(x: .value("Седмица", point.date), y: .value("ккал", point.value))
+                                .interpolationMethod(.catmullRom)
+                            PointMark(x: .value("Седмица", point.date), y: .value("ккал", point.value))
+                                .symbolSize(20)
+                        }
+                        .chartYScale(domain: .automatic(includesZero: false))
+                        .chartScrub(points.map {
+                            ScrubPoint(date: $0.date, value: $0.value, text: "\(scrubDate($0.date)): \(Int($0.value.rounded())) ккал")
+                        })
+                        .padding(.top, 24)
+                        .frame(height: 230)
+                    }
                 } else {
                     Text("Попълни профила и въведи тегло, за да се появи графиката.")
                         .foregroundStyle(.secondary)
                 }
             } header: {
-                Text("По седмици")
+                Text("Средно на ден, по седмици (ккал)")
             }
 
             Section("Седмиците") {

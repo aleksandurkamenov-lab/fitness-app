@@ -68,3 +68,25 @@ Every change to the app is a numbered version. The current version is shown at t
 - v64: Profile sex selector is now a segmented control, so the value no longer shows as "..." after switching tabs.
 - v65: Health monitor on Today has a "Тегло днес" tile that opens the weight statistics (7/30/90 days).
 - v66: Weight tile renamed with 7-day change, Measurements shows 7-day average and change, weight chart shows only the trend line.
+- v67: Week grid no longer accepts negative weight, rest timer starts only for the current week and is cancelled when leaving the grid.
+- v68: WHOOP response models marked nonisolated (fixes four Swift 6 Decodable warnings).
+- v69: Inspired by openGym: activity stats (week/month counts, week streak, 30-day weight, 12-month heatmap), muscle balance by sets and per-muscle readiness, goal weight line on weight charts, JSON backup export and Strong/Hevy CSV import.
+- v70: Activity heatmap counts workouts logged from the week grid as 45 minutes, so colors are not all the lightest shade.
+- v71: Heatmap uses real workout and cardio minutes from WHOOP and Apple Health (new daily metric, up to 12 months from Health), falling back to app-logged workouts.
+- v72: Energy screens show BMR (base metabolic rate) explicitly, "total daily expenditure" instead of the unclear "with activity" label, digestion (~10%) as its own row on Today; Activity card moved to the top of Trends.
+- v73: DEXA/InBody scans (Calculators) drive body fat and BMR (fat-free mass adjusted by 25% of weight change, 7-day average weight); heatmap is its own card with a legend; energy trend chart shows one selectable line (BMR / total / real) with a short tap label.
+- v74: Adds the user's 2025 DEXA scan once on launch; DEXA/InBody scans count for up to 24 months.
+- v75: Import a mesocycle from a coach .xlsx file or a Google Sheets link (Workouts tab buttons); pick a sheet.
+- v76: Removed the Exercises button from the Workouts tab; a mesocycle (e.g. imported from Excel) can be deleted from its detail screen with confirmation.
+- v77: Workouts of a mesocycle can be renamed (pencil button in the mesocycle screen).
+- v78: Renaming an exercise in the week grid only changes that workout's exercise (no longer renames it everywhere it is shared).
+- v79: Trends → workouts by day: strength workout counts for the last 7 and 30 days, plus the last 6 calendar weeks (Mon–Sun) with a check when the 3–4 per week target is reached.
+- v80: Reps fields in the workout grid now accept both comma and dot (e.g. 8,5), same as kg.
+- v81: Trends workout counts also use WHOOP/Health workout days (30+ min) and sessions logged in the grid are dated on the day they are first logged, so weeks no longer show 0 after real workouts.
+- v82: Trends counts strength and cardio sessions separately (7 days, 30 days, per Mon–Sun week) from the WHOOP/Health workout type; unknown types under 35 min count as cardio.
+- v83: Trends → "Силови тренировки" opens a day-by-day list showing strength and cardio days.
+- v84: The day-by-day screen is a month calendar (strength = green dot, cardio = orange dot, month switcher) with a list below; the "This week" and "This month" tiles open it too.
+- v85: Strength counts come from WHOOP/Health; workouts logged in the grid are used only for weeks without device data, at most one per day (old grid sessions carried the mesocycle week start date, giving "strength x3").
+- v86: Cloud (Supabase, project preset): sign in from Profile → Облак и треньор, hourly upload of weight/measurements/workouts/food/metrics, link to a coach by code, and a coach view of each client's progress (read-only).
+- v87: Cloud data is uploaded every time the app goes to the background (and at most every 15 min on open), so the coach dashboard shows fresh profile, weight and workouts.
+- v88: Cloud upload includes food from Apple Health (MyFitnessPal etc.), so calories and macros appear in the coach dashboard.

@@ -16,7 +16,7 @@ struct MetricDetailView: View {
 
     private var unit: String { kind?.unit ?? "кг" }
     private var digits: Int { kind?.digits ?? 1 }
-    private var isBar: Bool { kind == .steps || kind == .activeKcal }
+    private var isBar: Bool { kind == .steps || kind == .activeKcal || kind == .workoutMinutes }
 
     private var today: Date { Calendar.current.startOfDay(for: .now) }
     private var from: Date { Calendar.current.date(byAdding: .day, value: -rangeDays, to: today) ?? .distantPast }
