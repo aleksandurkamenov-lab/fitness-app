@@ -170,7 +170,9 @@ final class CloudService {
         if !force, let lastUpload, Date.now.timeIntervalSince(lastUpload) < 900 { return }
         busy = true
         defer { busy = false }
-        do { try await uploadSnapshot(CloudSnapshotBuilder.build(context: context, name: email)) } catch {}
+        // Храната от Apple Health (напр. MyFitnessPal) не е в локалната база, затова се чете отделно.
+        let healthFood = await HealthService().nutrition(days: 90)
+        do { try await uploadSnapshot(CloudSnapshotBuilder.build(context: context, name: email, healthFood: healthFood)) } catch {}
     }
 
     /// Моят профил и профилите на клиентите ми.
@@ -208,7 +210,7 @@ final class CloudService {
 
 @MainActor
 enum CloudSnapshotBuilder {
-    static func build(context: ModelContext, name: String) -> CloudSnapshot {
+    static func build(context: ModelContext, name: String, healthFood: [Date: NutritionDay] = [:]) -> CloudSnapshot {
         var snap = CloudSnapshot()
         snap.name = name
         let cal = Calendar.current
@@ -253,6 +255,15 @@ enum CloudSnapshotBuilder {
             day.p += entry.protein
             day.c += entry.carbs
             day.f += entry.fat
+            byDay[d] = day
+        }
+        for (date, h) in healthFood where date >= since90 {
+            let d = CloudDay.string(date)
+            var day = byDay[d] ?? .init(d: d, kcal: 0, p: 0, c: 0, f: 0)
+            day.kcal += h.kcal
+            day.p += h.protein
+            day.c += h.carbs
+            day.f += h.fat
             byDay[d] = day
         }
         snap.food = byDay.values.sorted { $0.d < $1.d }
