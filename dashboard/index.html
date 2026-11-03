@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Треньорски дашборд</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#16181d;--muted:#6b7280;--line:#e5e7eb;--accent:#2563eb;--good:#16a34a;--bad:#dc2626}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#171a21;--text:#e8eaee;--muted:#9aa1ad;--line:#262b35;--accent:#5b8cff;--good:#3fbf6b;--bad:#f06363}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:2}
+header h1{font-size:18px;margin:0;flex:1}
+button,select,input{font:inherit;color:inherit}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+input,select{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+main{max-width:1200px;margin:0 auto;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.login{max-width:360px;margin:12vh auto}.login input{margin-bottom:10px}.login button{width:100%}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:600;font-size:13px}tbody tr{cursor:pointer}tbody tr:hover{background:rgba(127,127,127,.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}.tile .l{color:var(--muted);font-size:13px}.tile .v{font-size:22px;font-weight:650}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:800px){.two{grid-template-columns:1fr}}
+.muted{color:var(--muted)}.up{color:var(--bad)}.down{color:var(--good)}h2{font-size:16px;margin:0 0 10px}
+.chart{position:relative;height:240px}details{border-bottom:1px solid var(--line);padding:8px 0}summary{cursor:pointer}
+.scroll{overflow-x:auto}.err{color:var(--bad);margin-top:8px}.foot{color:var(--muted);font-size:12px;text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<header><h1 id="title">Треньорски дашборд</h1><span id="who" class="muted"></span><button id="refresh" class="ghost" hidden>Обнови</button><button id="out" class="ghost" hidden>Изход</button></header>
+<main id="app"></main>
+<div class="foot">Стойностите са ориентировъчни, не е медицински съвет.</div>
+<script>
+const URL_ = "https://zdhdvxslolwelbpezjvp.supabase.co";
+const KEY = "sb_publishable_y8Ztcv8gr3fkLRWbv2Hfdg_BWj9r5UQ";
+const METRICS = {recovery:"Възстановяване %",hrv:"HRV (мс)",rhr:"Пулс в покой",sleepHours:"Сън (ч)",steps:"Крачки",strain:"Натоварване",activeKcal:"Активни ккал"};
+const MEAS = {waist:"Талия",abdomen:"Корем",neck:"Врат",chest:"Гърди",arm:"Ръка",thigh:"Бедро",calf:"Прасец",hips:"Ханш"};
+const $ = s => document.querySelector(s), app = $("#app");
+let token = null, me = null, people = [], snaps = {}, charts = [];
+const store = { get:k=>{try{return localStorage.getItem(k)}catch(e){return null}}, set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}} };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const n = (v, d=1) => v == null || isNaN(v) ? "–" : Number(v).toLocaleString("bg-BG",{maximumFractionDigits:d});
+
+async function api(path, opts={}) {
+  const headers = {apikey: KEY, "Content-Type":"application/json"};
+  if (token) headers.Authorization = "Bearer " + token;
+  const r = await fetch(URL_ + path, {...opts, headers});
+  const t = await r.text();
+  if (!r.ok) throw new Error((r.status === 400 || r.status === 401) && path.startsWith("/auth") ? "Грешен имейл или парола." : "Грешка " + r.status + ": " + t.slice(0,150));
+  return t ? JSON.parse(t) : null;
+}
+async function auth(body, grant) {
+  token = null;
+  const s = await api("/auth/v1/token?grant_type=" + grant, {method:"POST", body: JSON.stringify(body)});
+  token = s.access_token; me = s.user; store.set("fd.refresh", s.refresh_token);
+}
+
+function loginView(msg) {
+  $("#out").hidden = $("#refresh").hidden = true; $("#who").textContent = "";
+  app.innerHTML = `<div class="card login"><h2>Вход</h2><p class="muted">Същият имейл и парола като в приложението.</p>
+  <input id="em" type="email" placeholder="Имейл" autocomplete="username"><input id="pw" type="password" placeholder="Парола" autocomplete="current-password">
+  <button id="go">Влез</button><div class="err">${esc(msg||"")}</div></div>`;
+  const go = async () => { try { await auth({email:$("#em").value.trim(), password:$("#pw").value}, "password"); await load(); } catch(e) { loginView(e.message); } };
+  $("#go").onclick = go; $("#pw").onkeydown = e => e.key === "Enter" && go();
+}
+
+async function load() {
+  app.innerHTML = `<div class="card muted">Зареждане…</div>`;
+  const [profiles, rows] = await Promise.all([
+    api("/rest/v1/profiles?select=id,display_name,code,coach_id"),
+    api("/rest/v1/snapshots?select=user_id,updated_at,data")]);
+  people = profiles; snaps = {}; rows.forEach(r => snaps[r.user_id] = r);
+  $("#who").textContent = me.email; $("#out").hidden = $("#refresh").hidden = false;
+  overview();
+}
+
+const nameOf = p => p.display_name || snaps[p.id]?.data?.name || ("Клиент " + p.code);
+function lastN(arr, days) { const c = new Date(Date.now() - days*864e5).toISOString().slice(0,10); return (arr||[]).filter(x => x.d >= c); }
+function metricLast(s, k) { const m = (s.metrics||[]).filter(x => x.k === k).sort((a,b)=>a.d<b.d?-1:1); return m.length ? m[m.length-1].v : null; }
+function avg(a) { return a.length ? a.reduce((x,y)=>x+y,0)/a.length : null; }
+function weightTrend(s) {
+  const w = s.weights || []; if (!w.length) return [null, null];
+  const last = w[w.length-1].kg, ago = lastN(w, 8)[0];
+  return [last, ago && ago !== w[w.length-1] ? last - ago.kg : null];
+}
+
+function overview() {
+  destroyCharts(); $("#title").textContent = "Треньорски дашборд";
+  const list = [...people].sort((a,b) => (a.id === me.id) - (b.id === me.id) || nameOf(a).localeCompare(nameOf(b)));
+  const rows = list.map(p => {
+    const r = snaps[p.id], s = r?.data || {};
+    const [w, dw] = weightTrend(s);
+    const kcal = avg(lastN(s.food, 7).map(f => f.kcal));
+    const wk = lastN(s.workouts, 7).length;
+    const upd = r ? new Date(r.updated_at) : null;
+    const stale = upd && Date.now() - upd > 3*864e5;
+    return `<tr data-id="${p.id}"><td><b>${esc(nameOf(p))}</b>${p.id===me.id?' <span class="muted">(аз)</span>':''}</td>
+      <td class="${stale?'up':''}">${upd ? upd.toLocaleString("bg-BG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "няма данни"}</td>
+      <td>${n(w)} кг</td><td class="${dw>0?'up':dw<0?'down':''}">${dw==null?"–":(dw>0?"+":"")+n(dw)}</td>
+      <td>${n(kcal,0)}</td><td>${wk}</td><td>${n(metricLast(s,"recovery"),0)}</td><td>${n(metricLast(s,"sleepHours"))}</td></tr>`;
+  }).join("");
+  app.innerHTML = `<div class="card"><h2>Клиенти (${list.filter(p=>p.id!==me.id).length})</h2><div class="scroll"><table>
+    <thead><tr><th>Име</th><th>Обновено</th><th>Тегло</th><th>7 дни</th><th>Ккал/ден (7д)</th><th>Тренировки (7д)</th><th>Възст. %</th><th>Сън ч</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <p class="muted">Червено „Обновено“ = клиентът не е отварял приложението 3+ дни. Натисни ред за подробности.</p></div>`;
+  app.querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => detail(tr.dataset.id));
+}
+
+function destroyCharts() { charts.forEach(c => c.destroy()); charts = []; }
+function line(el, labels, data, label) {
+  if (typeof Chart === "undefined") { el.parentNode.innerHTML = "<p class=\"muted\">Графиките не се заредиха (няма интернет).</p>"; return; }
+  const color = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+  charts.push(new Chart(el, {type:"line", data:{labels, datasets:[{label, data, borderColor:color, backgroundColor:color, pointRadius:2, tension:.25, spanGaps:true}]},
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:"index", intersect:false}, plugins:{legend:{display:false}}, scales:{x:{ticks:{maxTicksLimit:8}}}}}));
+}
+
+function detail(id) {
+  destroyCharts();
+  const p = people.find(x => x.id === id), r = snaps[id];
+  $("#title").textContent = nameOf(p);
+  if (!r) { app.innerHTML = `<button class="ghost" id="back">← Назад</button><div class="card" style="margin-top:12px">Клиентът още не е качил данни.</div>`; $("#back").onclick = overview; return; }
+  const s = r.data, [w, dw] = weightTrend(s);
+  const food7 = lastN(s.food, 7);
+  const goal = {lose:"Сваляне",maintain:"Поддръжка",gain:"Качване"}[s.goal] || "–";
+  const mLatest = {};
+  (s.measures||[]).forEach(m => { const k = m.k + (m.side?"|"+m.side:"") + (m.flex?"|flex":""); mLatest[k] = m; });
+  app.innerHTML = `<button class="ghost" id="back">← Всички клиенти</button>
+  <div class="grid" style="margin-top:12px">
+    <div class="tile"><div class="l">Тегло</div><div class="v">${n(w)} кг</div><div class="${dw>0?'up':dw<0?'down':'muted'}">${dw==null?"":(dw>0?"+":"")+n(dw)+" кг за 7 дни"}</div></div>
+    <div class="tile"><div class="l">Цел</div><div class="v">${goal}</div><div class="muted">${s.age||"–"} г. · ${n(s.heightCm,0)} см</div></div>
+    <div class="tile"><div class="l">Ккал / белтък (7д ср.)</div><div class="v">${n(avg(food7.map(f=>f.kcal)),0)}</div><div class="muted">${n(avg(food7.map(f=>f.p)),0)} г белтък</div></div>
+    <div class="tile"><div class="l">Тренировки</div><div class="v">${lastN(s.workouts,7).length} / ${lastN(s.workouts,30).length}</div><div class="muted">7 / 30 дни</div></div>
+    <div class="tile"><div class="l">Възстановяване</div><div class="v">${n(metricLast(s,"recovery"),0)}%</div><div class="muted">HRV ${n(metricLast(s,"hrv"),0)} мс</div></div>
+  </div>
+  <div class="two">
+    <div class="card"><h2>Тегло</h2><div class="chart"><canvas id="cw"></canvas></div></div>
+    <div class="card"><h2 style="display:flex;gap:10px;align-items:center">Показател <select id="mk" style="width:auto">${Object.entries(METRICS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select></h2><div class="chart"><canvas id="cm"></canvas></div></div>
+    <div class="card"><h2>Калории по дни</h2><div class="chart"><canvas id="cf"></canvas></div></div>
+    <div class="card"><h2>Последни мерки</h2><div class="scroll"><table><thead><tr><th>Мярка</th><th>см</th><th>Дата</th></tr></thead><tbody>${
+      Object.values(mLatest).map(m=>`<tr><td>${MEAS[m.k]||m.k}${m.side?" ("+(m.side==="left"?"л":"д")+")":""}${m.flex?" стегнато":""}</td><td>${n(m.cm)}</td><td class="muted">${m.d}</td></tr>`).join("") || '<tr><td colspan="3" class="muted">Няма мерки</td></tr>'
+    }</tbody></table></div></div>
+  </div>
+  <div class="card"><h2>Хранене (последни 14 дни)</h2><div class="scroll"><table><thead><tr><th>Ден</th><th>Ккал</th><th>Белтък</th><th>Въгл.</th><th>Мазнини</th></tr></thead><tbody>${
+    (s.food||[]).slice(-14).reverse().map(f=>`<tr><td>${f.d}</td><td>${n(f.kcal,0)}</td><td>${n(f.p,0)}</td><td>${n(f.c,0)}</td><td>${n(f.f,0)}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Няма данни</td></tr>'
+  }</tbody></table></div></div>
+  <div class="card"><h2>Тренировки</h2>${
+    (s.workouts||[]).slice().reverse().slice(0,40).map(w=>`<details><summary><b>${w.d}</b> · ${esc(w.title)} <span class="muted">· ${w.sets} серии · ${n(w.volume,0)} кг обем</span></summary>${
+      w.lifts.map(l=>`<div style="margin:6px 0 0 16px"><b>${esc(l.name)}</b> <span class="muted">${l.sets.map(x=>n(x[0])+"×"+n(x[1])).join("  ")}</span></div>`).join("")}</details>`).join("") || '<p class="muted">Няма тренировки</p>'
+  }</div>`;
+  $("#back").onclick = overview;
+  const ws = s.weights || []; line($("#cw"), ws.map(x=>x.d), ws.map(x=>x.kg), "кг");
+  const fs = (s.food||[]).slice(-60); line($("#cf"), fs.map(x=>x.d), fs.map(x=>Math.round(x.kcal)), "ккал");
+  const drawMetric = () => {
+    const k = $("#mk").value, seen = new Set();
+    const pts = (s.metrics||[]).filter(m => m.k === k).sort((a,b)=>a.d<b.d?-1:1).filter(m => !seen.has(m.d) && seen.add(m.d));
+    const c = charts.find(c => c.canvas.id === "cm"); if (c) { c.destroy(); charts = charts.filter(x => x !== c); }
+    line($("#cm"), pts.map(x=>x.d), pts.map(x=>x.v), METRICS[k]);
+  };
+  $("#mk").onchange = drawMetric; drawMetric();
+}
+
+$("#out").onclick = () => { store.set("fd.refresh", null); token = me = null; loginView(); };
+$("#refresh").onclick = () => load().catch(e => loginView(e.message));
+(async () => {
+  const rt = store.get("fd.refresh");
+  if (!rt) return loginView();
+  try { await auth({refresh_token: rt}, "refresh_token"); await load(); } catch(e) { store.set("fd.refresh", null); loginView(); }
+})();
+</script>
+</body>
+</html>
