@@ -141,7 +141,7 @@ function mk(el, type, labels, datasets, extra={}) {
   const scales = { x:{ticks:{color:txt, maxTicksLimit:9, callback(v){ return fmtD(this.getLabelForValue(v)); }}, grid:{color:grid}}, y:{ticks:{color:txt}, grid:{color:grid}}, ...(extra.scales||{}) };
   const c = new Chart(el, {type, data:{labels, datasets: datasets.map((d,i)=>({borderColor:PAL[i], backgroundColor: type==="bar"&&!d.type ? PAL[i]+"99" : PAL[i], pointRadius: labels.length > 60 ? 0 : 2, tension:.25, spanGaps:true, ...d}))},
     options:{responsive:true, maintainAspectRatio:false, animation:false, interaction:{mode:"index", intersect:false},
-      plugins:{legend:{display: datasets.length > 1, labels:{color:txt, boxWidth:12}}, tooltip:{callbacks:{title: it => it[0] ? fmtD(it[0].label) + (extra.week ? " (седмица)" : "") : ""}}}, scales}, plugins:[selPlugin]});
+      plugins:{legend:{display: true, labels:{color:txt, boxWidth:12}}, tooltip:{callbacks:{title: it => it[0] ? fmtD(it[0].label) + (extra.week ? " (седмица)" : "") : ""}}}, scales}, plugins:[selPlugin]});
   charts.push(c);
   // Влачене с мишката = избор на период.
   const idx = px => { const i = Math.round(c.scales.x.getValueForPixel(px)); return labels[Math.max(0, Math.min(labels.length - 1, i))]; };
@@ -237,13 +237,14 @@ function render() {
   // Тегло + 7-дневна средна.
   mk($("#cw"), "line", W.map(x=>x.d), [
     {label:"Тегло кг", data:W.map(x=>x.kg), borderWidth:1, pointRadius: W.length > 60 ? 0 : 2, borderColor:PAL[0]+"88"},
-    {label:"Средно 7 дни", data:W.map(x => avg(W.filter(y => y.d <= x.d && y.d > shift(x.d,-7)).map(y=>y.kg))), pointRadius:0, borderWidth:2.5}]);
+    {label:"Средно 7 дни", data:W.map(x => avg(W.filter(y => y.d <= x.d && y.d > shift(x.d,-7)).map(y=>y.kg))), pointRadius:0, borderWidth:2.5},
+    {label:"Средно " + n(avg(W.map(x=>x.kg)), 1), data:W.map(x=>x.kg).map(()=>avg(W.map(x=>x.kg))), borderDash:[6,5], pointRadius:0, borderWidth:1.5, borderColor:"#9ca3af", backgroundColor:"#9ca3af", yAxisID:"y", type:"line"}]);
 
   const seen = new Set(), MP = M.filter(m => m.k === cur.metric).sort((a,b)=>a.d<b.d?-1:1).filter(m => !seen.has(m.d) && seen.add(m.d));
-  mk($("#cm"), "line", MP.map(x=>x.d), [{label:METRICS[cur.metric], data:MP.map(x=>x.v)}]);
+  mk($("#cm"), "line", MP.map(x=>x.d), [{label:METRICS[cur.metric], data:MP.map(x=>x.v)}, {label:"Средно " + n(avg(MP.map(x=>x.v)), 1), data:MP.map(x=>x.v).map(()=>avg(MP.map(x=>x.v))), borderDash:[6,5], pointRadius:0, borderWidth:1.5, borderColor:"#9ca3af", backgroundColor:"#9ca3af", yAxisID:"y", type:"line"}]);
 
   mk($("#cf"), "bar", F.map(x=>x.d), [{label:"Ккал", data:F.map(x=>Math.round(x.kcal)), yAxisID:"y"},
-    {type:"line", label:"Белтък г", data:F.map(x=>Math.round(x.p)), yAxisID:"y1", pointRadius:2}],
+    {type:"line", label:"Белтък г", data:F.map(x=>Math.round(x.p)), yAxisID:"y1", pointRadius:2}, {label:"Средно " + n(avg(F.map(x=>x.kcal)), 1), data:F.map(x=>x.kcal).map(()=>avg(F.map(x=>x.kcal))), borderDash:[6,5], pointRadius:0, borderWidth:1.5, borderColor:"#9ca3af", backgroundColor:"#9ca3af", yAxisID:"y", type:"line"}],
     {scales:{y1:{position:"right", grid:{display:false}, ticks:{color:css("--muted")}}}});
 
   // Обем по седмици.
@@ -253,7 +254,7 @@ function render() {
     else { wk[k].v += w.volume; wk[k].s += w.sets; } });
   const wks = Object.keys(wk).sort();
   mk($("#cv"), "bar", wks, [{label:"Обем кг", data:wks.map(k=>Math.round(wk[k].v)), yAxisID:"y"},
-    {type:"line", label:"Серии", data:wks.map(k=>wk[k].s), yAxisID:"y1", pointRadius:3}],
+    {type:"line", label:"Серии", data:wks.map(k=>wk[k].s), yAxisID:"y1", pointRadius:3}, {label:"Средно " + n(avg(wks.map(k=>wk[k].v)), 1), data:wks.map(k=>wk[k].v).map(()=>avg(wks.map(k=>wk[k].v))), borderDash:[6,5], pointRadius:0, borderWidth:1.5, borderColor:"#9ca3af", backgroundColor:"#9ca3af", yAxisID:"y", type:"line"}],
     {week:true, scales:{y1:{position:"right", grid:{display:false}, ticks:{color:css("--muted")}}}});
 
   // Силов прогрес за избраното упражнение.
@@ -263,7 +264,7 @@ function render() {
   mk($("#cs"), "line", LP.map(x=>x.d), [
     {label:"Най-тежка серия кг", data:LP.map(x=>x.top[0]), yAxisID:"y"},
     {label:"1ПМ ориент. кг", data:LP.map(x=>Math.round(x.e*10)/10), yAxisID:"y", borderDash:[5,4]},
-    {type:"bar", label:"Обем кг", data:LP.map(x=>Math.round(x.v)), yAxisID:"y1", backgroundColor:PAL[2]+"55", borderColor:PAL[2]}],
+    {type:"bar", label:"Обем кг", data:LP.map(x=>Math.round(x.v)), yAxisID:"y1", backgroundColor:PAL[2]+"55", borderColor:PAL[2]}, {label:"Средна тежест " + n(avg(LP.map(x=>x.top[0])), 1), data:LP.map(x=>x.top[0]).map(()=>avg(LP.map(x=>x.top[0]))), borderDash:[6,5], pointRadius:0, borderWidth:1.5, borderColor:"#9ca3af", backgroundColor:"#9ca3af", yAxisID:"y", type:"line"}],
     {scales:{y1:{position:"right", grid:{display:false}, ticks:{color:css("--muted")}}}});
   if (LP.length) {
     const a = LP[0], b = LP[LP.length-1], best = LP.reduce((x,y) => y.e > x.e ? y : x);
