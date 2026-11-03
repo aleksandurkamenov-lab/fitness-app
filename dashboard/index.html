@@ -26,7 +26,10 @@ th{color:var(--muted);font-weight:600;font-size:13px}tbody tr{cursor:pointer}tbo
 .muted{color:var(--muted)}.up{color:var(--bad)}.down{color:var(--good)}h2{font-size:16px;margin:0 0 10px}
 .chart{position:relative;height:240px}details{border-bottom:1px solid var(--line);padding:8px 0}summary{cursor:pointer}
 .scroll{overflow-x:auto}
-.stat{margin-top:8px;font-size:13px}.chart canvas{cursor:crosshair}
+.stat{margin-top:8px;font-size:13px}
+.avg:empty{display:none}
+.avgs{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}.avgs span b{color:var(--accent)}.avg{margin-left:auto;font-size:15px;font-weight:650;color:var(--accent);background:rgba(37,99,235,.1);padding:3px 10px;border-radius:8px}
+.card h2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.chart canvas{cursor:crosshair}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.cal-h{color:var(--muted);font-size:12px;text-align:center}
 .cal-d{border:1px solid var(--line);border-radius:10px;min-height:54px;padding:6px;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between}
 .cal-d:hover{background:rgba(127,127,127,.08)}.cal-d.today{border-color:var(--accent)}.cal-d.has span:first-child{font-weight:650}
@@ -205,11 +208,15 @@ function render() {
     ${tile("Възстановяване", n(mAvg("recovery"),0) + "%", "HRV " + n(mAvg("hrv"),0) + " мс · пулс " + n(mAvg("rhr"),0))}
     ${tile("Сън / крачки", n(mAvg("sleepHours")) + " ч", n(mAvg("steps"),0) + " крачки/ден")}
   </div>
+  <div class="card avgs"><b>Средно за периода:</b>
+    <span>Тегло <b>${n(avg(W.map(x=>x.kg)))} кг</b></span><span>Пулс в покой <b>${n(mAvg("rhr"),0)}</b></span><span>HRV <b>${n(mAvg("hrv"),0)} мс</b></span>
+    <span>Възстановяване <b>${n(mAvg("recovery"),0)}%</b></span><span>Сън <b>${n(mAvg("sleepHours"))} ч</b></span><span>Крачки <b>${n(mAvg("steps"),0)}</b></span>
+    <span>Ккал <b>${n(avg(F.map(f=>f.kcal)),0)}</b></span><span>Белтък <b>${n(avg(F.map(f=>f.p)),0)} г</b></span></div>
   <div class="two">
-    <div class="card"><h2>Тегло</h2><div class="chart"><canvas id="cw"></canvas></div><div id="cws" class="muted stat"></div></div>
-    <div class="card"><h2 style="display:flex;gap:10px;align-items:center">Показател <select id="mk" style="width:auto">${Object.entries(METRICS).map(([k,v])=>`<option value="${k}" ${k===cur.metric?"selected":""}>${v}</option>`).join("")}</select></h2><div class="chart"><canvas id="cm"></canvas></div><div id="cms" class="muted stat"></div></div>
-    <div class="card"><h2>Калории и белтък</h2><div class="chart"><canvas id="cf"></canvas></div><div id="cfs" class="muted stat"></div></div>
-    <div class="card"><h2>Обем по седмици <select id="vm" style="width:auto;margin-left:8px"><option value="all">всички упражнения</option><option value="lift" ${cur.volMode==="lift"?"selected":""}>само избраното упражнение</option></select></h2><div class="chart"><canvas id="cv"></canvas></div><div id="cvs" class="muted stat"></div></div>
+    <div class="card"><h2>Тегло <span class="avg" id="cwa"></span></h2><div class="chart"><canvas id="cw"></canvas></div><div id="cws" class="muted stat"></div></div>
+    <div class="card"><h2 style="display:flex;gap:10px;align-items:center">Показател <select id="mk" style="width:auto">${Object.entries(METRICS).map(([k,v])=>`<option value="${k}" ${k===cur.metric?"selected":""}>${v}</option>`).join("")}</select> <span class="avg" id="cma"></span></h2><div class="chart"><canvas id="cm"></canvas></div><div id="cms" class="muted stat"></div></div>
+    <div class="card"><h2>Калории и белтък <span class="avg" id="cfa"></span></h2><div class="chart"><canvas id="cf"></canvas></div><div id="cfs" class="muted stat"></div></div>
+    <div class="card"><h2>Обем по седмици <select id="vm" style="width:auto;margin-left:8px"><option value="all">всички упражнения</option><option value="lift" ${cur.volMode==="lift"?"selected":""}>само избраното упражнение</option></select> <span class="avg" id="cva"></span></h2><div class="chart"><canvas id="cv"></canvas></div><div id="cvs" class="muted stat"></div></div>
   </div>
   <div class="card" id="calCard"><h2 style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">Календар на тренировките
     <button class="ghost" id="calPrev">‹</button><span id="calTitle"></span><button class="ghost" id="calNext">›</button>
@@ -278,6 +285,12 @@ function render() {
   stat("cms", mv.length ? `средно ${n(avg(mv))} · мин ${n(Math.min(...mv))} · макс ${n(Math.max(...mv))} · ${mv.length} дни` : "няма данни");
   stat("cfs", F.length ? `средно ${n(avg(F.map(f=>f.kcal)),0)} ккал и ${n(avg(F.map(f=>f.p)),0)} г белтък на ден · ${F.length} дни` : "няма записано хранене");
   stat("cvs", wks.length ? `общо ${n(sum(wks.map(k=>wk[k].v))/1000)} т · средно ${n(avg(wks.map(k=>wk[k].v))/1000)} т и ${n(avg(wks.map(k=>wk[k].s)),0)} серии на седмица` : "няма тренировки");
+  const UNIT = {recovery:"%",hrv:" мс",rhr:" уд/мин",sleepHours:" ч",steps:" крачки",strain:"",activeKcal:" ккал"};
+  const A = (id, txt) => { const el = $("#" + id); if (el) el.textContent = txt; };
+  A("cwa", kgs.length ? "средно " + n(avg(kgs)) + " кг" : "");
+  A("cma", mv.length ? "средно " + n(avg(mv), cur.metric === "sleepHours" ? 1 : 0) + UNIT[cur.metric] : "");
+  A("cfa", F.length ? "средно " + n(avg(F.map(f=>f.kcal)),0) + " ккал · " + n(avg(F.map(f=>f.p)),0) + " г белтък" : "");
+  A("cva", wks.length ? "средно " + n(avg(wks.map(k=>wk[k].v))/1000) + " т/седм." : "");
   $("#wkTile").onclick = () => $("#calCard").scrollIntoView({behavior:"smooth"});
   drawCal();
 }
