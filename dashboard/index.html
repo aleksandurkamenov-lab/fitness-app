@@ -48,7 +48,12 @@ async function api(path, opts={}) {
   if (token) headers.Authorization = "Bearer " + token;
   const r = await fetch(URL_ + path, {...opts, headers});
   const t = await r.text();
-  if (!r.ok) throw new Error((r.status === 400 || r.status === 401) && path.startsWith("/auth") ? "Грешен имейл или парола." : "Грешка " + r.status + ": " + t.slice(0,150));
+  if (!r.ok) {
+    let m = t; try { const j = JSON.parse(t); m = j.msg || j.error_description || j.message || t; } catch(e) {}
+    if (/invalid login credentials/i.test(m)) m = "Грешен имейл или парола (" + m + ")";
+    else if (/not confirmed/i.test(m)) m = "Имейлът не е потвърден в Supabase (" + m + ")";
+    throw new Error("Грешка " + r.status + ": " + String(m).slice(0,200));
+  }
   return t ? JSON.parse(t) : null;
 }
 async function auth(body, grant) {
@@ -57,13 +62,14 @@ async function auth(body, grant) {
   token = s.access_token; me = s.user; store.set("fd.refresh", s.refresh_token);
 }
 
-function loginView(msg) {
+function loginView(msg, email) {
   $("#out").hidden = $("#refresh").hidden = true; $("#who").textContent = "";
   app.innerHTML = `<div class="card login"><h2>Вход</h2><p class="muted">Същият имейл и парола като в приложението.</p>
-  <input id="em" type="email" placeholder="Имейл" autocomplete="username"><input id="pw" type="password" placeholder="Парола" autocomplete="current-password">
+  <input id="em" type="email" placeholder="Имейл" autocomplete="username" value="${esc(email||"")}"><input id="pw" type="password" placeholder="Парола" autocomplete="current-password">
+
   <button id="go">Влез</button><div class="err">${esc(msg||"")}</div></div>`;
-  const go = async () => { try { await auth({email:$("#em").value.trim(), password:$("#pw").value}, "password"); await load(); } catch(e) { loginView(e.message); } };
-  $("#go").onclick = go; $("#pw").onkeydown = e => e.key === "Enter" && go();
+  const go = async () => { try { await auth({email:$("#em").value.trim(), password:$("#pw").value}, "password"); await load(); } catch(e) { const em = $("#em").value; loginView(e.message, em); $("#pw").focus(); } };
+  $("#go").onclick = go; $("#pw").onkeydown = e => { if (e.key === "Enter") go(); };
 }
 
 async function load() {
