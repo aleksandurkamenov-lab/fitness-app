@@ -63,8 +63,8 @@ enum CloudError: LocalizedError {
 final class CloudService {
     static let shared = CloudService()
 
-    var urlText: String = Keychain.get("cloud.url") ?? "" { didSet { Keychain.set(urlText, for: "cloud.url") } }
-    var keyText: String = Keychain.get("cloud.key") ?? "" { didSet { Keychain.set(keyText, for: "cloud.key") } }
+    var urlText: String = Keychain.get("cloud.url") ?? "https://zdhdvxslolwelbpezjvp.supabase.co" { didSet { Keychain.set(urlText, for: "cloud.url") } }
+    var keyText: String = Keychain.get("cloud.key") ?? "sb_publishable_y8Ztcv8gr3fkLRWbv2Hfdg_BWj9r5UQ" { didSet { Keychain.set(keyText, for: "cloud.key") } }
     var email: String = Keychain.get("cloud.email") ?? ""
     private(set) var userId: String = Keychain.get("cloud.uid") ?? ""
     var lastUpload: Date? = UserDefaults.standard.object(forKey: "cloud.lastUpload") as? Date
@@ -128,7 +128,7 @@ final class CloudService {
         request.httpMethod = method
         request.timeoutInterval = 30
         request.setValue(key, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer " + (token ?? key), forHTTPHeaderField: "Authorization")
+        if let token { request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization") }
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         for (k, v) in extra { request.setValue(v, forHTTPHeaderField: k) }
         if let body { request.httpBody = try JSONSerialization.data(withJSONObject: body) }
