@@ -16,6 +16,8 @@ enum AIModel: String, CaseIterable, Identifiable {
 
 struct ClaudeError: LocalizedError {
     let message: String
+    /// Няма кредити или ключът е невалиден: чатът минава през Claude приложението.
+    var useClaudeApp = false
     var errorDescription: String? { message }
 }
 
@@ -56,7 +58,10 @@ enum ClaudeService {
             let detail = ((json["error"] as? [String: Any])?["message"] as? String)
                 ?? String(data: data, encoding: .utf8) ?? ""
             switch status {
-            case 401: throw ClaudeError(message: "Грешен API ключ (401). Провери го в настройките.")
+            case 401: throw ClaudeError(message: "Грешен API ключ (401). Провери го в настройките.", useClaudeApp: true)
+            case 400 where detail.lowercased().contains("credit"),
+                 402:
+                throw ClaudeError(message: "Няма кредити по API ключа. Изпращам към Claude приложението.", useClaudeApp: true)
             case 429: throw ClaudeError(message: "Твърде много заявки, опитай след минута.")
             case 503, 529: throw ClaudeError(message: "Claude е претоварен, опитай пак след малко.")
             default: throw ClaudeError(message: "Грешка \(status): \(detail)")

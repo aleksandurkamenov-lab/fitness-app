@@ -175,6 +175,9 @@ struct AIChatView: View {
                 try? context.save()
             } catch {
                 errorText = error.localizedDescription
+                if (error as? ClaudeError)?.useClaudeApp == true {
+                    shareToClaudeApp(trimmed, withPhotos: withPhotos)
+                }
             }
             busy = false
         }
@@ -266,11 +269,17 @@ private struct AISettingsView: View {
                         key = ""
                     }
                     .disabled(key.isEmpty)
+                    if savedLength > 0 {
+                        Button("Изтрий ключа", role: .destructive) {
+                            Keychain.set("", for: ClaudeService.keyName)
+                            savedLength = 0
+                        }
+                    }
                 } header: {
                     Text("Claude API ключ")
                 } footer: {
                     Text(savedLength > 0 ? "Има запазен ключ (\(savedLength) знака). Пази се само на телефона." :
-                            "Направи ключ в console.anthropic.com → API Keys и го постави тук. Плаща се отделно от Claude Pro, с предплатени кредити.")
+                            "Направи ключ в console.anthropic.com → API Keys и го постави тук. Плаща се отделно от Claude Pro, с предплатени кредити. Без ключ чатът минава безплатно през Claude приложението.")
                 }
 
                 Section {
