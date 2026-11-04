@@ -26,11 +26,13 @@ struct RootTabView: View {
         }
         .onAppear {
             ExerciseLibrary.seedIfNeeded(context)
-            DataTransfer.seedUserDexaIfNeeded(in: context)
         }
         .task(id: scenePhase) {
             // При отваряне: качва, ако е минало време; при излизане: качва винаги, за да са свежи данните за треньора.
-            if scenePhase == .active { await CloudService.shared.syncIfNeeded(context: context) }
+            if scenePhase == .active {
+                await ClientCleanup.run(context: context)
+                await CloudService.shared.syncIfNeeded(context: context)
+            }
             if scenePhase == .background { await CloudService.shared.syncIfNeeded(context: context, force: true) }
         }
     }

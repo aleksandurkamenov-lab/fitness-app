@@ -1,21 +1,386 @@
 {
-  "name": "Примерен мезоцикъл",
-  "weeks": 4,
-  "workouts": [
+ "name": "Upper/Lower",
+ "weeks": 4,
+ "workouts": [
+  {
+   "name": "Upper Chest Focus",
+   "exercises": [
     {
-      "name": "Горна част",
-      "exercises": [
-        {"name": "Bench Press", "muscle": "chest", "note": "", "sets": [{"repMin": 5, "repMax": 8}, {"repMin": 8, "repMax": 10}]},
-        {"name": "Lat Pulldown", "muscle": "back", "note": "", "sets": [{"repMin": 8, "repMax": 12}, {"repMin": 8, "repMax": 12}]},
-        {"name": "Overhead Press", "muscle": "shoulders", "note": "", "sets": [{"repMin": 6, "repMax": 10}, {"repMin": 8, "repMax": 12}]}
-      ]
+     "name": "Seated Barbell Overhead Press",
+     "muscle": "shoulders",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 4,
+       "repMax": 6
+      },
+      {
+       "repMin": 7,
+       "repMax": 10
+      }
+     ]
     },
     {
-      "name": "Долна част",
-      "exercises": [
-        {"name": "Squat", "muscle": "quads", "note": "", "sets": [{"repMin": 5, "repMax": 8}, {"repMin": 8, "repMax": 10}]},
-        {"name": "Romanian Deadlift", "muscle": "hamstrings", "note": "", "sets": [{"repMin": 6, "repMax": 10}, {"repMin": 8, "repMax": 12}]}
-      ]
+     "name": "Lat Pulldown (close grip handle)",
+     "muscle": "back",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 5,
+       "repMax": 8
+      },
+      {
+       "repMin": 8,
+       "repMax": 10
+      }
+     ]
+    },
+    {
+     "name": "Pec Deck Machine",
+     "muscle": "chest",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 8,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 8
+      }
+     ]
+    },
+    {
+     "name": "D-Handle Cable Lateral Raises",
+     "muscle": "shoulders",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 9,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 9
+      }
+     ]
+    },
+    {
+     "name": "Seated DB Biceps Curls",
+     "muscle": "biceps",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 9,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 9
+      }
+     ]
+    },
+    {
+     "name": "Triceps Rope Extension",
+     "muscle": "triceps",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 9,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 9
+      }
+     ]
     }
-  ]
+   ]
+  },
+  {
+   "name": "Lower Hamstring Focus",
+   "exercises": [
+    {
+     "name": "Reverse Pec Deck",
+     "muscle": "shoulders",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 9,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 9
+      }
+     ]
+    },
+    {
+     "name": "RDL",
+     "muscle": "hamstrings",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 7,
+       "repMax": 10
+      },
+      {
+       "repMin": 7,
+       "repMax": 10
+      }
+     ]
+    },
+    {
+     "name": "Leg Press",
+     "muscle": "quads",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 8,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 8
+      }
+     ]
+    },
+    {
+     "name": "Seated Leg Curl",
+     "muscle": "hamstrings",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 9,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 9
+      }
+     ]
+    },
+    {
+     "name": "Barbell Trap Shrugs",
+     "muscle": "back",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 7,
+       "repMax": 10
+      },
+      {
+       "repMin": 10,
+       "repMax": 12
+      }
+     ]
+    },
+    {
+     "name": "Standing Calf Press (unilateral)",
+     "muscle": "calves",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 7,
+       "repMax": 10
+      },
+      {
+       "repMin": 7,
+       "repMax": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Upper Back Focus",
+   "exercises": [
+    {
+     "name": "Wide Grip Lat Pulldown",
+     "muscle": "back",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 4,
+       "repMax": 6
+      },
+      {
+       "repMin": 7,
+       "repMax": 10
+      }
+     ]
+    },
+    {
+     "name": "Barbell Bench Press",
+     "muscle": "chest",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 4,
+       "repMax": 6
+      },
+      {
+       "repMin": 7,
+       "repMax": 10
+      }
+     ]
+    },
+    {
+     "name": "Pendulum Row",
+     "muscle": "back",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 4,
+       "repMax": 6
+      },
+      {
+       "repMin": 7,
+       "repMax": 10
+      }
+     ]
+    },
+    {
+     "name": "Lateral Shoulder Machine",
+     "muscle": "shoulders",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 9,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 9
+      }
+     ]
+    },
+    {
+     "name": "Bayesian Curl",
+     "muscle": "biceps",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 9,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 9
+      }
+     ]
+    },
+    {
+     "name": "Triceps Unilateral Extension",
+     "muscle": "triceps",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 9,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 9
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Lower Quad Focus",
+   "exercises": [
+    {
+     "name": "Face Pulls",
+     "muscle": "shoulders",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 8,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 8
+      }
+     ]
+    },
+    {
+     "name": "Hack Squat",
+     "muscle": "quads",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 4,
+       "repMax": 6
+      },
+      {
+       "repMin": 7,
+       "repMax": 10
+      }
+     ]
+    },
+    {
+     "name": "Unilateral Leg Curls",
+     "muscle": "hamstrings",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 7,
+       "repMax": 10
+      },
+      {
+       "repMin": 7,
+       "repMax": 10
+      }
+     ]
+    },
+    {
+     "name": "Leg Extension",
+     "muscle": "quads",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 9,
+       "repMax": 12
+      },
+      {
+       "repMin": 5,
+       "repMax": 9
+      }
+     ]
+    },
+    {
+     "name": "Adductor Machine",
+     "muscle": "quads",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 12,
+       "repMax": 15
+      },
+      {
+       "repMin": 12,
+       "repMax": 15
+      }
+     ]
+    },
+    {
+     "name": "Leg Press Calf Press",
+     "muscle": "calves",
+     "note": "",
+     "sets": [
+      {
+       "repMin": 12,
+       "repMax": 15
+      },
+      {
+       "repMin": 12,
+       "repMax": 15
+      }
+     ]
+    }
+   ]
+  }
+ ]
 }

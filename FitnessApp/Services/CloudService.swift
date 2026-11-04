@@ -190,6 +190,13 @@ final class CloudService {
         _ = try await authed("/rest/v1/rpc/unlink_coach", method: "POST", body: [String: String]())
     }
 
+    /// true за треньора, false за клиент, nil ако не е ясно (няма вход или мрежа).
+    func isCoachAccount() async -> Bool? {
+        guard isSignedIn, let data = try? await authed("/rest/v1/profiles?id=eq.\(userId)&select=is_coach"),
+              let rows = try? JSONDecoder().decode([[String: Bool]].self, from: data) else { return nil }
+        return rows.first?["is_coach"]
+    }
+
     func setName(_ name: String) async throws {
         _ = try await authed("/rest/v1/profiles?id=eq.\(userId)", method: "PATCH", body: ["display_name": name])
     }

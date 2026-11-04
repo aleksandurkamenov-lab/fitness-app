@@ -17,16 +17,6 @@ struct CloudView: View {
 
     var body: some View {
         Form {
-            Section {
-                TextField("Адрес на проекта (https://…supabase.co)", text: $cloud.urlText)
-                    .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
-                SecureField("Публичен ключ (anon / publishable)", text: $cloud.keyText)
-            } header: {
-                Text("Сървър")
-            } footer: {
-                Text("Взима се от Supabase → Project Settings → API. Ключът е публичен; данните са защитени с правила за достъп.")
-            }
-
             if cloud.isSignedIn {
                 signedInSections
             } else {
@@ -77,8 +67,8 @@ struct CloudView: View {
 
         if let me {
             Section {
-                LabeledContent("Моят код", value: me.code).font(.body.monospaced())
                 if me.coach_id == nil {
+                    LabeledContent("Моят код", value: me.code).font(.body.monospaced())
                     TextField("Код на треньора", text: $coachCode)
                         .textInputAutocapitalization(.characters).autocorrectionDisabled()
                     Button("Свържи с треньор") {
@@ -97,7 +87,9 @@ struct CloudView: View {
             } header: {
                 Text("Треньор")
             } footer: {
-                Text("Дай своя код на треньора си или въведи неговия, за да го виждат твоите данни.")
+                if me.coach_id == nil {
+                    Text("Дай своя код на треньора си или въведи неговия, за да го виждат твоите данни.")
+                }
             }
         }
 
