@@ -95,3 +95,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v91: Sample mesocycle is now a clean Upper/Lower with corrected names; existing clients get their own records; server fields and the coach DEXA removed for clients
 - v92: The current split is uploaded to the cloud and shown in the coach dashboard
 - v93: Export compliance answer stored in the app, so new builds skip the encryption question
+- v94: New BabanFit app icon
