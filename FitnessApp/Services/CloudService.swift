@@ -14,6 +14,9 @@ struct CloudSnapshot: Codable, Sendable {
     }
     struct Food: Codable, Sendable { var d: String; var kcal: Double; var p: Double; var c: Double; var f: Double }
     struct Metric: Codable, Sendable { var d: String; var k: String; var v: Double; var s: String }
+    struct SplitExercise: Codable, Sendable { var name: String; var sets: Int; var reps: String }
+    struct SplitDay: Codable, Sendable { var name: String; var exercises: [SplitExercise] }
+    struct Split: Codable, Sendable { var name: String; var week: Int; var weeks: Int; var days: [SplitDay] }
 
     var name: String = ""
     var sex: String = ""
@@ -25,6 +28,7 @@ struct CloudSnapshot: Codable, Sendable {
     var workouts: [Workout] = []
     var food: [Food] = []
     var metrics: [Metric] = []
+    var split: Split? = nil
 }
 
 struct CloudProfile: Codable, Sendable, Identifiable {
@@ -278,6 +282,18 @@ enum CloudSnapshotBuilder {
         let metrics = (try? context.fetch(FetchDescriptor<DailyMetric>())) ?? []
         snap.metrics = metrics.filter { $0.day >= since90 }
             .map { .init(d: CloudDay.string($0.day), k: $0.kindRaw, v: $0.value, s: $0.sourceRaw) }
+
+        // Текущият мезоцикъл: същият, който се показва в таб Тренировки.
+        let mesos = (try? context.fetch(FetchDescriptor<Mesocycle>(sortBy: [SortDescriptor(\.startDate, order: .reverse)]))) ?? []
+        if let meso = mesos.first {
+            let days = meso.sortedTemplates.map { template in
+                CloudSnapshot.SplitDay(name: template.name, exercises: template.sortedItems.map { item in
+                    CloudSnapshot.SplitExercise(name: item.exercise?.name ?? "?", sets: item.targets.count,
+                                                reps: item.targets.first?.rangeText ?? "")
+                })
+            }
+            snap.split = .init(name: meso.name, week: meso.currentWeek, weeks: meso.weekCount, days: days)
+        }
         return snap
     }
 }

@@ -171,6 +171,14 @@ function detail(id) {
   render();
 }
 
+function splitCard(s) {
+  const e = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const p = s.split;
+  if (!p) return `<div class="card"><h2>Сплит</h2><p class="muted">Няма данни. Клиентът трябва да обнови приложението и да го отвори.</p></div>`;
+  const days = p.days.map(d => `<div style="min-width:220px;flex:1"><b>${e(d.name)}</b><table><tbody>${d.exercises.map(x => `<tr><td>${e(x.name)}</td><td style="white-space:nowrap">${e(x.sets)} × ${e(x.reps)}</td></tr>`).join("")}</tbody></table></div>`).join("");
+  return `<div class="card"><h2>Сплит: ${e(p.name)} <span class="muted">седмица ${e(p.week)} от ${e(p.weeks)}</span></h2><div style="display:flex;flex-wrap:wrap;gap:16px">${days}</div></div>`;
+}
+
 function render() {
   destroyCharts();
   const s = cur.s, p = people.find(x => x.id === cur.id);
@@ -230,6 +238,7 @@ function render() {
     <div class="card"><h2>Хранене по дни</h2><div class="scroll" style="max-height:320px;overflow-y:auto"><table><thead><tr><th>Ден</th><th>Ккал</th><th>Б</th><th>В</th><th>М</th></tr></thead><tbody>${
       F.slice().reverse().map(f=>`<tr><td>${fmtD(f.d)}</td><td>${n(f.kcal,0)}</td><td>${n(f.p,0)}</td><td>${n(f.c,0)}</td><td>${n(f.f,0)}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Няма данни</td></tr>'}</tbody></table></div></div>
   </div>
+  ${splitCard(s)}
   <div class="card"><h2>Тренировки в периода (${K.length})</h2>${
     K.slice().reverse().map(w=>`<details><summary><b>${fmtD(w.d)}</b> · ${esc(w.title)} <span class="muted">· ${w.sets} серии · ${n(w.volume,0)} кг обем</span></summary>${
       w.lifts.map(l=>`<div style="margin:6px 0 0 16px"><b>${esc(l.name)}</b> <span class="muted">${l.sets.map(x=>n(x[0])+"×"+n(x[1])).join("  ")}</span></div>`).join("")}</details>`).join("") || '<p class="muted">Няма тренировки в периода</p>'

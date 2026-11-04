@@ -93,3 +93,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v89: AI chat: delete the API key, and fall back to the Claude app when the key has no credits or is invalid
 - v90: App renamed to BabanFit; sign-up screen explains the automatic coach link; Apple Health permission texts corrected
 - v91: Sample mesocycle is now a clean Upper/Lower with corrected names; existing clients get their own records; server fields and the coach DEXA removed for clients
+- v92: The current split is uploaded to the cloud and shown in the coach dashboard
