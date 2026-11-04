@@ -1,4 +1,4 @@
-# Fitness App
+# BabanFit
 
 A personal iOS app for strength training, nutrition, body measurements and recovery, built with SwiftUI and SwiftData. Everything is stored on the device. Data from Apple Health and WHOOP is pulled in and combined into one daily overview.
 

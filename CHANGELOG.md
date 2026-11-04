@@ -91,3 +91,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v87: Cloud data is uploaded every time the app goes to the background (and at most every 15 min on open), so the coach dashboard shows fresh profile, weight and workouts.
 - v88: Cloud upload includes food from Apple Health (MyFitnessPal etc.), so calories and macros appear in the coach dashboard.
 - v89: AI chat: delete the API key, and fall back to the Claude app when the key has no credits or is invalid
+- v90: App renamed to BabanFit; sign-up screen explains the automatic coach link; Apple Health permission texts corrected
