@@ -263,10 +263,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = FitnessApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = BabanFit;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Приложението чете сън, пулс, дишане, крачки, тегло, хранене и тренировки от Apple Health, за да показва възстановяване и натоварване. Данни излизат от телефона само ако влезеш в облака или ползваш AI чата.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Приложението не записва данни в Apple Health. Достъпът е само за четене.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -301,10 +302,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = FitnessApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = BabanFit;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Приложението чете сън, пулс, дишане, крачки, тегло, хранене и тренировки от Apple Health, за да показва възстановяване и натоварване. Данни излизат от телефона само ако влезеш в облака или ползваш AI чата.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Приложението не записва данни в Apple Health. Достъпът е само за четене.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -337,7 +339,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1;
@@ -359,7 +361,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1;
