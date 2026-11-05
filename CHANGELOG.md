@@ -96,3 +96,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v92: The current split is uploaded to the cloud and shown in the coach dashboard
 - v93: Export compliance answer stored in the app, so new builds skip the encryption question
 - v94: New BabanFit app icon
+- v95: Recovery % is now computed per day from Apple Health HRV, resting HR, respiratory rate and sleep, so the coach dashboard shows it for clients without WHOOP (e.g. Amazfit Helio Strap).

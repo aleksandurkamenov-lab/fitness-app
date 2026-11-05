@@ -349,15 +349,35 @@ final class HealthService {
             }
         }
 
-        add(.hrv, dailyMeans(await quantitySamples(.heartRateVariabilitySDNN, unit: .secondUnit(with: .milli), from: from, to: .now)))
-        add(.rhr, dailyMeans(await quantitySamples(.restingHeartRate, unit: HKUnit.count().unitDivided(by: .minute()), from: from, to: .now)))
-        add(.respiratory, dailyMeans(await quantitySamples(.respiratoryRate, unit: HKUnit.count().unitDivided(by: .minute()), from: from, to: .now)))
+        let hrvDaily = dailyMeans(await quantitySamples(.heartRateVariabilitySDNN, unit: .secondUnit(with: .milli), from: from, to: .now))
+        let rhrDaily = dailyMeans(await quantitySamples(.restingHeartRate, unit: HKUnit.count().unitDivided(by: .minute()), from: from, to: .now))
+        let respDaily = dailyMeans(await quantitySamples(.respiratoryRate, unit: HKUnit.count().unitDivided(by: .minute()), from: from, to: .now))
+        add(.hrv, hrvDaily)
+        add(.rhr, rhrDaily)
+        add(.respiratory, respDaily)
         add(.spo2, dailyMeans(await quantitySamples(.oxygenSaturation, unit: .percent(), from: from, to: .now), scale: 100))
         add(.skinTemp, dailyMeans(await quantitySamples(.appleSleepingWristTemperature, unit: .degreeCelsius(), from: from, to: .now)))
 
         add(.steps, await dailyTotals(.stepCount, unit: .count(), from: from))
         add(.activeKcal, await dailyTotals(.activeEnergyBurned, unit: .kilocalorie(), from: from))
-        add(.sleepHours, await sleepHoursByDay(from: from))
+        let sleepDaily = await sleepHoursByDay(from: from)
+        add(.sleepHours, sleepDaily)
+
+        // Собствено възстановяване за всеки ден (за устройства без такава оценка, напр. Helio Strap).
+        var recoveryByDay: [Date: Double] = [:]
+        let allDays = Set(hrvDaily.keys).union(rhrDaily.keys).union(sleepDaily.keys)
+        for day in allDays {
+            func base(_ d: [Date: Double]) -> RecoveryMath.Baseline? {
+                RecoveryMath.Baseline(values: d.filter { $0.key < day && $0.key >= (calendar.date(byAdding: .day, value: -30, to: day) ?? day) }.map(\.value))
+            }
+            let score = RecoveryMath.recovery(.init(
+                hrv: hrvDaily[day], hrvBaseline: base(hrvDaily),
+                rhr: rhrDaily[day], rhrBaseline: base(rhrDaily),
+                respiratory: respDaily[day], respiratoryBaseline: base(respDaily),
+                sleepScore: sleepDaily[day].map { RecoveryMath.sleepScore(asleepHours: $0, inBedHours: nil) }))
+            if let score { recoveryByDay[day] = score }
+        }
+        add(.recovery, recoveryByDay)
 
         // Минути тренировки и кардио по дни (до 12 месеца назад, за heatmap-а).
         let workoutFrom = calendar.date(byAdding: .day, value: -365, to: today) ?? from
