@@ -229,7 +229,7 @@ function render() {
     return `<button class="${on?'':'ghost'}" data-from="${from||""}">${label}</button>`; };
   app.innerHTML = `<button class="ghost" id="back">← Всички клиенти</button>
   <div class="card" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-    <b>Период:</b> ${btn("7 дни",7)}${btn("30 дни",30)}${btn("90 дни",90)}${btn("6 мес.",182)}${btn("1 год.",365)}${btn("Всичко",0)}
+    <b>Период:</b> ${btn("Днес",1)}<button class="${cur.from && cur.from===cur.to && cur.from===shift(today(),-1)?'':'ghost'}" data-day="${shift(today(),-1)}">Вчера</button><label class="muted">Ден: <input type="date" id="dayPick" max="${today()}" value="${cur.from && cur.from===cur.to ? cur.from : ""}"></label>${btn("7 дни",7)}${btn("30 дни",30)}${btn("90 дни",90)}${btn("6 мес.",182)}${btn("1 год.",365)}${btn("Всичко",0)}
     <span class="muted" style="margin-left:auto">${cur.from ? fmtD(cur.from) : "началото"} – ${cur.to ? fmtD(cur.to) : "днес"} · влачи с мишката по графика за избор, двоен клик = всичко</span>
   </div>
   <div class="grid">
@@ -272,6 +272,8 @@ function render() {
 
   $("#back").onclick = overview;
   app.querySelectorAll("[data-from]").forEach(b => b.onclick = () => setRange(b.dataset.from || null, null));
+  app.querySelectorAll("[data-day]").forEach(b => b.onclick = () => setRange(b.dataset.day, b.dataset.day));
+  $("#dayPick").onchange = e => { if (e.target.value) setRange(e.target.value, e.target.value); };
   $("#mk").onchange = e => { cur.metric = e.target.value; render(); };
   $("#lf").onchange = e => { cur.lift = e.target.value; render(); };
   $("#vm").onchange = e => { cur.volMode = e.target.value; render(); };
