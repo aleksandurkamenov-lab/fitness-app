@@ -30,7 +30,12 @@ th{color:var(--muted);font-weight:600;font-size:13px}tbody tr{cursor:pointer}tbo
 .avg:empty{display:none}
 .avgs{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}.avgs span b{color:var(--accent)}.avg{margin-left:auto;font-size:15px;font-weight:650;color:var(--accent);background:rgba(37,99,235,.1);padding:3px 10px;border-radius:8px}
 .periods{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}.periods button{width:100%;padding:8px 4px;white-space:nowrap}
-.customRange{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.customRange label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:13px}
+.pwrap{position:relative}.rcal{position:absolute;right:0;top:calc(100% + 6px);z-index:5;width:280px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.rcal .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-weight:600}.rcal .hd button{padding:4px 10px}
+.rcal .g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:13px}.rcal .g span{color:var(--muted);padding:4px 0}
+.rcal .g button{padding:6px 0;background:transparent;color:var(--text);border-radius:6px}.rcal .g button:disabled{opacity:.3;cursor:default}
+.rcal .g button.in{background:color-mix(in srgb,var(--accent) 20%,transparent)}.rcal .g button.end{background:var(--accent);color:#fff}
+.rcal .hint{color:var(--muted);font-size:12px;margin-top:8px}
 @media (max-width:700px){.periods{grid-template-columns:repeat(4,1fr)}}
 .card h2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.chart canvas{cursor:crosshair}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.cal-h{color:var(--muted);font-size:12px;text-align:center}
@@ -208,6 +213,26 @@ function splitCard(s) {
   return `<div class="card"><h2>Сплит: ${e(p.name)} <span class="muted">седмица ${e(p.week)} от ${e(p.weeks)}</span></h2><div style="display:flex;flex-wrap:wrap;gap:16px">${days}</div></div>`;
 }
 
+// Падащ календар: първи клик = начало, втори = край.
+let calMonth = null, calStart = null;
+document.addEventListener("click", e => { const c = $("#cal"); if (c && !c.hidden && !c.contains(e.target)) c.hidden = true; });
+function calendar(c) {
+  if (!calMonth) calMonth = today().slice(0,7);
+  const [y, m] = calMonth.split("-").map(Number), first = new Date(y, m-1, 1), dim = new Date(y, m, 0).getDate();
+  const pad = (first.getDay() + 6) % 7, iso = d => `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  const a = calStart || cur.from, b = calStart ? null : (cur.to || today());
+  const names = ["Яну","Фев","Мар","Апр","Май","Юни","Юли","Авг","Сеп","Окт","Ное","Дек"];
+  let cells = ["П","В","С","Ч","П","С","Н"].map(x => `<span>${x}</span>`).join("") + "<i></i>".repeat(pad);
+  for (let d = 1; d <= dim; d++) { const k = iso(d), end = k === a || k === b, inn = a && b && k > a && k < b;
+    cells += `<button data-cd="${k}" class="${end?'end':inn?'in':''}" ${k > today() ? "disabled" : ""}>${d}</button>`; }
+  c.innerHTML = `<div class="hd"><button class="ghost" data-mv="-1">‹</button>${names[m-1]} ${y}<button class="ghost" data-mv="1">›</button></div><div class="g">${cells}</div><div class="hint">${calStart ? "Избери крайна дата" : "Избери начална дата"}</div>`;
+  c.onclick = e => { e.stopPropagation(); const t = e.target;
+    if (t.dataset.mv) { const n = new Date(y, m-1 + Number(t.dataset.mv), 1); calMonth = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}`; calendar(c); }
+    else if (t.dataset.cd) { const k = t.dataset.cd;
+      if (!calStart) { calStart = k; calendar(c); }
+      else { const f = k < calStart ? k : calStart, to = k < calStart ? calStart : k; calStart = null; setRange(f, to === today() ? null : to); } } };
+}
+
 function render() {
   destroyCharts();
   const s = cur.s, p = people.find(x => x.id === cur.id);
@@ -234,8 +259,7 @@ function render() {
     return `<button class="${on?'':'ghost'}" data-from="${from||""}">${label}</button>`; };
   app.innerHTML = `<button class="ghost" id="back">← Всички клиенти</button>
   <div class="card" style="margin-top:12px">
-    <div class="periods">${btn("Днес",1)}${btn("7 дни",7)}${btn("30 дни",30)}${btn("90 дни",90)}${btn("6 мес.",182)}${btn("1 год.",365)}${btn("Всичко",0)}<button class="${custom?'':'ghost'}" id="customBtn">Период…</button></div>
-    <div class="customRange" id="customRow" ${custom?"":"hidden"}><label>От<input type="date" id="fromPick" max="${today()}" value="${cur.from||""}"></label><label>До<input type="date" id="toPick" max="${today()}" value="${cur.to||today()}"></label></div>
+    <div class="pwrap"><div class="periods">${btn("Днес",1)}${btn("7 дни",7)}${btn("30 дни",30)}${btn("90 дни",90)}${btn("6 мес.",182)}${btn("1 год.",365)}${btn("Всичко",0)}<button class="${custom?'':'ghost'}" id="customBtn">${custom ? fmtD(cur.from) + " – " + (cur.to ? fmtD(cur.to) : "днес") : "Период ▾"}</button></div><div class="rcal" id="cal" hidden></div></div>
     <div class="muted" style="margin-top:8px">${cur.from ? fmtD(cur.from) : "началото"} – ${cur.to ? fmtD(cur.to) : "днес"} · влачи с мишката по графика за избор, двоен клик = всичко</div>
   </div>
   <div class="grid">
@@ -278,9 +302,7 @@ function render() {
 
   $("#back").onclick = overview;
   app.querySelectorAll("[data-from]").forEach(b => b.onclick = () => setRange(b.dataset.from || null, null));
-  $("#customBtn").onclick = () => { $("#customRow").hidden = !$("#customRow").hidden; };
-  const pick = () => { const f = $("#fromPick").value, t = $("#toPick").value; if (f) setRange(f, t && t !== today() ? t : null); };
-  $("#fromPick").onchange = pick; $("#toPick").onchange = pick;
+  $("#customBtn").onclick = e => { e.stopPropagation(); const c = $("#cal"); c.hidden = !c.hidden; if (!c.hidden) calendar(c); };
   $("#mk").onchange = e => { cur.metric = e.target.value; render(); };
   $("#lf").onchange = e => { cur.lift = e.target.value; render(); };
   $("#vm").onchange = e => { cur.volMode = e.target.value; render(); };
