@@ -85,9 +85,35 @@ async function load() {
   const [profiles, rows] = await Promise.all([
     api("/rest/v1/profiles?select=id,display_name,code,coach_id"),
     api("/rest/v1/snapshots?select=user_id,updated_at,data")]);
-  people = profiles; snaps = {}; rows.forEach(r => snaps[r.user_id] = r);
+  people = profiles; snaps = {}; rows.forEach(r => { addRecovery(r.data || {}); snaps[r.user_id] = r; });
   $("#who").textContent = me.email; $("#out").hidden = $("#refresh").hidden = false;
   overview();
+}
+
+// Собствено възстановяване (като RecoveryMath в приложението) за дни без готова оценка, напр. Helio Strap.
+function addRecovery(s) {
+  const ms = s.metrics || [], have = new Set(ms.filter(m => m.k === "recovery").map(m => m.d));
+  const daily = k => { const g = {}; ms.filter(m => m.k === k).forEach(m => (g[m.d] = g[m.d] || []).push(m.v));
+    const o = {}; for (const d in g) o[d] = g[d].reduce((a,b)=>a+b,0) / g[d].length; return o; };
+  const hrv = daily("hrv"), rhr = daily("rhr"), resp = daily("respiratory"), sleep = daily("sleepHours");
+  const base = (o, day) => { const from = new Date(new Date(day).getTime() - 30*864e5).toISOString().slice(0,10);
+    const v = Object.keys(o).filter(d => d < day && d >= from).map(d => o[d]); if (v.length < 7) return null;
+    const mean = v.reduce((a,b)=>a+b,0) / v.length, sd = Math.max(Math.sqrt(v.reduce((a,x)=>a+(x-mean)**2,0) / v.length), Math.abs(mean)*0.03);
+    return sd > 0 ? {mean, sd} : null; };
+  const z = (x, b) => Math.max(-2.5, Math.min(2.5, (x - b.mean) / b.sd));
+  const days = new Set([...Object.keys(hrv), ...Object.keys(rhr), ...Object.keys(sleep)]);
+  days.forEach(d => {
+    if (have.has(d)) return;
+    const parts = []; let b;
+    if (hrv[d] != null && (b = base(hrv, d))) parts.push([0.45, z(hrv[d], b)]);
+    if (rhr[d] != null && (b = base(rhr, d))) parts.push([0.25, -z(rhr[d], b)]);
+    if (resp[d] != null && (b = base(resp, d))) parts.push([0.10, -z(resp[d], b)]);
+    if (sleep[d] != null) parts.push([0.20, Math.max(-2.5, Math.min(2.5, (Math.min(sleep[d] / 8, 1) * 100 - 75) / 15))]);
+    if (parts.length < 2) return;
+    const w = parts.reduce((a,p)=>a+p[0],0), zz = parts.reduce((a,p)=>a+p[0]*p[1],0) / w;
+    ms.push({d, k:"recovery", v: 100 / (1 + Math.exp(-0.9 * zz)), s:"dashboard"});
+  });
+  s.metrics = ms;
 }
 
 const nameOf = p => p.display_name || snaps[p.id]?.data?.name || ("Клиент " + p.code);
