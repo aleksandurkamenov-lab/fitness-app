@@ -29,6 +29,9 @@ th{color:var(--muted);font-weight:600;font-size:13px}tbody tr{cursor:pointer}tbo
 .stat{margin-top:8px;font-size:13px}
 .avg:empty{display:none}
 .avgs{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}.avgs span b{color:var(--accent)}.avg{margin-left:auto;font-size:15px;font-weight:650;color:var(--accent);background:rgba(37,99,235,.1);padding:3px 10px;border-radius:8px}
+.periods{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}.periods button{width:100%;padding:8px 4px;white-space:nowrap}
+.customRange{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.customRange label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:13px}
+@media (max-width:700px){.periods{grid-template-columns:repeat(4,1fr)}}
 .card h2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.chart canvas{cursor:crosshair}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.cal-h{color:var(--muted);font-size:12px;text-align:center}
 .cal-d{border:1px solid var(--line);border-radius:10px;min-height:54px;padding:6px;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between}
@@ -225,12 +228,15 @@ function render() {
   const mRows = Object.values(mm).map(a => { const f = a[0], l = a[a.length-1];
     return `<tr><td>${MEAS[l.k]||l.k}${l.side?" ("+(l.side==="left"?"л":"д")+")":""}${l.flex?" стегнато":""}</td><td>${n(l.cm)}</td><td class="${l.cm-f.cm>0?'up':l.cm-f.cm<0?'down':''}">${a.length>1?sign(l.cm-f.cm):"–"}</td><td class="muted">${fmtD(l.d)}</td></tr>`; }).join("");
 
+  const presets = [1,7,30,90,182,365].map(d => shift(today(), -(d-1)));
+  const custom = !!cur.to || (cur.from && !presets.includes(cur.from));
   const btn = (label, days) => { const from = days ? shift(today(), -(days-1)) : null; const on = cur.from === from && !cur.to;
     return `<button class="${on?'':'ghost'}" data-from="${from||""}">${label}</button>`; };
   app.innerHTML = `<button class="ghost" id="back">← Всички клиенти</button>
-  <div class="card" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-    <b>Период:</b> ${btn("Днес",1)}<button class="${cur.from && cur.from===cur.to && cur.from===shift(today(),-1)?'':'ghost'}" data-day="${shift(today(),-1)}">Вчера</button><label class="muted">Ден: <input type="date" id="dayPick" max="${today()}" value="${cur.from && cur.from===cur.to ? cur.from : ""}"></label>${btn("7 дни",7)}${btn("30 дни",30)}${btn("90 дни",90)}${btn("6 мес.",182)}${btn("1 год.",365)}${btn("Всичко",0)}
-    <span class="muted" style="margin-left:auto">${cur.from ? fmtD(cur.from) : "началото"} – ${cur.to ? fmtD(cur.to) : "днес"} · влачи с мишката по графика за избор, двоен клик = всичко</span>
+  <div class="card" style="margin-top:12px">
+    <div class="periods">${btn("Днес",1)}${btn("7 дни",7)}${btn("30 дни",30)}${btn("90 дни",90)}${btn("6 мес.",182)}${btn("1 год.",365)}${btn("Всичко",0)}<button class="${custom?'':'ghost'}" id="customBtn">Период…</button></div>
+    <div class="customRange" id="customRow" ${custom?"":"hidden"}><label>От<input type="date" id="fromPick" max="${today()}" value="${cur.from||""}"></label><label>До<input type="date" id="toPick" max="${today()}" value="${cur.to||today()}"></label></div>
+    <div class="muted" style="margin-top:8px">${cur.from ? fmtD(cur.from) : "началото"} – ${cur.to ? fmtD(cur.to) : "днес"} · влачи с мишката по графика за избор, двоен клик = всичко</div>
   </div>
   <div class="grid">
     ${tile("Тегло (последно)", last ? n(last.kg)+" кг" : "–", dW==null ? goal : sign(dW)+" кг за периода", dW>0?"up":dW<0?"down":"muted")}
@@ -272,8 +278,9 @@ function render() {
 
   $("#back").onclick = overview;
   app.querySelectorAll("[data-from]").forEach(b => b.onclick = () => setRange(b.dataset.from || null, null));
-  app.querySelectorAll("[data-day]").forEach(b => b.onclick = () => setRange(b.dataset.day, b.dataset.day));
-  $("#dayPick").onchange = e => { if (e.target.value) setRange(e.target.value, e.target.value); };
+  $("#customBtn").onclick = () => { $("#customRow").hidden = !$("#customRow").hidden; };
+  const pick = () => { const f = $("#fromPick").value, t = $("#toPick").value; if (f) setRange(f, t && t !== today() ? t : null); };
+  $("#fromPick").onchange = pick; $("#toPick").onchange = pick;
   $("#mk").onchange = e => { cur.metric = e.target.value; render(); };
   $("#lf").onchange = e => { cur.lift = e.target.value; render(); };
   $("#vm").onchange = e => { cur.volMode = e.target.value; render(); };
