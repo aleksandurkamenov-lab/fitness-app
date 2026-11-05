@@ -154,8 +154,11 @@ final class BodyScan {
     /// Постна маса от доклада (без мазнините); ползва се, ако няма % мазнини.
     var leanMassKg: Double = 0
     var kind: String = "DEXA"
+    /// Скелетна мускулна маса (SMM) от доклада, кг; 0 = не е въведена.
+    var skeletalMuscleKg: Double = 0
 
-    init(date: Date = .now, weightKg: Double, bodyFatPercent: Double, leanMassKg: Double = 0, kind: String = "DEXA") {
+    init(date: Date = .now, weightKg: Double, bodyFatPercent: Double, leanMassKg: Double = 0, kind: String = "DEXA", skeletalMuscleKg: Double = 0) {
+        self.skeletalMuscleKg = skeletalMuscleKg
         self.date = date
         self.weightKg = weightKg
         self.bodyFatPercent = bodyFatPercent

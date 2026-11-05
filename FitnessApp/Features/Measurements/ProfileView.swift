@@ -166,7 +166,7 @@ private struct MacroEditor: View {
         HStack {
             Text(title)
             Spacer()
-            TextField("г", value: value, format: .number)
+            EditableNumberField(value: value)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(width: 80)
@@ -227,6 +227,38 @@ private struct MacroEditor: View {
     }
 }
 
+/// Числово поле, което може да се изтрие докато пишеш: текстът не се презарежда от стойността, докато полето е в фокус.
+private struct EditableNumberField: View {
+    @Binding var value: Double?
+    @State private var text = ""
+    @FocusState private var focused: Bool
+
+    private func format(_ number: Double?) -> String {
+        guard let number, number > 0 else { return "" }
+        return number.formatted(.number.precision(.fractionLength(0...2)))
+    }
+
+    var body: some View {
+        TextField("г", text: $text)
+            .focused($focused)
+            .onAppear { text = format(value) }
+            .onChange(of: text) { _, newText in
+                let cleaned = newText.replacingOccurrences(of: ",", with: ".")
+                if cleaned.isEmpty {
+                    value = nil
+                } else if let number = Double(cleaned) {
+                    value = number
+                }
+            }
+            .onChange(of: value) { _, newValue in
+                if !focused { text = format(newValue) }
+            }
+            .onChange(of: focused) { _, isFocused in
+                if !isFocused { text = format(value) }
+            }
+    }
+}
+
 struct CalculatorsView: View {
     @Query private var profiles: [UserProfile]
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
@@ -275,8 +307,14 @@ struct CalculatorsView: View {
                     if let scaleFat {
                         LabeledContent("% мазнини (кантар)", value: "\(scaleFat.short) %")
                     }
-                    if profile.bodyFatPercent > 0 {
-                        LabeledContent("Постна маса (\(profile.bodyFatSource))", value: "\((kg * (1 - profile.bodyFatPercent / 100)).short) кг")
+                    if let scan = scans.filter({ $0.skeletalMuscleKg > 0 }).max(by: { $0.date < $1.date }) {
+                        LabeledContent("Мускулна маса (\(scan.kind) \(scan.date.formatted(date: .numeric, time: .omitted)))", value: "\(scan.skeletalMuscleKg.short) кг")
+                    } else {
+                        NavigationLink {
+                            BodyScansView()
+                        } label: {
+                            LabeledContent("Мускулна маса", value: "въведи от DEXA/InBody")
+                        }
                     }
                 }
 

@@ -20,7 +20,7 @@ struct BodyScansView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(scan.kind) · \(scan.date.formatted(date: .abbreviated, time: .omitted))")
                             .font(.subheadline.weight(.semibold))
-                        Text("\(scan.weightKg.short) кг · \(scan.bodyFatPercent.short) % мазнини · безмастна \(scan.fatFreeKg.short) кг")
+                        Text("\(scan.weightKg.short) кг · \(scan.bodyFatPercent.short) % мазнини · безмастна \(scan.fatFreeKg.short) кг" + (scan.skeletalMuscleKg > 0 ? " · мускулна \(scan.skeletalMuscleKg.short) кг" : ""))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -58,6 +58,7 @@ private struct AddBodyScanSheet: View {
     @State private var weight: Double?
     @State private var fat: Double?
     @State private var lean: Double?
+    @State private var muscle: Double?
 
     var body: some View {
         NavigationStack {
@@ -75,6 +76,8 @@ private struct AddBodyScanSheet: View {
                     .keyboardType(.decimalPad)
                 TextField("Постна маса, кг (ако няма %)", value: $lean, format: .number)
                     .keyboardType(.decimalPad)
+                TextField("Скелетна мускулна маса (SMM), кг", value: $muscle, format: .number)
+                    .keyboardType(.decimalPad)
             }
             .navigationTitle("Ново сканиране")
             .navigationBarTitleDisplayMode(.inline)
@@ -86,9 +89,9 @@ private struct AddBodyScanSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Запази") {
                         let kg = weight ?? initialWeight ?? 0
-                        if kg > 0 && ((fat ?? 0) > 0 || (lean ?? 0) > 0) {
+                        if kg > 0 && ((fat ?? 0) > 0 || (lean ?? 0) > 0 || (muscle ?? 0) > 0) {
                             context.insert(BodyScan(date: date, weightKg: kg, bodyFatPercent: fat ?? 0,
-                                                    leanMassKg: lean ?? 0, kind: kind))
+                                                    leanMassKg: lean ?? 0, kind: kind, skeletalMuscleKg: muscle ?? 0))
                         }
                         dismiss()
                     }
