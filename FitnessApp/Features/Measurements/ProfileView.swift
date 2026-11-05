@@ -191,7 +191,6 @@ private struct MacroEditor: View {
                 }
             }
         }
-        .keyboardDoneButton()
 
         let forecast = BodyMath.forecast(profile: profile, kg: kg, intake: kcal, sessions: sessions)
         Section {
@@ -296,8 +295,8 @@ struct CalculatorsView: View {
                         LabeledContent("DEXA / InBody", value: "\(scans.count) записа")
                     }
                     LabeledContent("% мазнини (US Navy)", value: value(navy, "%"))
-                    LabeledContent("% мазнини ръчно (0 = автоматично)") {
-                        DecimalField(placeholder: "0", value: Binding(get: { profile.manualBodyFat }, set: {
+                    LabeledContent("Мазнини, ръчно %") {
+                        DecimalField(placeholder: "авто", value: Binding(get: { profile.manualBodyFat }, set: {
                             profile.manualBodyFat = $0
                             BodyMath.refreshBodyFat(profile: profile, weights: weights, measurements: measurements)
                         }))
@@ -344,6 +343,7 @@ struct CalculatorsView: View {
                 BodyMath.refreshBodyFat(profile: profile, weights: weights, measurements: measurements)
             }
         }
+        .keyboardDoneButton()
         .navigationTitle("Калкулатори")
         .navigationBarTitleDisplayMode(.inline)
     }
