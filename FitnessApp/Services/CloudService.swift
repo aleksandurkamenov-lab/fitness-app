@@ -143,7 +143,7 @@ final class CloudService {
             let text = String(data: data, encoding: .utf8) ?? ""
             if path.hasPrefix("/auth/v1") {
                 if text.contains("invalid_credentials") {
-                    throw CloudError.server("Грешен имейл или парола. Ако още нямаш акаунт, натисни „Регистрирай се“.")
+                    throw CloudError.server("Няма акаунт с този имейл или паролата е грешна. Ако си нов и още не си се регистрирал, натисни „Регистрирай се“ (с име), после „Влез“.")
                 }
                 if text.contains("user_already_exists") || text.contains("already registered") {
                     throw CloudError.server("Този имейл вече има акаунт. Натисни „Влез“.")
