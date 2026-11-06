@@ -104,12 +104,12 @@ struct ActivityStatsCard: View {
 
     private func daysAgo(_ days: Int) -> Date { calendar.date(byAdding: .day, value: -days, to: .now) ?? .distantPast }
 
-    /// Последните 6 календарни седмици (пон–нед), най-новата първа.
+    /// Седмиците от последните 30 дни (пон–нед), най-новата първа.
     private var weeklyCounts: [(start: Date, end: Date, strength: Int, cardio: Int)] {
         let current = weekStart(.now)
         let strength = strengthByDay
         let cardio = cardioByDay
-        return (0..<6).compactMap { offset in
+        return (0..<5).compactMap { offset in
             guard let start = calendar.date(byAdding: .weekOfYear, value: -offset, to: current),
                   let end = calendar.date(byAdding: .weekOfYear, value: 1, to: start) else { return nil }
             return (start, end, count(strength, from: start, to: end), count(cardio, from: start, to: end))
@@ -145,16 +145,42 @@ struct ActivityStatsCard: View {
             ForEach(weeklyCounts, id: \.start) { week in
                 let lastDay = calendar.date(byAdding: .day, value: -1, to: week.end) ?? week.end
                 let isCurrent = week.start == weekStart(.now)
-                HStack {
-                    Text("\(week.start.formatted(.dateTime.day().month(.twoDigits))) – \(lastDay.formatted(.dateTime.day().month(.twoDigits)))" + (isCurrent ? " " + tr("(тази)") : ""))
-                        .font(.callout)
-                    Spacer()
-                    Text(trf("силови %@ · кардио %@", "\(week.strength)", "\(week.cardio)")).font(.callout.bold())
-                    Image(systemName: week.strength >= 4 ? "checkmark.circle.fill" : week.strength >= 3 ? "checkmark.circle" : isCurrent ? "clock" : "xmark.circle")
-                        .foregroundStyle(week.strength >= 3 ? Color.green : isCurrent ? Color.secondary : Color.red)
+                let dayFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack {
+                        Text(trf("Седмица %@ – %@", week.start.formatted(dayFormat), lastDay.formatted(dayFormat))
+                             + (isCurrent ? " " + tr("(тази)") : ""))
+                            .font(.callout.bold())
+                        Spacer()
+                        Image(systemName: week.strength >= 4 ? "checkmark.circle.fill" : week.strength >= 3 ? "checkmark.circle" : isCurrent ? "clock" : "xmark.circle")
+                            .foregroundStyle(week.strength >= 3 ? Color.green : isCurrent ? Color.secondary : Color.red)
+                    }
+                    Text(trf("Силова ×%@ · Кардио ×%@", "\(week.strength)", "\(week.cardio)")).font(.callout)
+                    let names = weekWorkoutNames(from: week.start, to: week.end)
+                    if !names.isEmpty {
+                        Text(names).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
+                .padding(.vertical, 2)
             }
         }
+    }
+
+    /// Какви тренировки: от приложението (напр. Upper A) и от WHOOP/Health (напр. Running), с брой.
+    private func weekWorkoutNames(from start: Date, to end: Date) -> String {
+        var counts: [(name: String, count: Int)] = []
+        func add(_ name: String) {
+            if let i = counts.firstIndex(where: { $0.name == name }) { counts[i].count += 1 } else { counts.append((name, 1)) }
+        }
+        for session in finished.sorted(by: { $0.date < $1.date }) where session.date >= start && session.date < end {
+            add(session.title)
+        }
+        var day = start
+        while day < end {
+            for item in WorkoutNames.items(on: day) { add(item.name) }
+            day = calendar.date(byAdding: .day, value: 1, to: day) ?? end
+        }
+        return counts.map { $0.count > 1 ? "\($0.name) ×\($0.count)" : $0.name }.joined(separator: ", ")
     }
 
     private func color(_ minutes: Double) -> Color {

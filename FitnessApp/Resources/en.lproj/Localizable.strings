@@ -24,7 +24,7 @@
 "Бележка за упражнението" = "Exercise note";
 "Бележка" = "Note";
 "Бележката е за упражнението във всички седмици." = "The note applies to the exercise in all weeks.";
-"Версия v107" = "Version v107";
+"Версия v108" = "Version v108";
 "Всичко" = "All";
 "Второстепенни групи (броят 0.5 серия)" = "Secondary groups (count 0.5 set)";
 "Въведи тежест." = "Enter a weight.";
@@ -626,3 +626,5 @@
 "силова:" = "strength:";
 "Докосни ден, за да видиш тренировката." = "Tap a day to see the workout.";
 "Без тренировка" = "No workout";
+"Седмица %@ – %@" = "Week %@ – %@";
+"Силова ×%@ · Кардио ×%@" = "Strength ×%@ · Cardio ×%@";

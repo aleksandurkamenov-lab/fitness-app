@@ -109,3 +109,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v105: Remaining Bulgarian units and status texts translated (signed kg changes, body fat source, WHOOP/Polar/Cloud statuses, workout types, rest timer notification); birth date in Profile always shows day, month and year; language switch now re-renders the whole app at once (no mixed BG/EN)
 - v106: Workout-days heatmap GitHub-style: 7/30/90 days/12 months filter, month and weekday labels, horizontal scroll, tap a day to see its workouts; only strength days are green
 - v107: Tapping a day in the workout-days map also lists WHOOP/Apple Health workouts by name and minutes (e.g. Running · 32 min)
+- v108: Weekly strength list covers the last 30 days: "Week 02.11 – 08.11", Strength ×N · Cardio ×N and the workout names of each week
