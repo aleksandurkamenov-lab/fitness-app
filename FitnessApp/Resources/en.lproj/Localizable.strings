@@ -24,7 +24,7 @@
 "Бележка за упражнението" = "Exercise note";
 "Бележка" = "Note";
 "Бележката е за упражнението във всички седмици." = "The note applies to the exercise in all weeks.";
-"Версия v100" = "Version v100";
+"Версия v101" = "Version v101";
 "Всичко" = "All";
 "Второстепенни групи (броят 0.5 серия)" = "Secondary groups (count 0.5 set)";
 "Въведи тежест." = "Enter a weight.";
@@ -611,3 +611,9 @@
 "Време е за следващата серия." = "Time for the next set.";
 "Л" = "L";
 "Д" = "R";
+"Невалидни данни за храната; нищо не е записано." = "Invalid food data; nothing was logged.";
+"Записано: %@ %@ г, %@ ккал (%@)" = "Logged: %@ %@ g, %@ kcal (%@)";
+"Невалидно тегло, нищо не е записано" = "Invalid weight, nothing was logged";
+"Записано тегло: %@ кг" = "Weight logged: %@ kg";
+"Непознато действие" = "Unknown action";
+"Няма отговор, опитай пак." = "No response, try again.";

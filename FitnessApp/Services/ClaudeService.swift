@@ -8,8 +8,8 @@ enum AIModel: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .haiku: "Haiku (бърз, евтин)"
-        case .sonnet: "Sonnet (по-умен, по-скъп)"
+        case .haiku: tr("Haiku (бърз, евтин)")
+        case .sonnet: tr("Sonnet (по-умен, по-скъп)")
         }
     }
 }
@@ -31,10 +31,10 @@ enum ClaudeService {
                      tools: [[String: Any]]) async throws -> (content: [[String: Any]], stopReason: String) {
         let key = apiKey.filter { !$0.isWhitespace }
         guard !key.isEmpty else {
-            throw ClaudeError(message: "Няма API ключ. Въведи го от зъбчатото колело горе вдясно.")
+            throw ClaudeError(message: tr("Няма API ключ. Въведи го от зъбчатото колело горе вдясно."))
         }
         guard let url = URL(string: "https://api.anthropic.com/v1/messages") else {
-            throw ClaudeError(message: "Грешен адрес.")
+            throw ClaudeError(message: tr("Грешен адрес."))
         }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -58,12 +58,12 @@ enum ClaudeService {
             let detail = ((json["error"] as? [String: Any])?["message"] as? String)
                 ?? String(data: data, encoding: .utf8) ?? ""
             switch status {
-            case 401: throw ClaudeError(message: "Грешен API ключ (401). Провери го в настройките.", useClaudeApp: true)
+            case 401: throw ClaudeError(message: tr("Грешен API ключ (401). Провери го в настройките."), useClaudeApp: true)
             case 400 where detail.lowercased().contains("credit"),
                  402:
-                throw ClaudeError(message: "Няма кредити по API ключа. Изпращам към Claude приложението.", useClaudeApp: true)
-            case 429: throw ClaudeError(message: "Твърде много заявки, опитай след минута.")
-            case 503, 529: throw ClaudeError(message: "Claude е претоварен, опитай пак след малко.")
+                throw ClaudeError(message: tr("Няма кредити по API ключа. Изпращам към Claude приложението."), useClaudeApp: true)
+            case 429: throw ClaudeError(message: tr("Твърде много заявки, опитай след минута."))
+            case 503, 529: throw ClaudeError(message: tr("Claude е претоварен, опитай пак след малко."))
             default: throw ClaudeError(message: "Грешка \(status): \(detail)")
             }
         }

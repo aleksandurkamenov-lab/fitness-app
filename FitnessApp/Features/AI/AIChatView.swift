@@ -71,7 +71,7 @@ struct AIChatView: View {
             VStack(spacing: 8) {
                 if weeklyDue && !busy {
                     Button {
-                        send(weeklyPrompt, withPhotos: true)
+                        send(tr(weeklyPrompt), withPhotos: true)
                     } label: {
                         Label("Време е за седмичния анализ", systemImage: "chart.line.uptrend.xyaxis")
                             .frame(maxWidth: .infinity)
@@ -83,12 +83,12 @@ struct AIChatView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             if !weeklyDue {
-                                Button("Седмичен анализ") { send(weeklyPrompt, withPhotos: true) }
+                                Button("Седмичен анализ") { send(tr(weeklyPrompt), withPhotos: true) }
                                     .buttonStyle(.bordered)
                                     .font(.footnote)
                             }
                             ForEach(quickPrompts, id: \.self) { prompt in
-                                Button(prompt) { send(prompt) }
+                                Button(tr(prompt)) { send(tr(prompt)) }
                                     .buttonStyle(.bordered)
                                     .font(.footnote)
                             }

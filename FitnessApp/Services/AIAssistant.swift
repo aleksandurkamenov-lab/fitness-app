@@ -11,7 +11,7 @@ enum AIAssistant {
                 "input_schema": [
                     "type": "object",
                     "properties": [
-                        "name": ["type": "string", "description": "Име на храната на български"],
+                        "name": ["type": "string", "description": AppLanguage.current == .en ? "Food name in English" : "Име на храната на български"],
                         "grams": ["type": "number", "description": "Изядени грамове"],
                         "kcal": ["type": "number", "description": "Калории за изядените грамове"],
                         "protein": ["type": "number", "description": "Протеин в грамове за изядените грамове"],
@@ -68,7 +68,7 @@ enum AIAssistant {
                         (block["type"] as? String) == "text" ? block["text"] as? String : nil
                     }
                     .joined(separator: "\n")
-                if text.isEmpty && actions.isEmpty { throw ClaudeError(message: "Няма отговор, опитай пак.") }
+                if text.isEmpty && actions.isEmpty { throw ClaudeError(message: tr("Няма отговор, опитай пак.")) }
                 return (text, actions)
             }
             messages.append(["role": "assistant", "content": result.content])
@@ -136,7 +136,7 @@ enum AIAssistant {
                   let carbs = number(input["carbs"]),
                   let fat = number(input["fat"]),
                   isValidFoodInput(name: food, grams: grams, kcal: kcal, protein: protein, carbs: carbs, fat: fat) else {
-                return "Невалидни данни за храната; нищо не е записано."
+                return tr("Невалидни данни за храната; нищо не е записано.")
             }
             let meal = Meal(rawValue: (input["meal"] as? String) ?? "") ?? mealByHour()
             context.insert(FoodEntry(date: date(input["date"]), meal: meal, name: food, grams: grams,
@@ -152,14 +152,14 @@ enum AIAssistant {
                 context.insert(item)
             }
             try? context.save()
-            return "Записано: \(food) \(short(grams)) г, \(Int(kcal.rounded())) ккал (\(meal.title))"
+            return trf("Записано: %@ %@ г, %@ ккал (%@)", food, short(grams), "\(Int(kcal.rounded()))", meal.title)
         case "log_weight":
-            guard let kg = number(input["kg"]), kg > 20, kg < 400 else { return "Невалидно тегло, нищо не е записано" }
+            guard let kg = number(input["kg"]), kg > 20, kg < 400 else { return tr("Невалидно тегло, нищо не е записано") }
             context.insert(WeightEntry(date: date(input["date"]), kg: kg))
             try? context.save()
-            return "Записано тегло: \(short(kg)) кг"
+            return trf("Записано тегло: %@ кг", short(kg))
         default:
-            return "Непознато действие"
+            return tr("Непознато действие")
         }
     }
 
@@ -225,6 +225,9 @@ enum AIAssistant {
         let now = Date.now
         let today = calendar.startOfDay(for: now)
         var lines: [String] = []
+        if AppLanguage.current == .en {
+            lines.append("IMPORTANT: The user uses the app in English. Always reply in English, even though these instructions and data labels are in Bulgarian. Keep names of the user's workouts and exercises exactly as written in the data. Log food names in English.")
+        }
         lines.append("Ти си личен треньор и хранителен помощник във фитнес приложението на потребителя. Отговаряй на български, кратко и конкретно (английски термини са ок). Числата за здраве и хранене са ориентировъчни, не са медицински съвет; казвай го, когато даваш такива препоръки.")
         lines.append("Като треньор следиш съня, възстановяването (WHOOP), тренировките и прогреса по упражненията, теглото спрямо целта и оставащите макроси за деня. Свързвай ги: при ниско възстановяване или лош сън предлагай по-леко натоварване; при застой в упражнение предлагай промяна; при отклонение на теглото от целевото темпо предлагай корекция на калориите. За оставащите макроси давай конкретни храни и ястия с грамове, по възможност от запазените храни.")
         if forExport {
