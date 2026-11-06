@@ -208,10 +208,10 @@ private struct MacroBar: View {
                 Text(tr(title))
                 Spacer()
                 if let target {
-                    Text("\(value.short) / \(target.short) \(unit)")
+                    Text("\(value.short) / \(target.short) " + tr(unit))
                         .foregroundStyle(value > target ? Color.orange : Color.secondary)
                 } else {
-                    Text("\(value.short) \(unit)").foregroundStyle(.secondary)
+                    Text("\(value.short) " + tr(unit)).foregroundStyle(.secondary)
                 }
             }
             if let target, target > 0 {

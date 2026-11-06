@@ -398,7 +398,7 @@ struct TodayView: View {
         HStack {
             Text(tr(title)).fontWeight(bold ? .semibold : .regular)
             Spacer()
-            Text("\(prefix)\(Int(value.rounded()))\(unit)").fontWeight(bold ? .semibold : .regular).monospacedDigit()
+            Text("\(prefix)\(Int(value.rounded()))" + tr(unit)).fontWeight(bold ? .semibold : .regular).monospacedDigit()
         }
     }
 
