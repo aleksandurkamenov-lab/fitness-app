@@ -47,6 +47,12 @@ private struct ProfileForm: View {
                 Picker("Език", selection: $language) {
                     ForEach(AppLanguage.allCases) { Text($0.label).tag($0.rawValue) }
                 }
+                .onChange(of: language) { _, new in
+                    // Дати и месеци следват езика на приложението след рестарт.
+                    UserDefaults.standard.set([new], forKey: "AppleLanguages")
+                }
+            } footer: {
+                Text("Датите се превеждат изцяло след затваряне и отваряне на приложението.")
             }
 
             Section("За мен") {

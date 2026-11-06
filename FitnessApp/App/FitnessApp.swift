@@ -5,6 +5,10 @@ import SwiftData
 struct FitnessApp: App {
     @AppStorage(AppLanguage.storageKey) private var language = AppLanguage.bg.rawValue
 
+    init() {
+        UserDefaults.standard.set([AppLanguage.current.rawValue], forKey: "AppleLanguages")
+    }
+
     var body: some Scene {
         WindowGroup {
             RootTabView()
