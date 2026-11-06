@@ -32,7 +32,7 @@ struct PhotosView: View {
                 Picker("Поза", selection: $filter) {
                     Text("Всички").tag(PhotoPose?.none)
                     ForEach(PhotoPose.allCases) { pose in
-                        Text(pose.title).tag(PhotoPose?.some(pose))
+                        Text(tr(pose.title)).tag(PhotoPose?.some(pose))
                     }
                 }
                 .pickerStyle(.segmented)
@@ -66,7 +66,7 @@ struct PhotosView: View {
             .navigationTitle("Снимки")
             .safeAreaInset(edge: .bottom) {
                 if let progress {
-                    Text(progress)
+                    Text(tr(progress))
                         .font(.footnote)
                         .padding(8)
                         .background(.regularMaterial, in: Capsule())
@@ -141,7 +141,7 @@ struct PhotosView: View {
         let known = knownSources
         var added = 0
         for (index, item) in items.enumerated() {
-            progress = "Внасяне \(index + 1) от \(items.count)…"
+            progress = trf("Внасяне %@ от %@…", "\(index + 1)", "\(items.count)")
             let source = item.itemIdentifier.map { "lib:" + $0 } ?? ""
             if !source.isEmpty && known.contains(source) { continue }
             guard let data = try? await item.loadTransferable(type: Data.self),
@@ -162,7 +162,7 @@ struct PhotosView: View {
         let legacyCounts = Dictionary(grouping: files, by: { "file:\(folder.lastPathComponent)/\($0.url.lastPathComponent)" })
         var added = 0
         for (index, file) in files.enumerated() {
-            progress = "Внасяне \(index + 1) от \(files.count)…"
+            progress = trf("Внасяне %@ от %@…", "\(index + 1)", "\(files.count)")
             await Task.yield()
             // Full normalized path avoids collisions between same-named folders/files.
             let source = "file:" + file.url.standardizedFileURL.path
@@ -179,7 +179,7 @@ struct PhotosView: View {
 
     private func finish(added: Int) async {
         try? context.save()
-        progress = "Добавени: \(added)"
+        progress = trf("Добавени: %@", "\(added)")
         try? await Task.sleep(for: .seconds(3))
         progress = nil
     }
@@ -201,7 +201,7 @@ private struct PhotoThumb: View {
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(alignment: .bottomLeading) {
-                Text(photo.pose.title)
+                Text(tr(photo.pose.title))
                     .font(.caption2)
                     .padding(3)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 4))
@@ -229,7 +229,7 @@ private struct PhotoDetailView: View {
                 DatePicker("Дата", selection: $photo.date, displayedComponents: .date)
                 Picker("Поза", selection: Binding(get: { photo.pose }, set: { photo.pose = $0 })) {
                     ForEach(PhotoPose.allCases) { pose in
-                        Text(pose.title).tag(pose)
+                        Text(tr(pose.title)).tag(pose)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -270,7 +270,7 @@ private struct PhotoCompareView: View {
         VStack(spacing: 12) {
             Picker("Поза", selection: $pose) {
                 ForEach(PhotoPose.allCases) { pose in
-                    Text(pose.title).tag(pose)
+                    Text(tr(pose.title)).tag(pose)
                 }
             }
             .pickerStyle(.segmented)

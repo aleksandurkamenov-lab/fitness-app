@@ -35,8 +35,8 @@ struct MeasurementsView: View {
                 ? "\(value(side: side, flexed: false))/\(value(side: side, flexed: true))"
                 : value(side: side, flexed: nil)
         }
-        if kind.supportsSides { return "Л \(pair("left")) · Д \(pair("right")) см" }
-        return "\(pair(nil)) см"
+        if kind.supportsSides { return tr("Л") + " \(pair("left")) · " + tr("Д") + " \(pair("right")) " + tr("см") }
+        return trf("%@ см", "\(pair(nil))")
     }
 
     var body: some View {
@@ -46,12 +46,12 @@ struct MeasurementsView: View {
             List {
                 Section("Тегло") {
                     if let last = trend.last {
-                        LabeledContent("Последно", value: "\(last.kg.short) кг")
+                        LabeledContent("Последно", value: trf("%@ кг", "\(last.kg.short)"))
                         if let goal = profiles.first?.goalWeightKg, goal > 0 {
-                            LabeledContent("До целта \(goal.short) кг", value: BodyMath.signedKg(goal - last.trend))
+                            LabeledContent(trf("До целта %@ кг", "\(goal.short)"), value: BodyMath.signedKg(goal - last.trend))
                         }
                         if let week = BodyMath.weekSummary(weights) {
-                            LabeledContent("Средно (7 дни)", value: "\(week.average.short) кг")
+                            LabeledContent("Средно (7 дни)", value: trf("%@ кг", "\(week.average.short)"))
                             if let change = week.change {
                                 LabeledContent("Промяна за 7 дни", value: BodyMath.signedKg(change))
                             }
@@ -89,7 +89,7 @@ struct MeasurementsView: View {
                         Label("Внеси теглото от Apple Health", systemImage: "heart.text.square")
                     }
                     if let importedCount {
-                        Text(importedCount > 0 ? "Внесени записи: \(importedCount)" : "Няма нови записи в Apple Health.")
+                        Text(importedCount > 0 ? trf("Внесени записи: %@", "\(importedCount)") : tr("Няма нови записи в Apple Health."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -151,14 +151,14 @@ struct WeightChart: View {
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
                     .foregroundStyle(.green)
                     .annotation(position: .top, alignment: .trailing) {
-                        Text("Цел \(goalKg.short) кг").font(.caption2).foregroundStyle(.green)
+                        Text(trf("Цел %@ кг", "\(goalKg.short)")).font(.caption2).foregroundStyle(.green)
                     }
             }
         }
         .chartYScale(domain: .automatic(includesZero: false))
         .chartScrub(points.map {
             ScrubPoint(date: $0.date, value: $0.trend,
-                       text: "\(scrubDate($0.date)): \($0.kg.formatted(.number.precision(.fractionLength(0...2)))) кг (тренд \($0.trend.formatted(.number.precision(.fractionLength(0...2)))))")
+                       text: trf("%@: %@ кг (тренд %@)", "\(scrubDate($0.date))", "\($0.kg.formatted(.number.precision(.fractionLength(0...2))))", "\($0.trend.formatted(.number.precision(.fractionLength(0...2))))"))
         })
         .padding(.top, 24)
         .frame(height: 224)
@@ -177,7 +177,7 @@ struct AddWeightSheet: View {
         NavigationStack {
             Form {
                 DatePicker("Дата", selection: $date, in: ...Date.now, displayedComponents: .date)
-                TextField(initial.map { $0.short } ?? "кг", value: $kg, format: .number)
+                TextField(initial.map { $0.short } ?? tr("кг"), value: $kg, format: .number)
                     .keyboardType(.decimalPad)
                 TextField("% мазнини (по избор)", value: $bodyFat, format: .number)
                     .keyboardType(.decimalPad)
@@ -217,7 +217,7 @@ struct WeightHistoryView: View {
                     if let fat = entry.bodyFatPercent {
                         Text("\(fat.short)%").foregroundStyle(.secondary)
                     }
-                    Text("\(entry.kg.short) кг").font(.headline)
+                    Text(trf("%@ кг", "\(entry.kg.short)")).font(.headline)
                 }
             }
             .onDelete { offsets in
@@ -242,15 +242,15 @@ struct MeasurementDetailView: View {
 
     private func label(_ entry: MeasurementEntry) -> String {
         var parts: [String] = []
-        if kind.supportsSides { parts.append(entry.sideRaw == "right" ? "Дясно" : "Ляво") }
-        if kind.supportsFlex { parts.append(entry.isFlexed ? "стегнато" : "отпуснато") }
-        return parts.isEmpty ? "см" : parts.joined(separator: " ")
+        if kind.supportsSides { parts.append(entry.sideRaw == "right" ? tr("Дясно") : tr("Ляво")) }
+        if kind.supportsFlex { parts.append(entry.isFlexed ? tr("стегнато") : tr("отпуснато")) }
+        return parts.isEmpty ? tr("см") : parts.joined(separator: " ")
     }
 
     private var hint: String {
         entries.first {
             (!kind.supportsFlex || $0.isFlexed == flexed) && (!kind.supportsSides || $0.sideRaw == side)
-        }.map { $0.cm.short } ?? "см"
+        }.map { $0.cm.short } ?? tr("см")
     }
 
     var body: some View {
@@ -295,7 +295,7 @@ struct MeasurementDetailView: View {
                     .chartYScale(domain: .automatic(includesZero: false))
                     .chartScrub(entries.map {
                         ScrubPoint(date: $0.date, value: $0.cm,
-                                   text: "\(scrubDate($0.date)): \($0.cm.formatted(.number.precision(.fractionLength(0...1)))) см · \(label($0))")
+                                   text: trf("%@: %@ см · %@", "\(scrubDate($0.date))", "\($0.cm.formatted(.number.precision(.fractionLength(0...1))))", "\(label($0))"))
                     })
                     .padding(.top, 24)
                     .frame(height: 224)
@@ -307,7 +307,7 @@ struct MeasurementDetailView: View {
                     LabeledContent(
                         "\(entry.date.formatted(date: .abbreviated, time: .omitted))" +
                             (label(entry) == "см" ? "" : " · \(label(entry).lowercased())"),
-                        value: "\(entry.cm.short) см")
+                        value: trf("%@ см", "\(entry.cm.short)"))
                 }
                 .onDelete { offsets in
                     let items = entries

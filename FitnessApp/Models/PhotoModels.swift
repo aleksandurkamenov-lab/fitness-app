@@ -6,7 +6,9 @@ enum PhotoPose: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
+    var title: String { tr(titleBG) }
+
+    private var titleBG: String {
         switch self {
         case .front: "Отпред"
         case .side: "Отстрани"

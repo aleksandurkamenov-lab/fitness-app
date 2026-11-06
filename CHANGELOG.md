@@ -101,3 +101,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v97: Weekly tonnage chart redesigned: tons on axis, week-start date labels, empty weeks filled, tooltip stays inside screen with week range, change vs previous week
 - v98: Login: password field focus fix, email/password checks and clear Bulgarian auth errors (incl. "no account → register" hint)
 - v99: Language switcher in Profile (Български / English). English translation for the Workouts and Today tabs (other tabs follow)
+- v100: English translation for Nutrition, Measurements, Photos, Profile, AI chat, Cloud and Devices screens (language switcher now covers the whole app)

@@ -58,7 +58,7 @@ struct AIChatView: View {
                     }
                 }
                 if let errorText {
-                    Text(errorText)
+                    Text(tr(errorText))
                         .font(.footnote)
                         .foregroundStyle(.red)
                 }
@@ -278,14 +278,14 @@ private struct AISettingsView: View {
                 } header: {
                     Text("Claude API ключ")
                 } footer: {
-                    Text(savedLength > 0 ? "Има запазен ключ (\(savedLength) знака). Пази се само на телефона." :
+                    Text(savedLength > 0 ? trf("Има запазен ключ (%@ знака). Пази се само на телефона.", "\(savedLength)") :
                             "Направи ключ в console.anthropic.com → API Keys и го постави тук. Плаща се отделно от Claude Pro, с предплатени кредити. Без ключ чатът минава безплатно през Claude приложението.")
                 }
 
                 Section {
                     Picker("Модел", selection: $model) {
                         ForEach(AIModel.allCases) { option in
-                            Text(option.title).tag(option.rawValue)
+                            Text(tr(option.title)).tag(option.rawValue)
                         }
                     }
                 } footer: {

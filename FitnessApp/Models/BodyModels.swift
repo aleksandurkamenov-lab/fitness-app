@@ -10,7 +10,9 @@ enum Sex: String, CaseIterable, Identifiable, Codable {
 enum GoalKind: String, CaseIterable, Identifiable, Codable {
     case lose, maintain, gain
     var id: String { rawValue }
-    var title: String {
+    var title: String { tr(titleBG) }
+
+    private var titleBG: String {
         switch self {
         case .lose: "Сваляне"
         case .maintain: "Поддръжка"
@@ -22,7 +24,9 @@ enum GoalKind: String, CaseIterable, Identifiable, Codable {
 enum MeasurementKind: String, CaseIterable, Identifiable, Codable {
     case waist, abdomen, neck, chest, arm, thigh, calf, hips
     var id: String { rawValue }
-    var title: String {
+    var title: String { tr(titleBG) }
+
+    private var titleBG: String {
         switch self {
         case .waist: "Талия (под пъпа)"
         case .abdomen: "Корем"

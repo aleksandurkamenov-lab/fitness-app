@@ -37,7 +37,7 @@ struct DataTransferView: View {
             }
 
             if let message {
-                Section { Text(message) }
+                Section { Text(tr(message)) }
             }
         }
         .navigationTitle("Данни")
@@ -49,7 +49,7 @@ struct DataTransferView: View {
                 defer { if access { url.stopAccessingSecurityScopedResource() } }
                 let text = try String(contentsOf: url, encoding: .utf8)
                 let count = try DataTransfer.importCSV(text, in: context)
-                message = "Внесени тренировки: \(count)"
+                message = trf("Внесени тренировки: %@", "\(count)")
             } catch {
                 message = error.localizedDescription
             }

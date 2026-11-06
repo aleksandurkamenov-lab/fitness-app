@@ -36,7 +36,7 @@ struct PolarConnectView: View {
                 }
                 if polar.isBusy { ProgressView() }
                 if let status = polar.statusText {
-                    Text(status).font(.footnote).foregroundStyle(.secondary)
+                    Text(tr(status)).font(.footnote).foregroundStyle(.secondary)
                 }
             }
 

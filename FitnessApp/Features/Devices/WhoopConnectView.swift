@@ -33,14 +33,14 @@ struct WhoopConnectView: View {
                 }
                 if whoop.isBusy { ProgressView() }
                 if let status = whoop.statusText {
-                    Text(status).font(.footnote).foregroundStyle(.secondary)
+                    Text(tr(status)).font(.footnote).foregroundStyle(.secondary)
                 }
             }
 
             if let s = whoop.snapshot {
                 Section("Последни данни") {
                     LabeledContent("Recovery", value: s.recoveryScore.map { "\(Int($0))%" } ?? "–")
-                    LabeledContent("HRV", value: s.hrv.map { "\(Int($0)) мс" } ?? "–")
+                    LabeledContent("HRV", value: s.hrv.map { trf("%@ мс", "\(Int($0))") } ?? "–")
                     LabeledContent("Пулс в покой", value: s.rhr.map { "\(Int($0))" } ?? "–")
                     LabeledContent("Сън (performance)", value: s.sleepPerformance.map { "\(Int($0))%" } ?? "–")
                     LabeledContent("Strain", value: s.strain.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "–")

@@ -97,7 +97,7 @@ struct NutritionView: View {
                         Button { shiftDay(-1) } label: { Image(systemName: "chevron.left") }
                             .buttonStyle(.borderless)
                         Spacer()
-                        Text(dayTitle).font(.headline)
+                        Text(tr(dayTitle)).font(.headline)
                         Spacer()
                         Button { shiftDay(1) } label: { Image(systemName: "chevron.right") }
                             .buttonStyle(.borderless)
@@ -119,7 +119,7 @@ struct NutritionView: View {
                     MacroBar(title: "Въглехидрати", value: today.reduce(0) { $0 + $1.carbs } + fromHealth.carbs, target: targets?.carbs, unit: "г")
                     MacroBar(title: "Мазнини", value: today.reduce(0) { $0 + $1.fat } + fromHealth.fat, target: targets?.fat, unit: "г")
                     if fromHealth.kcal > 0 {
-                        Text("Вкл. от Apple Health (напр. MyFitnessPal): \(fromHealth.kcal.short) ккал")
+                        Text(trf("Вкл. от Apple Health (напр. MyFitnessPal): %@ ккал", "\(fromHealth.kcal.short)"))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -146,9 +146,9 @@ struct NutritionView: View {
                                     HStack {
                                         Text(entry.name).foregroundStyle(.primary)
                                         Spacer()
-                                        Text("\(entry.kcal.short) ккал").foregroundStyle(.secondary)
+                                        Text(trf("%@ ккал", "\(entry.kcal.short)")).foregroundStyle(.secondary)
                                     }
-                                    Text("\(entry.grams.short) г · Б \(entry.protein.short) · В \(entry.carbs.short) · М \(entry.fat.short)")
+                                    Text(trf("%@ г · Б %@ · В %@ · М %@", "\(entry.grams.short)", "\(entry.protein.short)", "\(entry.carbs.short)", "\(entry.fat.short)"))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -164,10 +164,10 @@ struct NutritionView: View {
                         }
                     } header: {
                         HStack {
-                            Text(meal.title)
+                            Text(tr(meal.title))
                             Spacer()
                             if !items.isEmpty {
-                                Text("\(items.reduce(0) { $0 + $1.kcal }.short) ккал")
+                                Text(trf("%@ ккал", "\(items.reduce(0) { $0 + $1.kcal }.short)"))
                             }
                         }
                     }
@@ -205,7 +205,7 @@ private struct MacroBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(title)
+                Text(tr(title))
                 Spacer()
                 if let target {
                     Text("\(value.short) / \(target.short) \(unit)")
@@ -248,7 +248,7 @@ private struct EditEntrySheet: View {
                             .frame(maxWidth: 100)
                         Text("г").foregroundStyle(.secondary)
                     }
-                    Text("= \((entry.kcal * factor).short) ккал · Б \((entry.protein * factor).short) · В \((entry.carbs * factor).short) · М \((entry.fat * factor).short)")
+                    Text(trf("= %@ ккал · Б %@ · В %@ · М %@", "\((entry.kcal * factor).short)", "\((entry.protein * factor).short)", "\((entry.carbs * factor).short)", "\((entry.fat * factor).short)"))
                         .font(.subheadline.weight(.semibold))
                 }
                 Section {

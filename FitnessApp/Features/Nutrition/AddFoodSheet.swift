@@ -94,7 +94,7 @@ struct AddFoodSheet: View {
                     HStack {
                         VStack(alignment: .leading) {
                             Text(food.name).foregroundStyle(.primary)
-                            Text("на 100 г: \(food.kcalPer100.short) ккал · Б \(food.proteinPer100.short) · В \(food.carbsPer100.short) · М \(food.fatPer100.short)")
+                            Text(trf("на 100 г: %@ ккал · Б %@ · В %@ · М %@", "\(food.kcalPer100.short)", "\(food.proteinPer100.short)", "\(food.carbsPer100.short)", "\(food.fatPer100.short)"))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -120,7 +120,7 @@ struct AddFoodSheet: View {
                 }
                 preview(grams: number(pickedGrams), kcal: picked.kcalPer100, protein: picked.proteinPer100,
                         carbs: picked.carbsPer100, fat: picked.fatPer100)
-                Button("Добави \(picked.name)") {
+                Button(trf("Добави %@", "\(picked.name)")) {
                     let amount = number(pickedGrams)
                     guard amount.isFinite, amount > 0 else { return }
                     addEntry(name: picked.name, grams: amount, kcal100: picked.kcalPer100,
@@ -175,7 +175,7 @@ struct AddFoodSheet: View {
     /// Изчислени стойности за въведеното количество.
     private func preview(grams: Double, kcal: Double, protein: Double, carbs: Double, fat: Double) -> some View {
         let factor = grams / 100
-        return Text("= \((kcal * factor).short) ккал · Б \((protein * factor).short) · В \((carbs * factor).short) · М \((fat * factor).short)")
+        return Text(trf("= %@ ккал · Б %@ · В %@ · М %@", "\((kcal * factor).short)", "\((protein * factor).short)", "\((carbs * factor).short)", "\((fat * factor).short)"))
             .font(.subheadline.weight(.semibold))
     }
 
@@ -188,7 +188,7 @@ struct AddFoodSheet: View {
                 .disabled(onlineQuery.trimmingCharacters(in: .whitespaces).isEmpty || isSearching)
             if isSearching { ProgressView() }
             if let searchMessage {
-                Text(searchMessage).font(.footnote).foregroundStyle(.secondary)
+                Text(tr(searchMessage)).font(.footnote).foregroundStyle(.secondary)
             }
         } footer: {
             Text("Данни от Open Food Facts (нужен е интернет). Избраната храна се запазва в твоя списък и после я намираш в \"Запазени\".")
@@ -206,7 +206,7 @@ struct AddFoodSheet: View {
                 } label: {
                     VStack(alignment: .leading) {
                         Text(food.name).foregroundStyle(.primary)
-                        Text("на 100 г: \(food.kcal.short) ккал · Б \(food.protein.short) · В \(food.carbs.short) · М \(food.fat.short)")
+                        Text(trf("на 100 г: %@ ккал · Б %@ · В %@ · М %@", "\(food.kcal.short)", "\(food.protein.short)", "\(food.carbs.short)", "\(food.fat.short)"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -224,10 +224,10 @@ struct AddFoodSheet: View {
             do {
                 let results = try await FoodSearch.search(query)
                 onlineResults = results
-                searchMessage = results.isEmpty ? "Няма резултати." : nil
+                searchMessage = results.isEmpty ? tr("Няма резултати.") : nil
             } catch {
                 onlineResults = []
-                searchMessage = "Не успях да търся: \(error.localizedDescription)"
+                searchMessage = trf("Не успях да търся: %@", "\(error.localizedDescription)")
             }
             isSearching = false
         }
@@ -235,13 +235,13 @@ struct AddFoodSheet: View {
 
     private func field(_ title: String, _ text: Binding<String>, _ unit: String) -> some View {
         HStack {
-            Text(title)
+            Text(tr(title))
             Spacer()
             TextField("0", text: text)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: 100)
-            Text(unit).foregroundStyle(.secondary)
+            Text(tr(unit)).foregroundStyle(.secondary)
         }
     }
 }

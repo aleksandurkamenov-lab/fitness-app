@@ -55,7 +55,7 @@ struct CloudView: View {
             }
 
             if let message {
-                Section { Text(message).font(.footnote) }
+                Section { Text(tr(message)).font(.footnote) }
             }
         }
         .navigationTitle("Облак и треньор")
@@ -73,7 +73,7 @@ struct CloudView: View {
             Button("Качи данните сега") {
                 run {
                     await cloud.syncIfNeeded(context: context, force: true)
-                    message = cloud.lastUpload == nil ? "Неуспешно качване." : "Качено."
+                    message = tr(cloud.lastUpload == nil ? "Неуспешно качване." : "Качено.")
                 }
             }
             Button("Изход", role: .destructive) { cloud.signOut(); me = nil; clients = [] }
@@ -92,7 +92,7 @@ struct CloudView: View {
                     Button("Свържи с треньор") {
                         run {
                             let ok = try await cloud.linkCoach(code: coachCode.trimmed)
-                            message = ok ? "Свързан си с треньора." : "Няма такъв код."
+                            message = tr(ok ? "Свързан си с треньора." : "Няма такъв код.")
                             await load()
                         }
                     }
@@ -116,7 +116,7 @@ struct CloudView: View {
                 Text("Още няма клиенти. Клиентът въвежда твоя код в тази страница.").foregroundStyle(.secondary)
             }
             ForEach(clients) { client in
-                NavigationLink(client.display_name.isEmpty ? "Клиент \(client.code)" : client.display_name) {
+                NavigationLink(client.display_name.isEmpty ? trf("Клиент %@", "\(client.code)") : client.display_name) {
                     ClientDetailView(client: client)
                 }
             }
@@ -170,12 +170,12 @@ struct ClientDetailView: View {
 
     var body: some View {
         List {
-            if let message { Section { Text(message) } }
+            if let message { Section { Text(tr(message)) } }
             if let s = snapshot {
                 Section {
                     LabeledContent("Обновено", value: String(updated.prefix(16)).replacingOccurrences(of: "T", with: " "))
-                    LabeledContent("Възраст / ръст", value: "\(s.age) г. / \(Int(s.heightCm)) см")
-                    if let w = s.weights.last { LabeledContent("Последно тегло", value: "\(w.kg.formatted(.number.precision(.fractionLength(0...1)))) кг · \(w.d)") }
+                    LabeledContent("Възраст / ръст", value: trf("%@ г. / %@ см", "\(s.age)", "\(Int(s.heightCm))"))
+                    if let w = s.weights.last { LabeledContent("Последно тегло", value: trf("%@ кг · %@", "\(w.kg.formatted(.number.precision(.fractionLength(0...1))))", "\(w.d)")) }
                 }
                 if s.weights.count > 1 {
                     Section("Тегло") { weightChart(s) }
@@ -190,7 +190,7 @@ struct ClientDetailView: View {
                     let days = Array(s.food.suffix(14))
                     if days.isEmpty { Text("Няма данни").foregroundStyle(.secondary) }
                     ForEach(days.reversed(), id: \.d) { f in
-                        LabeledContent(f.d, value: "\(Int(f.kcal)) ккал · Б \(Int(f.p)) В \(Int(f.c)) М \(Int(f.f))")
+                        LabeledContent(f.d, value: trf("%@ ккал · Б %@ В %@ М %@", "\(Int(f.kcal))", "\(Int(f.p))", "\(Int(f.c))", "\(Int(f.f))"))
                             .font(.footnote)
                     }
                 }
@@ -208,7 +208,7 @@ struct ClientDetailView: View {
                         } label: {
                             VStack(alignment: .leading) {
                                 Text("\(w.d) · \(w.title)")
-                                Text("\(w.sets) серии · обем \(Int(w.volume)) кг").font(.footnote).foregroundStyle(.secondary)
+                                Text(trf("%@ серии · обем %@ кг", "\(w.sets)", "\(Int(w.volume))")).font(.footnote).foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -217,7 +217,7 @@ struct ClientDetailView: View {
                 ProgressView()
             }
         }
-        .navigationTitle(client.display_name.isEmpty ? "Клиент" : client.display_name)
+        .navigationTitle(client.display_name.isEmpty ? tr("Клиент") : client.display_name)
         .task { await load() }
     }
 
@@ -229,7 +229,7 @@ struct ClientDetailView: View {
             }
         }
         .chartYScale(domain: .automatic(includesZero: false))
-        .chartScrub(points.map { ScrubPoint(date: $0.0, value: $0.1, text: "\(scrubDate($0.0)): \($0.1.formatted(.number.precision(.fractionLength(0...1)))) кг") })
+        .chartScrub(points.map { ScrubPoint(date: $0.0, value: $0.1, text: trf("%@: %@ кг", "\(scrubDate($0.0))", "\($0.1.formatted(.number.precision(.fractionLength(0...1))))")) })
         .frame(height: 180)
     }
 

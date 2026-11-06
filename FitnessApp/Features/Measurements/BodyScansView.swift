@@ -20,7 +20,7 @@ struct BodyScansView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(scan.kind) · \(scan.date.formatted(date: .abbreviated, time: .omitted))")
                             .font(.subheadline.weight(.semibold))
-                        Text("\(scan.weightKg.short) кг · \(scan.bodyFatPercent.short) % мазнини · безмастна \(scan.fatFreeKg.short) кг" + (scan.skeletalMuscleKg > 0 ? " · мускулна \(scan.skeletalMuscleKg.short) кг" : ""))
+                        Text(trf("%@ кг · %@ %% мазнини · безмастна %@ кг", "\(scan.weightKg.short)", "\(scan.bodyFatPercent.short)", "\(scan.fatFreeKg.short)") + (scan.skeletalMuscleKg > 0 ? trf(" · мускулна %@ кг", "\(scan.skeletalMuscleKg.short)") : ""))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -70,7 +70,7 @@ private struct AddBodyScanSheet: View {
                 }
                 .pickerStyle(.segmented)
                 DatePicker("Дата", selection: $date, in: ...Date.now, displayedComponents: .date)
-                TextField(initialWeight.map { "Тегло (\($0.short) кг)" } ?? "Тегло, кг", value: $weight, format: .number)
+                TextField(initialWeight.map { trf("Тегло (%@ кг)", "\($0.short)") } ?? tr("Тегло, кг"), value: $weight, format: .number)
                     .keyboardType(.decimalPad)
                 TextField("% мазнини", value: $fat, format: .number)
                     .keyboardType(.decimalPad)

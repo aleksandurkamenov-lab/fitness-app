@@ -36,7 +36,7 @@ private struct ProfileForm: View {
     private var activityOptions: [(String, Double)] {
         activities.contains { $0.1 == profile.activityFactor }
             ? activities
-            : activities + [("Калибрирана (\(profile.activityFactor.formatted(.number.precision(.fractionLength(0...2)))))", profile.activityFactor)]
+            : activities + [(trf("Калибрирана (%@)", "\(profile.activityFactor.formatted(.number.precision(.fractionLength(0...2))))"), profile.activityFactor)]
     }
 
     @AppStorage(AppLanguage.storageKey) private var language = AppLanguage.bg.rawValue
@@ -52,7 +52,7 @@ private struct ProfileForm: View {
             Section("За мен") {
                 LabeledContent("Пол") {
                     Picker("Пол", selection: $profile.sex) {
-                        ForEach(Sex.allCases) { Text($0.title).tag($0) }
+                        ForEach(Sex.allCases) { Text(tr($0.title)).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
@@ -68,13 +68,13 @@ private struct ProfileForm: View {
                         .frame(width: 80)
                 }
                 Picker("Активност", selection: $profile.activityFactor) {
-                    ForEach(activityOptions, id: \.1) { Text($0.0).tag($0.1) }
+                    ForEach(activityOptions, id: \.1) { Text(tr($0.0)).tag($0.1) }
                 }
             }
 
             Section("Цел") {
                 Picker("Цел", selection: $profile.goal) {
-                    ForEach(GoalKind.allCases) { Text($0.title).tag($0) }
+                    ForEach(GoalKind.allCases) { Text(tr($0.title)).tag($0) }
                 }
                 LabeledContent("Целево тегло (кг, 0 = няма)") {
                     TextField("0", value: $profile.goalWeightKg, format: .number)
@@ -83,38 +83,38 @@ private struct ProfileForm: View {
                 }
                 if profile.goal == .lose {
                     Picker("Темпо на сваляне", selection: $profile.lossRateKg) {
-                        ForEach(rates, id: \.self) { Text("\($0.formatted(.number.precision(.fractionLength(0...2)))) кг седмично").tag($0) }
+                        ForEach(rates, id: \.self) { Text(trf("%@ кг седмично", "\($0.formatted(.number.precision(.fractionLength(0...2))))")).tag($0) }
                     }
                 } else if profile.goal == .gain {
                     Picker("Темпо на качване", selection: $profile.gainRateKg) {
-                        ForEach(rates, id: \.self) { Text("\($0.formatted(.number.precision(.fractionLength(0...2)))) кг седмично").tag($0) }
+                        ForEach(rates, id: \.self) { Text(trf("%@ кг седмично", "\($0.formatted(.number.precision(.fractionLength(0...2))))")).tag($0) }
                     }
                 }
             }
 
             Section("Макроси (г на кг тегло)") {
-                Stepper("Белтък при дефицит: \(profile.proteinLoseGPerKg.short)",
+                Stepper(trf("Белтък при дефицит: %@", "\(profile.proteinLoseGPerKg.short)"),
                         value: $profile.proteinLoseGPerKg, in: 1.0...3.5, step: 0.1)
-                Stepper("Белтък при бълк и поддръжка: \(profile.proteinOtherGPerKg.short)",
+                Stepper(trf("Белтък при бълк и поддръжка: %@", "\(profile.proteinOtherGPerKg.short)"),
                         value: $profile.proteinOtherGPerKg, in: 1.0...3.5, step: 0.1)
-                Stepper("Мазнини минимум: \(profile.fatMinGPerKg.short)",
+                Stepper(trf("Мазнини минимум: %@", "\(profile.fatMinGPerKg.short)"),
                         value: $profile.fatMinGPerKg, in: 0.4...2.0, step: 0.1)
             }
 
             Section {
                 Toggle("Променлив прием", isOn: $profile.variableCalories)
                 if profile.variableCalories {
-                    Stepper("Тренировъчни дни: \(profile.trainingDaysPerWeek) / седм.",
+                    Stepper(trf("Тренировъчни дни: %@ / седм.", "\(profile.trainingDaysPerWeek)"),
                             value: $profile.trainingDaysPerWeek, in: 1...6)
-                    Stepper("Тренировъчен ден: +\(Int(profile.trainingDayBoostPercent))%",
+                    Stepper(trf("Тренировъчен ден: +%@%%", "\(Int(profile.trainingDayBoostPercent))"),
                             value: $profile.trainingDayBoostPercent, in: 5...30, step: 5)
                 }
             } header: {
                 Text("Калориен прием")
             } footer: {
-                Text(profile.variableCalories
+                Text(tr(profile.variableCalories
                      ? "Тренировъчните дни получават повече калории от въглехидрати, почивните по-малко. Седмичната сума остава същата."
-                     : "Еднакви цели всеки ден (линеен прием).")
+                     : "Еднакви цели всеки ден (линеен прием)."))
             }
 
             Section("Данни") {
@@ -172,26 +172,26 @@ private struct MacroEditor: View {
 
     private func row(_ title: String, _ value: Binding<Double?>, unit: String = "г") -> some View {
         HStack {
-            Text(title)
+            Text(tr(title))
             Spacer()
             EditableNumberField(value: value)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(width: 80)
                 .textFieldStyle(.roundedBorder)
-            Text(unit)
+            Text(tr(unit))
         }
     }
 
     var body: some View {
-        Section("Цел: \(profile.goal.title)") {
-            LabeledContent("Калории от целта", value: "\(Int(targets.kcal)) ккал")
+        Section(trf("Цел: %@", "\(profile.goal.title)")) {
+            LabeledContent("Калории от целта", value: trf("%@ ккал", "\(Int(targets.kcal))"))
             row("Белтък", binding(\.customProteinG, auto: targets.protein))
             row("Мазнини", binding(\.customFatG, auto: targets.fat))
             row("Въглехидрати", binding(\.customCarbsG, auto: targets.carbs))
-            LabeledContent("Калории от макросите", value: "\(Int(kcal)) ккал")
+            LabeledContent("Калории от макросите", value: trf("%@ ккал", "\(Int(kcal))"))
             if isCustom {
-                LabeledContent("Разлика спрямо целта", value: "\(Int(kcal - targets.kcal)) ккал")
+                LabeledContent("Разлика спрямо целта", value: trf("%@ ккал", "\(Int(kcal - targets.kcal))"))
                 Button("Върни автоматичните стойности", role: .destructive) {
                     profile.customProteinG = 0
                     profile.customFatG = 0
@@ -210,12 +210,12 @@ private struct MacroEditor: View {
                 get: { profile.weeklyCardioMinutes },
                 set: { profile.weeklyCardioMinutes = max($0 ?? 0, 0) }
             ), unit: "мин")
-            LabeledContent("Прием", value: "\(Int(forecast.intake)) ккал")
-            LabeledContent("Базов разход", value: "\(Int(forecast.baseKcal)) ккал")
-            LabeledContent("Крачки", value: "+\(Int(forecast.stepsKcal)) ккал")
-            LabeledContent("Тренировки", value: "+\(Int(forecast.trainingKcal)) ккал")
-            LabeledContent("Кардио", value: "+\(Int(forecast.cardioKcal)) ккал")
-            LabeledContent("Общ разход", value: "\(Int(forecast.expenditure)) ккал")
+            LabeledContent("Прием", value: trf("%@ ккал", "\(Int(forecast.intake))"))
+            LabeledContent("Базов разход", value: trf("%@ ккал", "\(Int(forecast.baseKcal))"))
+            LabeledContent("Крачки", value: trf("+%@ ккал", "\(Int(forecast.stepsKcal))"))
+            LabeledContent("Тренировки", value: trf("+%@ ккал", "\(Int(forecast.trainingKcal))"))
+            LabeledContent("Кардио", value: trf("+%@ ккал", "\(Int(forecast.cardioKcal))"))
+            LabeledContent("Общ разход", value: trf("%@ ккал", "\(Int(forecast.expenditure))"))
             LabeledContent("Очаквана промяна", value: verdict(forecast.weeklyChangeKg))
             if let actual = BodyMath.actualWeeklyChange(weights) {
                 LabeledContent("Реален тренд (21 дни)", value: "\(actual > 0 ? "+" : "")\(actual.formatted(.number.precision(.fractionLength(0...2)))) кг/седм.")
@@ -230,7 +230,7 @@ private struct MacroEditor: View {
     private func verdict(_ change: Double) -> String {
         let text = abs(change).formatted(.number.precision(.fractionLength(0...2)))
         if abs(change) < 0.1 { return "стабилно тегло" }
-        return change < 0 ? "сваляш ~\(text) кг/седм." : "качваш ~\(text) кг/седм."
+        return change < 0 ? trf("сваляш ~%@ кг/седм.", "\(text)") : trf("качваш ~%@ кг/седм.", "\(text)")
     }
 }
 
@@ -278,7 +278,7 @@ struct CalculatorsView: View {
     }
 
     private func value(_ number: Double?, _ unit: String) -> String {
-        number.map { "\($0.short) \(unit)" } ?? "няма данни"
+        number.map { "\($0.short) \(tr(unit))" } ?? tr("няма данни")
     }
 
     var body: some View {
@@ -300,7 +300,7 @@ struct CalculatorsView: View {
                     NavigationLink {
                         BodyScansView()
                     } label: {
-                        LabeledContent("DEXA / InBody", value: "\(scans.count) записа")
+                        LabeledContent("DEXA / InBody", value: trf("%@ записа", "\(scans.count)"))
                     }
                     LabeledContent("% мазнини (US Navy)", value: value(navy, "%"))
                     LabeledContent("Мазнини, ръчно %") {
@@ -315,7 +315,7 @@ struct CalculatorsView: View {
                         LabeledContent("% мазнини (кантар)", value: "\(scaleFat.short) %")
                     }
                     if let scan = scans.filter({ $0.skeletalMuscleKg > 0 }).max(by: { $0.date < $1.date }) {
-                        LabeledContent("Мускулна маса (\(scan.kind) \(scan.date.formatted(date: .numeric, time: .omitted)))", value: "\(scan.skeletalMuscleKg.short) кг")
+                        LabeledContent(trf("Мускулна маса (%@ %@)", "\(scan.kind)", "\(scan.date.formatted(date: .numeric, time: .omitted))"), value: trf("%@ кг", "\(scan.skeletalMuscleKg.short)"))
                     } else {
                         NavigationLink {
                             BodyScansView()
@@ -327,8 +327,8 @@ struct CalculatorsView: View {
 
                 let bmr = BodyMath.bmr(sex: profile.sex, kg: kg, cm: profile.heightCm, age: profile.age, bodyFat: profile.bodyFatPercent)
                 Section("Енергия") {
-                    LabeledContent(profile.bodyFatPercent > 0 ? "BMR (Katch-McArdle, \(profile.bodyFatSource))" : "BMR (Mifflin-St Jeor)", value: "\(Int(bmr)) ккал")
-                    LabeledContent("Разход за деня", value: "\(Int(BodyMath.tdee(bmr: bmr, activity: profile.activityFactor))) ккал")
+                    LabeledContent(profile.bodyFatPercent > 0 ? "BMR (Katch-McArdle, \(profile.bodyFatSource))" : "BMR (Mifflin-St Jeor)", value: trf("%@ ккал", "\(Int(bmr))"))
+                    LabeledContent("Разход за деня", value: trf("%@ ккал", "\(Int(BodyMath.tdee(bmr: bmr, activity: profile.activityFactor)))"))
                 }
 
                 if let targets = BodyMath.targets(profile: profile, kg: kg) {
