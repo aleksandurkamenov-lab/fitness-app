@@ -98,3 +98,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v94: New BabanFit app icon
 - v95: Recovery % is now computed per day from Apple Health HRV, resting HR, respiratory rate and sleep, so the coach dashboard shows it for clients without WHOOP (e.g. Amazfit Helio Strap).
 - v96: Calculators show skeletal muscle mass (SMM from DEXA/InBody, new field in scan form) instead of lean mass; macro fields can be fully cleared and retyped; one keyboard "Готово" button on Calculators; manual body-fat label shortened
+- v97: Weekly tonnage chart redesigned: tons on axis, week-start date labels, empty weeks filled, tooltip stays inside screen with week range, change vs previous week

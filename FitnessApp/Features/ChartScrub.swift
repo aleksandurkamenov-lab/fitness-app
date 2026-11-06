@@ -11,6 +11,7 @@ struct ScrubPoint {
 private struct ChartScrub: ViewModifier {
     let points: [ScrubPoint]
     @State private var selected: Date?
+    @State private var tipWidth: CGFloat = 140
 
     private var nearest: ScrubPoint? {
         guard let selected else { return nil }
@@ -44,7 +45,8 @@ private struct ChartScrub: ViewModifier {
                             .padding(.vertical, 4)
                             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
                             .fixedSize()
-                            .position(x: min(max(px, 70), geo.size.width - 70), y: max(frame.minY - 2, 10))
+                            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { tipWidth = $0 }
+                            .position(x: min(max(px, tipWidth / 2 + 4), geo.size.width - tipWidth / 2 - 4), y: max(frame.minY - 2, 10))
                     }
                 }
                 .allowsHitTesting(false)

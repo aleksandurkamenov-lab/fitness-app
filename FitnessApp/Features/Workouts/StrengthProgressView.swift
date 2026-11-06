@@ -64,7 +64,26 @@ struct StrengthProgressView: View {
             let week = calendar.dateInterval(of: .weekOfYear, for: session.date)?.start ?? session.date
             totals[week, default: 0] += WorkoutMath.totalVolume(session.sets)
         }
-        return totals.keys.sorted().map { WeekVolume(week: $0, kg: totals[$0] ?? 0) }
+        guard let first = totals.keys.min(), let last = totals.keys.max() else { return [] }
+        // Пълни и празните седмици с 0, за да няма "дупки" в оста.
+        var result: [WeekVolume] = []
+        var week = first
+        while week <= last {
+            result.append(WeekVolume(week: week, kg: totals[week] ?? 0))
+            guard let next = calendar.date(byAdding: .weekOfYear, value: 1, to: week) else { break }
+            week = next
+        }
+        return result
+    }
+
+    private func tons(_ kg: Double) -> String {
+        (kg / 1000).formatted(.number.precision(.fractionLength(0...1))) + " т"
+    }
+
+    private func weekRange(_ start: Date) -> String {
+        let end = Calendar.current.date(byAdding: .day, value: 6, to: start) ?? start
+        let f = Date.FormatStyle().day().month(.defaultDigits)
+        return "\(start.formatted(f)) – \(end.formatted(f))"
     }
 
     private func changeText(_ value: Double) -> String {
@@ -169,15 +188,41 @@ struct StrengthProgressView: View {
                 Section {
                     Chart(volume) { item in
                         BarMark(x: .value("Седмица", item.week, unit: .weekOfYear), y: .value("кг", item.kg))
+                            .cornerRadius(4)
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .leading) { value in
+                            AxisGridLine()
+                            AxisValueLabel {
+                                if let kg = value.as(Double.self) {
+                                    Text((kg / 1000).formatted(.number.precision(.fractionLength(0...1))) + " т")
+                                }
+                            }
+                        }
+                    }
+                    .chartXAxis {
+                        AxisMarks(values: .stride(by: .weekOfYear, count: volume.count > 8 ? 2 : 1)) { _ in
+                            AxisTick()
+                            AxisValueLabel(format: .dateTime.day().month(.defaultDigits), centered: true)
+                        }
                     }
                     .chartScrub(volume.map {
                         ScrubPoint(date: $0.week, value: $0.kg,
-                                   text: "Седмица от \(scrubDate($0.week)): \($0.kg.short) кг")
+                                   text: "\(weekRange($0.week)): \(tons($0.kg))")
                     })
                     .padding(.top, 24)
-                    .frame(height: 200)
+                    .frame(height: 220)
+                    if let last = volume.last {
+                        LabeledContent("Седмица от \(weekRange(last.week))", value: tons(last.kg))
+                        if volume.count >= 2, volume[volume.count - 2].kg > 0 {
+                            let prev = volume[volume.count - 2].kg
+                            LabeledContent("Спрямо предишната", value: changeText((last.kg - prev) / prev * 100))
+                        }
+                    }
                 } header: {
-                    Text("Седмичен тонаж (кг × повт., без загрявки)")
+                    Text("Седмичен тонаж")
+                } footer: {
+                    Text("Сума от кг × повторения, без загрявки. Етикетите са начало на седмицата (понеделник); докосни и плъзни за точна стойност.")
                 }
             }
         }
