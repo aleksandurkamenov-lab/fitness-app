@@ -3,17 +3,13 @@ import SwiftData
 
 @main
 struct FitnessApp: App {
-    @AppStorage(AppLanguage.storageKey) private var language = AppLanguage.bg.rawValue
-
     init() {
         UserDefaults.standard.set([AppLanguage.current.rawValue], forKey: "AppleLanguages")
     }
 
     var body: some Scene {
         WindowGroup {
-            RootTabView()
-                .environment(\.locale, (AppLanguage(rawValue: language) ?? .bg).locale)
-                .id(language)
+            LanguageRoot()
         }
         .modelContainer(for: [
             Exercise.self,
@@ -32,5 +28,16 @@ struct FitnessApp: App {
             ProgressPhoto.self,
             AIMessage.self,
         ])
+    }
+}
+
+/// Следи езика и пресъздава целия интерфейс при смяна, за да няма смесен български и английски.
+private struct LanguageRoot: View {
+    @AppStorage(AppLanguage.storageKey) private var language = AppLanguage.bg.rawValue
+
+    var body: some View {
+        RootTabView()
+            .environment(\.locale, (AppLanguage(rawValue: language) ?? .bg).locale)
+            .id(language)
     }
 }
