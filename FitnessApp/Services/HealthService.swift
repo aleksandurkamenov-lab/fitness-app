@@ -361,8 +361,6 @@ final class HealthService {
         add(.spo2, dailyMeans(await quantitySamples(.oxygenSaturation, unit: .percent(), from: from, to: .now), scale: 100))
         add(.skinTemp, dailyMeans(await quantitySamples(.appleSleepingWristTemperature, unit: .degreeCelsius(), from: from, to: .now)))
 
-        let workouts = await todaysWorkouts(from: from, to: .now)
-        WorkoutNames.save(workouts.map { ($0.start, $0.name, $0.minutes) }, source: .health)
         add(.steps, await dailyTotals(.stepCount, unit: .count(), from: from))
         add(.activeKcal, await dailyTotals(.activeEnergyBurned, unit: .kilocalorie(), from: from))
         let sleepDaily = await sleepHoursByDay(from: from)
@@ -389,6 +387,8 @@ final class HealthService {
         let predicate = HKQuery.predicateForSamples(withStart: workoutFrom, end: .now, options: [])
         let descriptor = HKSampleQueryDescriptor(predicates: [.workout(predicate)], sortDescriptors: [SortDescriptor(\.startDate)])
         let workouts = (try? await descriptor.result(for: store)) ?? []
+        // Имената по дни за картата "Тренировки по дни" (всички устройства, записващи в Health).
+        WorkoutNames.save(workouts.map { ($0.startDate, Self.title(for: $0.workoutActivityType), $0.duration / 60) }, source: .health)
         var workoutMinutes: [Date: Double] = [:]
         var strengthSessions: [Date: Double] = [:]
         var cardioSessions: [Date: Double] = [:]
