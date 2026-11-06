@@ -64,7 +64,12 @@ private struct ProfileForm: View {
                     .labelsHidden()
                     .frame(maxWidth: 180)
                 }
-                DatePicker("Рождена дата", selection: $profile.birthDate, in: ...Date.now, displayedComponents: .date)
+                LabeledContent("Рождена дата") {
+                    // fixedSize: иначе компактният избор за кратко показва само месец и година.
+                    DatePicker("Рождена дата", selection: $profile.birthDate, in: ...Date.now, displayedComponents: .date)
+                        .labelsHidden()
+                        .fixedSize()
+                }
                 HStack {
                     Text("Ръст (см)")
                     Spacer()
