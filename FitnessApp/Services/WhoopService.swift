@@ -416,10 +416,12 @@ final class WhoopService {
         var workoutMinutes: [Date: Double] = [:]
         var strengthSessions: [Date: Double] = [:]
         var cardioSessions: [Date: Double] = [:]
+        var named: [(start: Date, name: String, minutes: Double)] = []
         for record in await allRecords("/v2/activity/workout", pages: 10, as: WhoopWorkout.self) {
             guard let start = Self.date(record.start), let end = Self.date(record.end) else { continue }
             let day = HistorySync.dayStart(start)
             let minutes = end.timeIntervalSince(start) / 60
+            named.append((start, record.sport_name?.capitalized ?? "Workout", minutes))
             workoutMinutes[day, default: 0] += minutes
             if SessionKindRule.isStrength(sport: record.sport_name, minutes: minutes) {
                 strengthSessions[day, default: 0] += 1
@@ -427,6 +429,7 @@ final class WhoopService {
                 cardioSessions[day, default: 0] += 1
             }
         }
+        WorkoutNames.save(named, source: .whoop)
         for (day, count) in strengthSessions { add(.strengthSessions, day, count) }
         for (day, count) in cardioSessions { add(.cardioSessions, day, count) }
         for (day, minutes) in workoutMinutes {

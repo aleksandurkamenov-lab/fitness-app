@@ -50,3 +50,45 @@ enum HistorySync {
         return added
     }
 }
+
+/// Имена на тренировките по дни от WHOOP и Apple Health (напр. "Running", 32 мин), за картата "Тренировки по дни".
+/// Пазят се в UserDefaults: малко данни, без нов SwiftData модел.
+enum WorkoutNames {
+    struct Item: Hashable {
+        let name: String
+        let minutes: Int
+    }
+
+    private static func storageKey(_ source: MetricSource) -> String { "workoutNames.\(source.rawValue)" }
+
+    private static func dayKey(_ date: Date) -> String {
+        String(Int(Calendar.current.startOfDay(for: date).timeIntervalSince1970))
+    }
+
+    /// Новите дни заменят старите; по-старите дни (извън периода на заявката) остават.
+    static func save(_ workouts: [(start: Date, name: String, minutes: Double)], source: MetricSource) {
+        guard !workouts.isEmpty else { return }
+        let key = storageKey(source)
+        var all = (UserDefaults.standard.dictionary(forKey: key) as? [String: [String]]) ?? [:]
+        let grouped = Dictionary(grouping: workouts) { dayKey($0.start) }
+        for (day, items) in grouped {
+            all[day] = items.sorted { $0.start < $1.start }.map { "\($0.name)|\(Int($0.minutes.rounded()))" }
+        }
+        UserDefaults.standard.set(all, forKey: key)
+    }
+
+    /// WHOOP има предимство; Health се ползва за дни без WHOOP тренировки.
+    static func items(on date: Date) -> [Item] {
+        let day = dayKey(date)
+        for source in [MetricSource.whoop, .health] {
+            let all = (UserDefaults.standard.dictionary(forKey: storageKey(source)) as? [String: [String]]) ?? [:]
+            if let list = all[day], !list.isEmpty {
+                return list.map { entry in
+                    let parts = entry.split(separator: "|", maxSplits: 1).map(String.init)
+                    return Item(name: parts.first ?? "", minutes: Int(parts.count > 1 ? parts[1] : "") ?? 0)
+                }
+            }
+        }
+        return []
+    }
+}

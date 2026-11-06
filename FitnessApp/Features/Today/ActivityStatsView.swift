@@ -309,7 +309,7 @@ struct ActivityStatsCard: View {
         let names = finished.filter { calendar.isDate($0.date, inSameDayAs: date) }.map(\.title)
         return VStack(alignment: .leading, spacing: 2) {
             Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide))).font(.caption.bold())
-            if strength == 0 && cardio == 0 && names.isEmpty {
+            if strength == 0 && cardio == 0 && names.isEmpty && WorkoutNames.items(on: date).isEmpty {
                 Text("Без тренировка").font(.caption).foregroundStyle(.secondary)
             } else {
                 Text(trf("силови %@ · кардио %@", "\(strength)", "\(cardio)")
@@ -317,6 +317,10 @@ struct ActivityStatsCard: View {
                     .font(.caption)
                 ForEach(Array(names.enumerated()), id: \.offset) { _, name in
                     Label(name, systemImage: "dumbbell").font(.caption).foregroundStyle(.secondary)
+                }
+                ForEach(Array(WorkoutNames.items(on: date).enumerated()), id: \.offset) { _, item in
+                    Label(item.name + " · " + trf("%@ мин", "\(item.minutes)"), systemImage: "figure.run")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
         }

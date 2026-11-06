@@ -361,6 +361,8 @@ final class HealthService {
         add(.spo2, dailyMeans(await quantitySamples(.oxygenSaturation, unit: .percent(), from: from, to: .now), scale: 100))
         add(.skinTemp, dailyMeans(await quantitySamples(.appleSleepingWristTemperature, unit: .degreeCelsius(), from: from, to: .now)))
 
+        let workouts = await todaysWorkouts(from: from, to: .now)
+        WorkoutNames.save(workouts.map { ($0.start, $0.name, $0.minutes) }, source: .health)
         add(.steps, await dailyTotals(.stepCount, unit: .count(), from: from))
         add(.activeKcal, await dailyTotals(.activeEnergyBurned, unit: .kilocalorie(), from: from))
         let sleepDaily = await sleepHoursByDay(from: from)
