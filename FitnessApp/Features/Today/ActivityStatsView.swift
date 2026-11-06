@@ -156,12 +156,41 @@ struct ActivityStatsCard: View {
                             .foregroundStyle(week.strength >= 3 ? Color.green : isCurrent ? Color.secondary : Color.red)
                     }
                     Text(trf("Силова ×%@ · Кардио ×%@", "\(week.strength)", "\(week.cardio)")).font(.callout)
+                    weekStrip(from: week.start)
                     let names = weekWorkoutNames(from: week.start, to: week.end)
                     if !names.isEmpty {
                         Text(names).font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 .padding(.vertical, 2)
+            }
+        }
+    }
+
+    /// 7 дни от седмицата: зелено = силова, синьо = само кардио, сиво = почивка; под всеки ден имената.
+    private func weekStrip(from start: Date) -> some View {
+        let strength = strengthByDay
+        let cardio = cardioByDay
+        let today = calendar.startOfDay(for: .now)
+        let labels = ["пн", "вт", "ср", "чт", "пт", "сб", "нд"]
+        return HStack(spacing: 4) {
+            ForEach(0..<7, id: \.self) { offset in
+                let day = calendar.date(byAdding: .day, value: offset, to: start) ?? start
+                let s = strength[day] ?? 0
+                let c = cardio[day] ?? 0
+                let fill: Color = day > today ? Color.clear : s > 0 ? .green : c > 0 ? .blue : Color.secondary.opacity(0.15)
+                VStack(spacing: 2) {
+                    Text(tr(labels[offset])).font(.system(size: 9)).foregroundStyle(.secondary)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(fill)
+                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.secondary.opacity(0.3), lineWidth: day > today ? 1 : 0))
+                        .frame(height: 18)
+                        .overlay {
+                            if s + c > 1 { Text("\(s + c)").font(.system(size: 10, weight: .bold)).foregroundStyle(.white) }
+                        }
+                }
+                .frame(maxWidth: .infinity)
+                .onTapGesture { selectedDay = day }
             }
         }
     }
