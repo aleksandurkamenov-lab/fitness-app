@@ -298,7 +298,7 @@ struct TodayView: View {
                 DashboardRow(title: "Активни калории", icon: "flame", value: s.activeKcal, average: s.avgActiveKcal, unit: "ккал")
             }
             link(.metric(.hrv)) {
-                DashboardRow(title: "HRV", icon: "waveform.path.ecg", value: s.hrv, average: s.hrvBaseline?.mean, unit: "мс")
+                DashboardRow(title: AppLanguage.current == .en ? "Heart rate variability" : "HRV", icon: "waveform.path.ecg", value: s.hrv, average: s.hrvBaseline?.mean, unit: "мс")
             }
             link(.metric(.rhr)) {
                 DashboardRow(title: "Пулс в покой", icon: "heart", value: s.rhr, average: s.rhrBaseline?.mean, unit: "уд./мин")

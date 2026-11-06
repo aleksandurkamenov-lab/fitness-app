@@ -11,8 +11,8 @@
 "90 дни" = "90 days";
 "Apple Health не е достъпно на това устройство." = "Apple Health is not available on this device.";
 "Google Sheets линк" = "Google Sheets link";
-"°C от нормата" = "°C from normal";
-"Активни калории" = "Active calories";
+"°C от нормата" = "°C from baseline";
+"Активни калории" = "Calories";
 "Активност / крачки" = "Activity / steps";
 "Активност" = "Activity";
 "Базов обмен (BMR)" = "Basal metabolic rate (BMR)";
@@ -24,7 +24,7 @@
 "Бележка за упражнението" = "Exercise note";
 "Бележка" = "Note";
 "Бележката е за упражнението във всички седмици." = "The note applies to the exercise in all weeks.";
-"Версия v101" = "Version v101";
+"Версия v102" = "Version v102";
 "Всичко" = "All";
 "Второстепенни групи (броят 0.5 серия)" = "Secondary groups (count 0.5 set)";
 "Въведи тежест." = "Enter a weight.";
@@ -40,7 +40,7 @@
 "Ден" = "Day";
 "Дискове" = "Plates";
 "Дискове: 25, 20, 15, 10, 5, 2,5 и 1,25 кг." = "Plates: 25, 20, 15, 10, 5, 2.5 and 1.25 kg.";
-"Дишане" = "Respiration";
+"Дишане" = "Respiratory rate";
 "Дневен дефицит" = "Daily deficit";
 "Дневен излишък" = "Daily surplus";
 "Днес" = "Today";
@@ -91,7 +91,7 @@
 "Махни серия" = "Remove set";
 "Мезоцикли и сплит" = "Mesocycles and split";
 "Мезоцикъл 1" = "Mesocycle 1";
-"Монитор на здравето" = "Health monitor";
+"Монитор на здравето" = "Health Monitor";
 "Моя бележка (по избор)" = "My note (optional)";
 "Моят ден" = "My day";
 "Мускул" = "Muscle";
@@ -187,12 +187,12 @@
 "Сън, възстановяване, натоварване, HRV и пулс в покой са от WHOOP. Крачките и тренировките са от Apple Health. Не е медицински съвет." = "Sleep, recovery, strain, HRV and resting heart rate are from WHOOP. Steps and workouts are from Apple Health. Not medical advice.";
 "Таблицата не се изтегли. Провери дали е споделена с линк за преглед." = "The sheet could not be downloaded. Check that it is shared with a view link.";
 "Таблицата трябва да е споделена „всеки с линка може да преглежда“. Мога да чета само .xlsx формат на Google Sheets." = "The sheet must be shared as “anyone with the link can view”. I can only read the .xlsx format of Google Sheets.";
-"Таблото ми" = "My dashboard";
+"Таблото ми" = "My Dashboard";
 "Тази седмица" = "This week";
 "Таймер за почивка" = "Rest timer";
 "Тегло 30 дни" = "Weight 30 days";
 "Тегло" = "Weight";
-"Температура на кожата" = "Skin temperature";
+"Температура на кожата" = "Skin temp";
 "Тенденции и графики" = "Trends and charts";
 "Тенденции" = "Trends";
 "Тенденция и точност на разхода" = "Trend and expenditure accuracy";
@@ -211,7 +211,7 @@
 "Щанга" = "Barbell";
 "Ще създам 4 тренировки: Upper 1, Lower 1, Upper 2, Lower 2. Можеш да ги преименуваш и да добавиш упражнения." = "I will create 4 workouts: Upper 1, Lower 1, Upper 2, Lower 2. You can rename them and add exercises.";
 "без щанга" = "no barbell";
-"вд./мин" = "br/min";
+"вд./мин" = "rpm";
 "вт" = "Tu";
 "до" = "to";
 "дупки" = "holes";
@@ -247,14 +247,14 @@
 "Седалище" = "Glutes";
 "Прасци" = "Calves";
 "Корем" = "Abs";
-"Сън (оценка)" = "Sleep (score)";
-"Сън (часове)" = "Sleep (hours)";
-"Тренировки и кардио" = "Workouts and cardio";
+"Сън (оценка)" = "Sleep performance";
+"Сън (часове)" = "Hours of sleep";
+"Тренировки и кардио" = "Activity time";
 "Силови сесии" = "Strength sessions";
 "Кардио сесии" = "Cardio sessions";
-"в нормата" = "normal";
-"над нормата" = "above normal";
-"под нормата" = "below normal";
+"в нормата" = "within";
+"над нормата" = "elevated";
+"под нормата" = "low";
 "мин" = "min";
 "Език" = "Language";
 " · %@ ккал" = " · %@ kcal";
@@ -549,7 +549,7 @@
 "Свържи с WHOOP" = "Connect to WHOOP";
 "Последни данни" = "Latest data";
 "%@ мс" = "%@ ms";
-"Сън (performance)" = "Sleep (performance)";
+"Сън (performance)" = "Sleep performance";
 "Мъж" = "Male";
 "Жена" = "Female";
 "Сваляне" = "Lose";
@@ -617,3 +617,4 @@
 "Записано тегло: %@ кг" = "Weight logged: %@ kg";
 "Непознато действие" = "Unknown action";
 "Няма отговор, опитай пак." = "No response, try again.";
+"SpO₂" = "Blood oxygen (SpO₂)";
