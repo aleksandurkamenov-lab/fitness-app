@@ -8,7 +8,7 @@ struct ActivityStatsCard: View {
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
     @Query private var metrics: [DailyMetric]
 
-    private let weekCount = 53
+    @State private var heatDays = 365
 
     private var calendar: Calendar {
         var calendar = Calendar.current
@@ -199,14 +199,23 @@ struct ActivityStatsCard: View {
     private var heatmapCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Тренировки по дни").font(.headline)
-            Text("12 месеца, минути тренировка и кардио от WHOOP/Health")
+            Text("Зелено = ден със силова тренировка; по-наситено = повече минути (WHOOP/Health).")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             strengthSummary
+            Picker("Период", selection: $heatDays) {
+                Text("7 дни").tag(7)
+                Text("30 дни").tag(30)
+                Text("90 дни").tag(90)
+                Text("12 месеца").tag(365)
+            }
+            .pickerStyle(.segmented)
             heatmap
             HStack(spacing: 4) {
-                Text("по-малко").font(.caption2).foregroundStyle(.secondary)
-                ForEach([0.0, 20, 45, 75, 100], id: \.self) { minutes in
+                Text("без силова").font(.caption2).foregroundStyle(.secondary)
+                RoundedRectangle(cornerRadius: 1.5).fill(color(0)).frame(width: 10, height: 10)
+                Text("силова:").font(.caption2).foregroundStyle(.secondary).padding(.leading, 6)
+                ForEach([20.0, 45, 75, 100], id: \.self) { minutes in
                     RoundedRectangle(cornerRadius: 1.5).fill(color(minutes)).frame(width: 10, height: 10)
                 }
                 Text("над 90 мин").font(.caption2).foregroundStyle(.secondary)
@@ -228,22 +237,34 @@ struct ActivityStatsCard: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
     }
 
+    @ViewBuilder
     private var heatmap: some View {
         let minutes = minutesByDay
+        let strength = strengthByDay
         let today = calendar.startOfDay(for: .now)
-        let start = calendar.date(byAdding: .weekOfYear, value: -(weekCount - 1), to: weekStart(today)) ?? today
-        return Canvas { context, size in
+        let first = calendar.date(byAdding: .day, value: -(heatDays - 1), to: today) ?? today
+        let start = weekStart(first)
+        let weeks = max(1, (calendar.dateComponents([.day], from: start, to: today).day ?? 0) / 7 + 1)
+        let maxCell: CGFloat = 16
+        let canvas = Canvas { context, size in
             let gap: CGFloat = 2
-            let cell = (size.width - gap * CGFloat(weekCount - 1)) / CGFloat(weekCount)
-            for week in 0..<weekCount {
+            let cell = min(maxCell, (size.width - gap * CGFloat(weeks - 1)) / CGFloat(weeks))
+            for week in 0..<weeks {
                 for day in 0..<7 {
-                    guard let date = calendar.date(byAdding: .day, value: week * 7 + day, to: start), date <= today else { continue }
+                    guard let date = calendar.date(byAdding: .day, value: week * 7 + day, to: start),
+                          date >= first, date <= today else { continue }
                     let rect = CGRect(x: CGFloat(week) * (cell + gap), y: CGFloat(day) * (cell + gap), width: cell, height: cell)
-                    context.fill(Path(roundedRect: rect, cornerRadius: 1.5), with: .color(color(minutes[date] ?? 0)))
+                    // Само дни със силова са зелени; без силова остават сиви.
+                    let value = (strength[date] ?? 0) > 0 ? max(minutes[date] ?? 45, 1) : 0
+                    context.fill(Path(roundedRect: rect, cornerRadius: 1.5), with: .color(color(value)))
                 }
             }
         }
-        .aspectRatio(CGFloat(weekCount) / 7.9, contentMode: .fit)
+        if weeks >= 30 {
+            canvas.aspectRatio(CGFloat(weeks) / 7.9, contentMode: .fit)
+        } else {
+            canvas.frame(height: 7 * maxCell + 12)
+        }
     }
 }
 

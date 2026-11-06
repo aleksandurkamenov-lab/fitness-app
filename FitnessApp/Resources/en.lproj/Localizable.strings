@@ -24,7 +24,7 @@
 "Бележка за упражнението" = "Exercise note";
 "Бележка" = "Note";
 "Бележката е за упражнението във всички седмици." = "The note applies to the exercise in all weeks.";
-"Версия v105" = "Version v105";
+"Версия v106" = "Version v106";
 "Всичко" = "All";
 "Второстепенни групи (броят 0.5 серия)" = "Secondary groups (count 0.5 set)";
 "Въведи тежест." = "Enter a weight.";
@@ -620,3 +620,7 @@
 "SpO₂" = "Blood oxygen (SpO₂)";
 "Датите се превеждат изцяло след затваряне и отваряне на приложението." = "Dates switch fully after closing and reopening the app.";
 "тегло" = "weight";
+"Зелено = ден със силова тренировка; по-наситено = повече минути (WHOOP/Health)." = "Green = day with a strength workout; darker = more minutes (WHOOP/Health).";
+"12 месеца" = "12 months";
+"без силова" = "no strength";
+"силова:" = "strength:";
