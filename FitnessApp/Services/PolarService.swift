@@ -49,7 +49,7 @@ final class PolarService {
         polarUserId = nil
         Keychain.set("", for: "polar.accessToken")
         Keychain.set("", for: "polar.userId")
-        statusText = "Изключено от Polar."
+        statusText = tr("Изключено от Polar.")
         output = ""
     }
 
@@ -59,13 +59,13 @@ final class PolarService {
     func finishAuthorization(code: String, state: String?) async {
         guard let expectedState = pendingOAuthState, state == expectedState else {
             pendingOAuthState = nil
-            statusText = "Входът в Polar не беше потвърден. Опитай отново."
+            statusText = tr("Входът в Polar не беше потвърден. Опитай отново.")
             return
         }
         pendingOAuthState = nil
         isBusy = true
         defer { isBusy = false }
-        statusText = "Свързвам…"
+        statusText = tr("Свързвам…")
         guard let url = URL(string: "https://polarremote.com/v2/oauth2/token") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -115,9 +115,9 @@ final class PolarService {
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             switch status {
             case 200, 409:
-                statusText = "Свързано с Polar."
+                statusText = tr("Свързано с Polar.")
             case 403:
-                statusText = "Polar иска да приемеш условията им във Polar Flow (профил → Settings), после опитай пак."
+                statusText = tr("Polar иска да приемеш условията им във Polar Flow (профил → Settings), после опитай пак.")
             default:
                 statusText = "Регистрацията върна код \(status): \(String(data: data, encoding: .utf8) ?? "")"
             }
@@ -130,7 +130,7 @@ final class PolarService {
 
     /// Сурова заявка (за проверка какво връща Polar): връща красиво форматиран отговор.
     func fetchRaw(_ path: String) async -> String {
-        guard let token = accessToken, let url = URL(string: apiBase + path) else { return "Няма връзка." }
+        guard let token = accessToken, let url = URL(string: apiBase + path) else { return tr("Няма връзка.") }
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")

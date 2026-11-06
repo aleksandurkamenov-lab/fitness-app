@@ -85,7 +85,7 @@ final class HealthService {
 
     func requestAccess() async {
         guard isAvailable else {
-            errorText = "Apple Health не е достъпно на това устройство."
+            errorText = tr("Apple Health не е достъпно на това устройство.")
             return
         }
         do {
@@ -282,14 +282,14 @@ final class HealthService {
 
     private static func title(for type: HKWorkoutActivityType) -> String {
         switch type {
-        case .traditionalStrengthTraining, .functionalStrengthTraining: "Силова тренировка"
-        case .running: "Бягане"
-        case .walking: "Ходене"
-        case .cycling: "Колоездене"
-        case .swimming: "Плуване"
+        case .traditionalStrengthTraining, .functionalStrengthTraining: tr("Силова тренировка")
+        case .running: tr("Бягане")
+        case .walking: tr("Ходене")
+        case .cycling: tr("Колоездене")
+        case .swimming: tr("Плуване")
         case .highIntensityIntervalTraining: "HIIT"
-        case .yoga: "Йога"
-        default: "Тренировка"
+        case .yoga: tr("Йога")
+        default: tr("Тренировка")
         }
     }
 

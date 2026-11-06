@@ -43,7 +43,7 @@ enum BodyMath {
     /// Най-добра оценка на % мазнини: ръчно зададен, иначе средно от US Navy (врат, корем) и RFM (корем, ръст), иначе кантар (неточен).
     static func bodyFatEstimate(profile: UserProfile, weights: [WeightEntry],
                                 measurements: [MeasurementEntry], scans: [BodyScan] = []) -> (percent: Double, source: String)? {
-        if profile.manualBodyFat >= 4 { return (profile.manualBodyFat, "ръчно") }
+        if profile.manualBodyFat >= 4 { return (profile.manualBodyFat, tr("ръчно")) }
         // DEXA/InBody до 24 месеца назад: безмастната маса оттогава се мени с ~25% от промяната на теглото.
         let yearAgo = Date.now.addingTimeInterval(-730 * 86_400)
         if let scan = scans.filter({ $0.date >= yearAgo && $0.fatFreeKg > 0 && $0.weightKg > 0 }).max(by: { $0.date < $1.date }) {
@@ -51,7 +51,7 @@ enum BodyMath {
             let fatFree = scan.fatFreeKg + 0.25 * (current - scan.weightKg)
             let percent = (1 - fatFree / current) * 100
             if percent >= 4 && percent <= 55 {
-                return (percent, "\(scan.kind) \(scan.date.formatted(.dateTime.day().month(.abbreviated).year())) + тегло")
+                return (percent, "\(scan.kind) \(scan.date.formatted(.dateTime.day().month(.abbreviated).year())) + " + tr("тегло"))
             }
         }
         func latest(_ kind: MeasurementKind) -> Double? {
@@ -156,8 +156,8 @@ enum BodyMath {
     /// "+0,3 кг" / "−0,7 кг".
     static func signedKg(_ value: Double) -> String {
         let text = abs(value).formatted(.number.precision(.fractionLength(0...1)))
-        if abs(value) < 0.05 { return "0 кг" }
-        return (value > 0 ? "+" : "−") + text + " кг"
+        if abs(value) < 0.05 { return "0 " + tr("кг") }
+        return (value > 0 ? "+" : "−") + text + " " + tr("кг")
     }
 
     // MARK: Прогноза

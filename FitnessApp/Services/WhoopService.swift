@@ -148,7 +148,7 @@ final class WhoopService {
         snapshot = nil
         for key in ["whoop.accessToken", "whoop.refreshToken"] { Keychain.set("", for: key) }
         UserDefaults.standard.removeObject(forKey: "whoop.expiry")
-        statusText = "Изключено от WHOOP."
+        statusText = tr("Изключено от WHOOP.")
     }
 
     // MARK: Вход и токени
@@ -156,13 +156,13 @@ final class WhoopService {
     func finishAuthorization(code: String, state: String?) async {
         guard let expectedState = pendingOAuthState, state == expectedState else {
             pendingOAuthState = nil
-            statusText = "Входът в WHOOP не беше потвърден. Опитай отново."
+            statusText = tr("Входът в WHOOP не беше потвърден. Опитай отново.")
             return
         }
         pendingOAuthState = nil
         isBusy = true
         defer { isBusy = false }
-        statusText = "Свързвам…"
+        statusText = tr("Свързвам…")
         let fields = [
             "grant_type": "authorization_code",
             "code": code,
@@ -216,7 +216,7 @@ final class WhoopService {
         ], basicAuth: false)
         if !ok && (lastTokenStatus == 400 || lastTokenStatus == 401) {
             disconnect()
-            statusText = "Връзката с WHOOP изтече. Натисни „Свържи с WHOOP“ отново, ключовете са запазени."
+            statusText = tr("Връзката с WHOOP изтече. Натисни „Свържи с WHOOP“ отново, ключовете са запазени.")
         }
         return ok
     }
@@ -241,7 +241,7 @@ final class WhoopService {
             let seconds = (json["expires_in"] as? Double) ?? 3600
             expiry = Date.now.addingTimeInterval(seconds)
             UserDefaults.standard.set(expiry, forKey: "whoop.expiry")
-            statusText = "Свързано с WHOOP."
+            statusText = tr("Свързано с WHOOP.")
             return true
         } catch {
             statusText = "Грешка: \(error.localizedDescription)"
@@ -349,14 +349,14 @@ final class WhoopService {
 
         result.workouts = ((await workouts)?.records ?? []).compactMap { workout in
             guard let start = Self.date(workout.start), let end = Self.date(workout.end) else { return nil }
-            return WorkoutInfo(name: workout.sport_name?.capitalized ?? "Тренировка",
+            return WorkoutInfo(name: workout.sport_name?.capitalized ?? tr("Тренировка"),
                                start: start,
                                minutes: end.timeIntervalSince(start) / 60,
                                kcal: workout.score?.kilojoule.map { $0 / 4.184 })
         }
 
         if result.recoveryScore != nil || result.sleepPerformance != nil || result.strain != nil {
-            statusText = "Свързано с WHOOP."
+            statusText = tr("Свързано с WHOOP.")
         }
         snapshot = result
     }

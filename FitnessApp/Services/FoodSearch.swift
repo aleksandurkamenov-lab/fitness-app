@@ -55,5 +55,5 @@ enum FoodSearch {
 private enum FoodSearchError: LocalizedError {
     case invalidResponse
 
-    var errorDescription: String? { "Open Food Facts върна неуспешен отговор." }
+    var errorDescription: String? { tr("Open Food Facts върна неуспешен отговор.") }
 }

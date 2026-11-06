@@ -24,7 +24,7 @@
 "Бележка за упражнението" = "Exercise note";
 "Бележка" = "Note";
 "Бележката е за упражнението във всички седмици." = "The note applies to the exercise in all weeks.";
-"Версия v104" = "Version v104";
+"Версия v105" = "Version v105";
 "Всичко" = "All";
 "Второстепенни групи (броят 0.5 серия)" = "Secondary groups (count 0.5 set)";
 "Въведи тежест." = "Enter a weight.";
@@ -619,3 +619,4 @@
 "Няма отговор, опитай пак." = "No response, try again.";
 "SpO₂" = "Blood oxygen (SpO₂)";
 "Датите се превеждат изцяло след затваряне и отваряне на приложението." = "Dates switch fully after closing and reopening the app.";
+"тегло" = "weight";

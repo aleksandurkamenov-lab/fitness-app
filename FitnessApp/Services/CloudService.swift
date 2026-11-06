@@ -53,8 +53,8 @@ enum CloudError: LocalizedError {
     case notConfigured, notSignedIn, server(String)
     var errorDescription: String? {
         switch self {
-        case .notConfigured: "Въведи адрес и ключ на Supabase."
-        case .notSignedIn: "Не си влязъл."
+        case .notConfigured: tr("Въведи адрес и ключ на Supabase.")
+        case .notSignedIn: tr("Не си влязъл.")
         case .server(let text): text
         }
     }

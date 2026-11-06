@@ -47,8 +47,8 @@ final class RestTimer {
         center.removePendingNotificationRequests(withIdentifiers: [notificationID])
         guard interval > 1 else { return }
         let content = UNMutableNotificationContent()
-        content.title = "Почивката свърши"
-        content.body = "Време е за следващата серия."
+        content.title = tr("Почивката свърши")
+        content.body = tr("Време е за следващата серия.")
         content.sound = .default
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
         center.add(UNNotificationRequest(identifier: notificationID, content: content, trigger: trigger))

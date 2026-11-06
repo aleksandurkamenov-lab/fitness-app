@@ -106,3 +106,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v102: English metric names aligned with WHOOP (Respiratory rate, rpm, within/elevated/low, Skin temp from baseline, Blood oxygen, Heart rate variability)
 - v103: Health monitor tiles get WHOOP-style icons and a check/warning badge on the status
 - v104: "kcal"/"g" units translated in energy rows and macro bars; "Goal" label; dates and month names follow the app language after restart
+- v105: Remaining Bulgarian units and status texts translated (signed kg changes, body fat source, WHOOP/Polar/Cloud statuses, workout types, rest timer notification)
