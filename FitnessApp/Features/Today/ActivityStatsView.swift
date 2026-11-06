@@ -9,6 +9,7 @@ struct ActivityStatsCard: View {
     @Query private var metrics: [DailyMetric]
 
     @State private var heatDays = 365
+    @State private var selectedDay: Date?
 
     private var calendar: Calendar {
         var calendar = Calendar.current
@@ -210,6 +211,7 @@ struct ActivityStatsCard: View {
                 Text("12 месеца").tag(365)
             }
             .pickerStyle(.segmented)
+            .onChange(of: heatDays) { selectedDay = nil }
             heatmap
             HStack(spacing: 4) {
                 Text("без силова").font(.caption2).foregroundStyle(.secondary)
@@ -237,34 +239,90 @@ struct ActivityStatsCard: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
     }
 
-    @ViewBuilder
+    /// GitHub-стил: колона = седмица (пон–нед), месеци отгоре, докосване на ден показва какво е тренирано.
     private var heatmap: some View {
         let minutes = minutesByDay
         let strength = strengthByDay
+        let cardio = cardioByDay
         let today = calendar.startOfDay(for: .now)
         let first = calendar.date(byAdding: .day, value: -(heatDays - 1), to: today) ?? today
         let start = weekStart(first)
         let weeks = max(1, (calendar.dateComponents([.day], from: start, to: today).day ?? 0) / 7 + 1)
-        let maxCell: CGFloat = 16
-        let canvas = Canvas { context, size in
-            let gap: CGFloat = 2
-            let cell = min(maxCell, (size.width - gap * CGFloat(weeks - 1)) / CGFloat(weeks))
-            for week in 0..<weeks {
-                for day in 0..<7 {
-                    guard let date = calendar.date(byAdding: .day, value: week * 7 + day, to: start),
-                          date >= first, date <= today else { continue }
-                    let rect = CGRect(x: CGFloat(week) * (cell + gap), y: CGFloat(day) * (cell + gap), width: cell, height: cell)
-                    // Само дни със силова са зелени; без силова остават сиви.
-                    let value = (strength[date] ?? 0) > 0 ? max(minutes[date] ?? 45, 1) : 0
-                    context.fill(Path(roundedRect: rect, cornerRadius: 1.5), with: .color(color(value)))
+        let cell: CGFloat = heatDays <= 30 ? 26 : (heatDays <= 90 ? 16 : 12)
+        let gap: CGFloat = 3
+        func day(_ week: Int, _ weekday: Int) -> Date? {
+            calendar.date(byAdding: .day, value: week * 7 + weekday, to: start)
+        }
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: gap) {
+                // Дни от седмицата като в GitHub: пн, ср, пт.
+                VStack(alignment: .leading, spacing: gap) {
+                    Color.clear.frame(width: 18, height: 12)
+                    ForEach(0..<7, id: \.self) { weekday in
+                        Text(weekday == 0 ? tr("пн") : weekday == 2 ? tr("ср") : weekday == 4 ? tr("пт") : "")
+                            .font(.system(size: 9)).foregroundStyle(.secondary)
+                            .frame(width: 18, height: cell, alignment: .leading)
+                    }
+                }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: gap) {
+                        ForEach(0..<weeks, id: \.self) { week in
+                            VStack(spacing: gap) {
+                                // Етикет на месеца над първата седмица, в която започва нов месец.
+                                let monday = day(week, 0) ?? start
+                                let isNewMonth = week == 0 || calendar.component(.day, from: monday) <= 7
+                                Text(isNewMonth ? monday.formatted(.dateTime.month(.abbreviated)) : "")
+                                    .font(.system(size: 9)).foregroundStyle(.secondary)
+                                    .fixedSize()
+                                    .frame(width: cell, height: 12, alignment: .leading)
+                                ForEach(0..<7, id: \.self) { weekday in
+                                    if let date = day(week, weekday), date >= first, date <= today {
+                                        let value = (strength[date] ?? 0) > 0 ? max(minutes[date] ?? 45, 1) : 0
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .fill(color(value))
+                                            .frame(width: cell, height: cell)
+                                            .overlay {
+                                                if selectedDay == date {
+                                                    RoundedRectangle(cornerRadius: 2).stroke(Color.primary, lineWidth: 1.5)
+                                                }
+                                            }
+                                            .onTapGesture { selectedDay = selectedDay == date ? nil : date }
+                                    } else {
+                                        Color.clear.frame(width: cell, height: cell)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                .defaultScrollAnchor(.trailing)
+            }
+            if let selectedDay {
+                dayDetail(selectedDay, minutes: minutes[selectedDay], strength: strength[selectedDay] ?? 0, cardio: cardio[selectedDay] ?? 0)
+            } else {
+                Text("Докосни ден, за да видиш тренировката.").font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func dayDetail(_ date: Date, minutes: Double?, strength: Int, cardio: Int) -> some View {
+        let names = finished.filter { calendar.isDate($0.date, inSameDayAs: date) }.map(\.title)
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide))).font(.caption.bold())
+            if strength == 0 && cardio == 0 && names.isEmpty {
+                Text("Без тренировка").font(.caption).foregroundStyle(.secondary)
+            } else {
+                Text(trf("силови %@ · кардио %@", "\(strength)", "\(cardio)")
+                     + (minutes.map { " · " + trf("%@ мин", "\(Int($0))") } ?? ""))
+                    .font(.caption)
+                ForEach(Array(names.enumerated()), id: \.offset) { _, name in
+                    Label(name, systemImage: "dumbbell").font(.caption).foregroundStyle(.secondary)
                 }
             }
         }
-        if weeks >= 30 {
-            canvas.aspectRatio(CGFloat(weeks) / 7.9, contentMode: .fit)
-        } else {
-            canvas.frame(height: 7 * maxCell + 12)
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 

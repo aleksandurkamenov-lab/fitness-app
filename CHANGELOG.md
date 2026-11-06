@@ -107,4 +107,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v103: Health monitor tiles get WHOOP-style icons and a check/warning badge on the status
 - v104: "kcal"/"g" units translated in energy rows and macro bars; "Goal" label; dates and month names follow the app language after restart
 - v105: Remaining Bulgarian units and status texts translated (signed kg changes, body fat source, WHOOP/Polar/Cloud statuses, workout types, rest timer notification); birth date in Profile always shows day, month and year; language switch now re-renders the whole app at once (no mixed BG/EN)
-- v106: Workout-days heatmap: 7/30/90 days/12 months filter; only strength days are green (shade = minutes)
+- v106: Workout-days heatmap GitHub-style: 7/30/90 days/12 months filter, month and weekday labels, horizontal scroll, tap a day to see its workouts; only strength days are green
