@@ -157,12 +157,6 @@ struct ActivityStatsCard: View {
                     }
                     Text(trf("Силова ×%@ · Кардио ×%@", "\(week.strength)", "\(week.cardio)")).font(.callout)
                     weekStrip(from: week.start)
-                    let names = weekWorkoutNames(from: week.start, to: week.end)
-                    if !names.isEmpty {
-                        Text(names).font(.caption).foregroundStyle(.secondary)
-                    } else if week.strength + week.cardio > 0 {
-                        Text("Имената идват след опресняване: плъзни надолу в Днес.").font(.caption2).foregroundStyle(.secondary)
-                    }
                 }
                 .padding(.vertical, 2)
             }
@@ -180,11 +174,16 @@ struct ActivityStatsCard: View {
                 let day = calendar.date(byAdding: .day, value: offset, to: start) ?? start
                 let s = strength[day] ?? 0
                 let c = cardio[day] ?? 0
-                let fill: Color = day > today ? Color.clear : s > 0 ? .green : c > 0 ? .blue : Color.secondary.opacity(0.15)
+                let empty: Color = day > today ? Color.clear : Color.secondary.opacity(0.15)
                 VStack(spacing: 2) {
                     Text(tr(labels[offset])).font(.system(size: 9)).foregroundStyle(.secondary)
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(fill)
+                    // Силова и кардио в един ден: половин зелено, половин синьо.
+                    HStack(spacing: 0) {
+                        if s > 0 { Color.green }
+                        if c > 0 { Color.blue }
+                        if s == 0 && c == 0 { empty }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
                         .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.secondary.opacity(0.3), lineWidth: day > today ? 1 : 0))
                         .frame(height: 18)
                         .overlay {
