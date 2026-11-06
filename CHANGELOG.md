@@ -104,3 +104,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v100: English translation for Nutrition, Measurements, Photos, Profile, AI chat, Cloud and Devices screens (language switcher now covers the whole app)
 - v101: AI coach replies in English (and logs English food names) when the app language is English; AI chat messages and errors translated
 - v102: English metric names aligned with WHOOP (Respiratory rate, rpm, within/elevated/low, Skin temp from baseline, Blood oxygen, Heart rate variability)
+- v103: Health monitor tiles get WHOOP-style icons and a check/warning badge on the status

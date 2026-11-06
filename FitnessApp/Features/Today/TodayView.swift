@@ -253,30 +253,30 @@ struct TodayView: View {
             Text("Монитор на здравето").font(.headline)
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 link(.metric(.rhr)) {
-                    MetricTile(title: "Пулс в покой", value: s.rhr, unit: "уд./мин", digits: 0,
+                    MetricTile(title: "Пулс в покой", icon: "arrow.down.heart", value: s.rhr, unit: "уд./мин", digits: 0,
                                baseline: s.rhrBaseline, missing: "няма данни")
                 }
                 link(.metric(.hrv)) {
-                    MetricTile(title: "HRV", value: s.hrv, unit: "мс", digits: 0,
+                    MetricTile(title: "HRV", icon: "waveform.path.ecg", value: s.hrv, unit: "мс", digits: 0,
                                baseline: s.hrvBaseline,
                                missing: "свържи WHOOP (Профил → Устройства)")
                 }
                 link(.metric(.respiratory)) {
-                    MetricTile(title: "Дишане", value: s.respiratory, unit: "вд./мин", digits: 1,
+                    MetricTile(title: "Дишане", icon: "lungs", value: s.respiratory, unit: "вд./мин", digits: 1,
                                baseline: s.respiratoryBaseline, missing: "няма данни")
                 }
                 link(.metric(.spo2)) {
-                    MetricTile(title: "SpO₂", value: s.oxygen, unit: "%", digits: 0,
+                    MetricTile(title: "SpO₂", icon: "drop", value: s.oxygen, unit: "%", digits: 0,
                                baseline: s.oxygenBaseline,
                                missing: "няма данни")
                 }
                 link(.weight) {
-                    MetricTile(title: "Тегло", value: todayWeight, unit: "кг", digits: 1,
+                    MetricTile(title: "Тегло", icon: "scalemass", value: todayWeight, unit: "кг", digits: 1,
                                baseline: nil, missing: "няма запис днес", note: weightNote)
                 }
                 if let delta = s.skinTempDelta {
                     link(.metric(.skinTemp)) {
-                        MetricTile(title: "Температура на кожата", value: delta, unit: "°C от нормата", digits: 1,
+                        MetricTile(title: "Температура на кожата", icon: "thermometer.medium", value: delta, unit: "°C от нормата", digits: 1,
                                    baseline: nil, missing: "", signed: true)
                     }
                 }
@@ -482,6 +482,7 @@ private struct RingView: View {
 
 private struct MetricTile: View {
     let title: String
+    var icon: String? = nil
     let value: Double?
     let unit: String
     let digits: Int
@@ -504,7 +505,10 @@ private struct MetricTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(tr(title)).font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                if let icon { Image(systemName: icon).font(.caption).foregroundStyle(.secondary) }
+                Text(tr(title)).font(.caption).foregroundStyle(.secondary)
+            }
             if let value {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text((signed && value > 0 ? "+" : "") + value.formatted(.number.precision(.fractionLength(digits))))
@@ -512,7 +516,10 @@ private struct MetricTile: View {
                     Text(tr(unit)).font(.caption2).foregroundStyle(.secondary)
                 }
                 if let status {
-                    Text(tr(status.title)).font(.caption2.weight(.semibold)).foregroundStyle(statusColor)
+                    Label(tr(status.title), systemImage: status == .normal ? "checkmark" : "exclamationmark")
+                        .font(.caption2.weight(.semibold)).foregroundStyle(statusColor)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(statusColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
                 }
                 if let note {
                     Text(tr(note)).font(.caption2).foregroundStyle(.secondary)
