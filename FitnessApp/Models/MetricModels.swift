@@ -7,7 +7,9 @@ enum MetricKind: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
+    var title: String { tr(titleBG) }
+
+    private var titleBG: String {
         switch self {
         case .recovery: "Възстановяване"
         case .sleepPerformance: "Сън (оценка)"
@@ -26,7 +28,9 @@ enum MetricKind: String, CaseIterable, Identifiable {
         }
     }
 
-    var unit: String {
+    var unit: String { tr(unitBG) }
+
+    private var unitBG: String {
         switch self {
         case .recovery, .sleepPerformance, .spo2: "%"
         case .sleepHours: "ч"
@@ -107,7 +111,7 @@ enum TrendTarget: Hashable {
     var title: String {
         switch self {
         case .metric(let kind): kind.title
-        case .weight: "Тегло"
+        case .weight: tr("Тегло")
         }
     }
 }

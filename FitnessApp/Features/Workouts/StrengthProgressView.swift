@@ -145,14 +145,14 @@ struct StrengthProgressView: View {
                     .chartYScale(domain: .automatic(includesZero: false))
                     .chartScrub(selected.points.map {
                         ScrubPoint(date: $0.date, value: $0.value,
-                                   text: "\(scrubDate($0.date)): ~\($0.value.formatted(.number.precision(.fractionLength(0...1)))) кг")
+                                   text: trf("%@: ~%@ кг", "\(scrubDate($0.date))", "\($0.value.formatted(.number.precision(.fractionLength(0...1))))"))
                     })
                     .padding(.top, 24)
                     .frame(height: 220)
                     LabeledContent("Промяна", value: changeText(selected.change))
-                    LabeledContent("Сега", value: "~\(selected.last.short) кг")
+                    LabeledContent("Сега", value: trf("~%@ кг", "\(selected.last.short)"))
                 } header: {
-                    Text("\(selected.name): 1RM (кг)")
+                    Text(trf("%@: 1RM (кг)", "\(selected.name)"))
                 }
             }
 
@@ -164,9 +164,9 @@ struct StrengthProgressView: View {
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(summary.name)
+                                    Text(tr(summary.name))
                                         .foregroundStyle(.primary)
-                                    Text("\(summary.points.count) тренировки · ~\(summary.last.short) кг")
+                                    Text(trf("%@ тренировки · ~%@ кг", "\(summary.points.count)", "\(summary.last.short)"))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -213,7 +213,7 @@ struct StrengthProgressView: View {
                     .padding(.top, 24)
                     .frame(height: 220)
                     if let last = volume.last {
-                        LabeledContent("Седмица от \(weekRange(last.week))", value: tons(last.kg))
+                        LabeledContent(trf("Седмица от %@", "\(weekRange(last.week))"), value: tons(last.kg))
                         if volume.count >= 2, volume[volume.count - 2].kg > 0 {
                             let prev = volume[volume.count - 2].kg
                             LabeledContent("Спрямо предишната", value: changeText((last.kg - prev) / prev * 100))

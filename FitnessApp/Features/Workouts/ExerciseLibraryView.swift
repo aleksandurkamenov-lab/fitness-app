@@ -19,7 +19,7 @@ struct ExercisePickerView: View {
                 ForEach(MuscleGroup.allCases) { muscle in
                     let items = filtered.filter { $0.primaryMuscle == muscle }
                     if !items.isEmpty {
-                        Section(muscle.title) {
+                        Section(tr(muscle.title)) {
                             ForEach(items) { exercise in
                                 Button(exercise.name) {
                                     onPick(exercise)

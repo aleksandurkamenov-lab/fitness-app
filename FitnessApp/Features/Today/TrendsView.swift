@@ -34,8 +34,8 @@ struct TrendsView: View {
                 .pickerStyle(.segmented)
 
                 if weightPoints.count >= 2, let last = weightPoints.last {
-                    card(title: "Тегло", latest: "\(last.kg.short) кг",
-                         detail: "тренд \(last.trend.short) кг") {
+                    card(title: "Тегло", latest: trf("%@ кг", "\(last.kg.short)"),
+                         detail: trf("тренд %@ кг", "\(last.trend.short)")) {
                         WeightChart(points: weightPoints, goalKg: profiles.first?.goalWeightKg)
                     }
                 }
@@ -74,7 +74,7 @@ struct TrendsView: View {
                         let average = data.map(\.value).reduce(0, +) / Double(data.count)
                         card(title: kind.title,
                              latest: "\(format(last.value, kind)) \(kind.unit)",
-                             detail: "средно \(format(average, kind))") {
+                             detail: trf("средно %@", "\(format(average, kind))")) {
                             Chart(data) { point in
                                 LineMark(x: .value("Ден", point.day), y: .value(kind.title, point.value))
                                     .interpolationMethod(.catmullRom)
@@ -114,11 +114,11 @@ struct TrendsView: View {
                                      @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(title).font(.headline)
+                Text(tr(title)).font(.headline)
                 Spacer()
                 VStack(alignment: .trailing) {
-                    Text(latest).font(.headline)
-                    Text(detail).font(.caption).foregroundStyle(.secondary)
+                    Text(tr(latest)).font(.headline)
+                    Text(tr(detail)).font(.caption).foregroundStyle(.secondary)
                 }
             }
             content()

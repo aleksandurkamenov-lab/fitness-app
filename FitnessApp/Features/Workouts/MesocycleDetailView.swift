@@ -16,9 +16,9 @@ struct MesocycleDetailView: View {
             Section {
                 TextField("Име", text: $mesocycle.name)
                 DatePicker("Начало", selection: $mesocycle.startDate, displayedComponents: .date)
-                Stepper("Седмици: \(mesocycle.weekCount)", value: $mesocycle.weekCount, in: 1...12)
+                Stepper(trf("Седмици: %@", "\(mesocycle.weekCount)"), value: $mesocycle.weekCount, in: 1...12)
             } footer: {
-                Text("Сега е седмица \(mesocycle.currentWeek).")
+                Text(trf("Сега е седмица %@.", "\(mesocycle.currentWeek)"))
             }
 
             Section("Тренировки") {
@@ -29,7 +29,7 @@ struct MesocycleDetailView: View {
                         } label: {
                             VStack(alignment: .leading) {
                                 Text(template.name).font(.headline)
-                                Text("\(template.items.count) упражнения")
+                                Text(trf("%@ упражнения", "\(template.items.count)"))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -49,7 +49,7 @@ struct MesocycleDetailView: View {
                     for index in offsets { context.delete(sorted[index]) }
                 }
                 Button {
-                    let template = WorkoutTemplate(name: "Тренировка \(mesocycle.templates.count + 1)",
+                    let template = WorkoutTemplate(name: trf("Тренировка %@", "\(mesocycle.templates.count + 1)"),
                                                    order: (mesocycle.templates.map(\.order).max() ?? -1) + 1)
                     template.mesocycle = mesocycle
                     context.insert(template)
@@ -97,7 +97,7 @@ struct MesocycleDetailView: View {
         }
         .safeAreaInset(edge: .bottom) {
             if let created = createdName {
-                Text("Създаден е „\(created)“ в списъка с мезоцикли.")
+                Text(trf("Създаден е „%@“ в списъка с мезоцикли.", "\(created)"))
                     .font(.footnote)
                     .padding(8)
                     .background(.regularMaterial, in: Capsule())

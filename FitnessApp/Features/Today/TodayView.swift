@@ -104,7 +104,7 @@ struct TodayView: View {
     }
 
     private func notice(_ text: String) -> some View {
-        Text(text)
+        Text(tr(text))
             .font(.footnote)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -173,7 +173,7 @@ struct TodayView: View {
         if w != nil {
             notice("Сън, възстановяване, натоварване, HRV и пулс в покой са от WHOOP. Крачките и тренировките са от Apple Health. Не е медицински съвет.")
         } else {
-            notice("Оценките са наши, ориентировъчни изчисления от данните в Apple Health. Не са оценките на WHOOP или Polar и не са медицински съвет." + (s.sleepSource.map { " Сънят е от: \($0)." } ?? ""))
+            notice("Оценките са наши, ориентировъчни изчисления от данните в Apple Health. Не са оценките на WHOOP или Polar и не са медицински съвет." + (s.sleepSource.map { trf(" Сънят е от: %@.", "\($0)") } ?? ""))
         }
     }
 
@@ -239,7 +239,7 @@ struct TodayView: View {
     /// Промяна на средното тегло за 7 дни спрямо предишните 7.
     private var weightNote: String? {
         guard let change = BodyMath.weekSummary(weights)?.change else { return nil }
-        return "\(BodyMath.signedKg(change)) за 7 дни"
+        return trf("%@ за 7 дни", "\(BodyMath.signedKg(change))")
     }
 
     /// Средно от записите за днес (ако са няколко).
@@ -361,9 +361,9 @@ struct TodayView: View {
                 energyRow("Прием (храна и Apple Health)", intake)
                 HStack {
                     let value = Int((intake - total).rounded())
-                    Text(value >= 0 ? "Дневен излишък" : "Дневен дефицит").fontWeight(.semibold)
+                    Text(tr(value >= 0 ? "Дневен излишък" : "Дневен дефицит")).fontWeight(.semibold)
                     Spacer()
-                    Text("\(abs(value)) ккал")
+                    Text(trf("%@ ккал", "\(abs(value))"))
                         .fontWeight(.semibold)
                         .foregroundStyle(value >= 0 ? Color.orange : Color.green)
                 }
@@ -371,7 +371,7 @@ struct TodayView: View {
                 HStack {
                     Text("Очаквана промяна за седмица при такъв ден")
                     Spacer()
-                    Text("\(weekly >= 0 ? "+" : "−")\(abs(weekly).formatted(.number.precision(.fractionLength(2)))) кг")
+                    Text("\(weekly >= 0 ? "+" : "−")\(abs(weekly).formatted(.number.precision(.fractionLength(2)))) " + tr("кг"))
                         .monospacedDigit()
                 }
                 .font(.subheadline)
@@ -396,7 +396,7 @@ struct TodayView: View {
 
     private func energyRow(_ title: String, _ value: Double, bold: Bool = false, unit: String = " ккал", prefix: String = "") -> some View {
         HStack {
-            Text(title).fontWeight(bold ? .semibold : .regular)
+            Text(tr(title)).fontWeight(bold ? .semibold : .regular)
             Spacer()
             Text("\(prefix)\(Int(value.rounded()))\(unit)").fontWeight(bold ? .semibold : .regular).monospacedDigit()
         }
@@ -411,17 +411,17 @@ struct TodayView: View {
             if let start = s.sleepStart, let end = s.sleepEnd, let hours = s.asleepHours {
                 dayRow(icon: "moon.zzz", title: "Сън",
                        detail: "\(start.formatted(date: .omitted, time: .shortened))–\(end.formatted(date: .omitted, time: .shortened))",
-                       trailing: "\(Int(hours))ч \(Int((hours * 60).truncatingRemainder(dividingBy: 60)))м")
+                       trailing: trf("%@ч %@м", "\(Int(hours))", "\(Int((hours * 60).truncatingRemainder(dividingBy: 60)))"))
             }
             ForEach(appToday) { session in
                 dayRow(icon: "dumbbell", title: session.title,
                        detail: session.date.formatted(date: .omitted, time: .shortened),
-                       trailing: "\(WorkoutMath.totalVolume(session.sets).short) кг обем")
+                       trailing: trf("%@ кг обем", "\(WorkoutMath.totalVolume(session.sets).short)"))
             }
             ForEach(s.workouts) { workout in
                 dayRow(icon: "figure.run", title: workout.name,
                        detail: workout.start.formatted(date: .omitted, time: .shortened),
-                       trailing: "\(Int(workout.minutes)) мин" + (workout.kcal.map { " · \(Int($0)) ккал" } ?? ""))
+                       trailing: trf("%@ мин", "\(Int(workout.minutes))") + (workout.kcal.map { trf(" · %@ ккал", "\(Int($0))") } ?? ""))
             }
             if s.sleepStart == nil && appToday.isEmpty && s.workouts.isEmpty {
                 Text("Още няма записани събития за днес.")
@@ -440,11 +440,11 @@ struct TodayView: View {
                 .frame(width: 28)
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading) {
-                Text(title).font(.subheadline.weight(.semibold))
-                Text(detail).font(.caption).foregroundStyle(.secondary)
+                Text(tr(title)).font(.subheadline.weight(.semibold))
+                Text(tr(detail)).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            Text(trailing).font(.subheadline)
+            Text(tr(trailing)).font(.subheadline)
         }
     }
 }
@@ -465,12 +465,12 @@ private struct RingView: View {
                     .trim(from: 0, to: max(0.001, min(progress, 1)))
                     .stroke(color, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                Text(valueText)
+                Text(tr(valueText))
                     .font(.title3.weight(.bold))
                     .minimumScaleFactor(0.6)
             }
             .frame(width: 84, height: 84)
-            Text(title)
+            Text(tr(title))
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -504,22 +504,22 @@ private struct MetricTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(tr(title)).font(.caption).foregroundStyle(.secondary)
             if let value {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text((signed && value > 0 ? "+" : "") + value.formatted(.number.precision(.fractionLength(digits))))
                         .font(.title2.weight(.bold))
-                    Text(unit).font(.caption2).foregroundStyle(.secondary)
+                    Text(tr(unit)).font(.caption2).foregroundStyle(.secondary)
                 }
                 if let status {
-                    Text(status.title).font(.caption2.weight(.semibold)).foregroundStyle(statusColor)
+                    Text(tr(status.title)).font(.caption2.weight(.semibold)).foregroundStyle(statusColor)
                 }
                 if let note {
-                    Text(note).font(.caption2).foregroundStyle(.secondary)
+                    Text(tr(note)).font(.caption2).foregroundStyle(.secondary)
                 }
             } else {
                 Text("–").font(.title2.weight(.bold))
-                Text(missing).font(.caption2).foregroundStyle(.secondary)
+                Text(tr(missing)).font(.caption2).foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -543,7 +543,7 @@ private struct DashboardRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon).frame(width: 28).foregroundStyle(.secondary)
-            Text(title).font(.subheadline)
+            Text(tr(title)).font(.subheadline)
             Spacer()
             VStack(alignment: .trailing) {
                 HStack(spacing: 4) {
@@ -553,7 +553,7 @@ private struct DashboardRow: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
-                    if !unit.isEmpty { Text(unit).font(.caption).foregroundStyle(.secondary) }
+                    if !unit.isEmpty { Text(tr(unit)).font(.caption).foregroundStyle(.secondary) }
                 }
                 if let average {
                     Text(text(average)).font(.caption).foregroundStyle(.secondary)

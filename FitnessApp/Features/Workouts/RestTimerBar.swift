@@ -9,7 +9,7 @@ struct RestTimerBar: View {
             let remaining = timer.remaining(at: context.date)
             HStack {
                 Image(systemName: "timer")
-                Text(remaining > 0 ? "Почивка" : "Почивката свърши")
+                Text(tr(remaining > 0 ? "Почивка" : "Почивката свърши"))
                 Spacer()
                 Text(Duration.seconds(remaining.rounded(.up)), format: .time(pattern: .minuteSecond))
                     .monospacedDigit()

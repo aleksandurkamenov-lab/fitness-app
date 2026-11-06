@@ -132,7 +132,7 @@ struct MesoGridView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(isEditing ? "Готово" : "Редакция") { isEditing.toggle() }
+                Button(tr(isEditing ? "Готово" : "Редакция")) { isEditing.toggle() }
             }
             ToolbarItem(placement: .secondaryAction) {
                 Toggle("Таймер за почивка", isOn: $restTimerOn)
@@ -157,9 +157,9 @@ struct MesoGridView: View {
                 let value = totalVolume(week: week)
                 let prev = previousWeek(of: week) { totalVolume(week: $0) > 0 }
                 HStack {
-                    Text("Седмица \(week)").foregroundStyle(.secondary)
+                    Text(trf("Седмица %@", "\(week)")).foregroundStyle(.secondary)
                     Spacer()
-                    Text(value > 0 ? "\(value.short) кг" : "–").font(.subheadline.weight(.semibold))
+                    Text(value > 0 ? trf("%@ кг", "\(value.short)") : "–").font(.subheadline.weight(.semibold))
                     DeltaText(value: value, previous: prev.map { totalVolume(week: $0) })
                         .frame(width: 52, alignment: .trailing)
                 }
@@ -417,7 +417,7 @@ private struct ExerciseGridCard: View {
                 .font(.subheadline)
             }
             VStack(alignment: .leading, spacing: 2) {
-                if !isEditing { Text(item.exercise?.name ?? "Упражнение").font(.headline) }
+                if !isEditing { Text(item.exercise?.name ?? tr("Упражнение")).font(.headline) }
                 Text("Натисни номера на седмицата за RIR, загрявки, плочи и бележка.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -428,7 +428,7 @@ private struct ExerciseGridCard: View {
                         Text("Сед.").frame(width: weekWidth)
                         ForEach(0..<setCount, id: \.self) { index in
                             VStack(spacing: 0) {
-                                Text("Серия \(index + 1)")
+                                Text(trf("Серия %@", "\(index + 1)"))
                                 Text(targetText(index)).foregroundStyle(.primary)
                             }
                             .frame(width: cellWidth)
@@ -604,7 +604,7 @@ private struct WeekDetailSheet: View {
                             .foregroundStyle(.secondary)
                     }
                 } header: {
-                    Text("Седмица \(week)")
+                    Text(trf("Седмица %@", "\(week)"))
                 }
                 Section {
                     Button { onWarmups() } label: {
@@ -622,7 +622,7 @@ private struct WeekDetailSheet: View {
                     Text("Бележката е за упражнението във всички седмици.")
                 }
             }
-            .navigationTitle(item.exercise?.name ?? "Упражнение")
+            .navigationTitle(item.exercise?.name ?? tr("Упражнение"))
             .navigationBarTitleDisplayMode(.inline)
             .keyboardDoneButton()
             .toolbar {
@@ -652,7 +652,7 @@ private struct DetailSetRow: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.orange)
             } else {
-                Text("Серия \(set.setIndex + 1)").font(.subheadline.weight(.semibold))
+                Text(trf("Серия %@", "\(set.setIndex + 1)")).font(.subheadline.weight(.semibold))
             }
             HStack(spacing: 10) {
                 DecimalField(placeholder: "кг", value: $set.weight)

@@ -69,7 +69,7 @@ struct EnergyTrendView: View {
 
     private func text(_ value: Double?) -> String {
         guard let value else { return "няма данни" }
-        return "\(Int(value.rounded())) ккал"
+        return trf("%@ ккал", "\(Int(value.rounded()))")
     }
 
     /// Очаквана промяна в кг за седмицата: (прием − разход с активност, иначе дневен разход) × 7 / 7700.
@@ -80,18 +80,18 @@ struct EnergyTrendView: View {
 
     private func weightText(_ week: EnergyModel.WeekPoint) -> String {
         let kg = week.kg.map { $0.formatted(.number.precision(.fractionLength(0...1))) + " кг" } ?? "–"
-        return "Тегло \(kg) · прием \(text(week.intake))"
+        return trf("Тегло %@ · прием %@", "\(kg)", "\(text(week.intake))")
     }
 
     private func changeText(_ change: Double) -> String {
         let sign = change >= 0 ? "+" : "−"
         let value = abs(change).formatted(.number.precision(.fractionLength(2)))
-        return "Очаквана промяна по прием и разход: \(sign)\(value) кг"
+        return trf("Очаквана промяна по прием и разход: %@%@ кг", "\(sign)", "\(value)")
     }
 
     private func weekRow(_ week: EnergyModel.WeekPoint) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("Седмица от \(week.weekStart.formatted(.dateTime.day().month(.abbreviated)))")
+            Text(trf("Седмица от %@", "\(week.weekStart.formatted(.dateTime.day().month(.abbreviated)))"))
                 .font(.subheadline.weight(.semibold))
             Text(weightText(week))
                 .font(.caption)
@@ -107,8 +107,8 @@ struct EnergyTrendView: View {
     }
 
     private func valuesText(_ week: EnergyModel.WeekPoint) -> String {
-        var result = "BMR \(text(week.bmr)) · общ \(text(week.device ?? week.formula))"
-        if let real = week.real { result += " · реален \(text(real))" }
+        var result = trf("BMR %@ · общ %@", "\(text(week.bmr))", "\(text(week.device ?? week.formula))")
+        if let real = week.real { result += trf(" · реален %@", "\(text(real))") }
         return result
     }
 
@@ -163,7 +163,7 @@ struct EnergyTrendView: View {
                         }
                         .chartYScale(domain: .automatic(includesZero: false))
                         .chartScrub(points.map {
-                            ScrubPoint(date: $0.date, value: $0.value, text: "\(scrubDate($0.date)): \(Int($0.value.rounded())) ккал")
+                            ScrubPoint(date: $0.date, value: $0.value, text: trf("%@: %@ ккал", "\(scrubDate($0.date))", "\(Int($0.value.rounded()))"))
                         })
                         .padding(.top, 24)
                         .frame(height: 230)

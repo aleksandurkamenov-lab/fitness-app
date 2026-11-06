@@ -113,18 +113,18 @@ struct MetricDetailView: View {
                 }
             }
 
-            Section("Статистика (\(rangeDays) дни)") {
+            Section(trf("Статистика (%@ дни)", "\(rangeDays)")) {
                 LabeledContent("Средно", value: "\(text(avg)) \(unit)")
                 LabeledContent("Най-ниско", value: "\(text(data.map(\.value).min())) \(unit)")
                 LabeledContent("Най-високо", value: "\(text(data.map(\.value).max())) \(unit)")
                 if let avg, let previousAvg, previousAvg != 0 {
                     let change = avg - previousAvg
                     let percent = change / previousAvg * 100
-                    LabeledContent("Спрямо предишните \(rangeDays) дни",
+                    LabeledContent(trf("Спрямо предишните %@ дни", "\(rangeDays)"),
                                    value: "\(change > 0 ? "+" : "")\(text(change)) \(unit) (\(percent > 0 ? "+" : "")\(percent.formatted(.number.precision(.fractionLength(0...1))))%)")
                 }
                 if let last = data.last {
-                    LabeledContent("Последно (\(last.day.formatted(date: .abbreviated, time: .omitted)))",
+                    LabeledContent(trf("Последно (%@)", "\(last.day.formatted(date: .abbreviated, time: .omitted))"),
                                    value: "\(text(last.value)) \(unit)")
                 }
             }
@@ -132,7 +132,7 @@ struct MetricDetailView: View {
             if !weeks.isEmpty {
                 Section("Средно по седмици") {
                     ForEach(weeks) { week in
-                        LabeledContent("от \(week.start.formatted(date: .abbreviated, time: .omitted))",
+                        LabeledContent(trf("от %@", "\(week.start.formatted(date: .abbreviated, time: .omitted))"),
                                        value: "\(text(week.average)) \(unit)")
                     }
                 }

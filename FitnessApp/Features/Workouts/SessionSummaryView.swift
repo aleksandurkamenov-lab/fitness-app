@@ -12,7 +12,7 @@ struct SessionSummaryView: View {
             Section {
                 LabeledContent("Дата", value: session.date.formatted(date: .abbreviated, time: .shortened))
                 LabeledContent("Седмица", value: "\(session.week)")
-                LabeledContent("Обем", value: "\(WorkoutMath.totalVolume(session.sets).short) кг")
+                LabeledContent("Обем", value: trf("%@ кг", "\(WorkoutMath.totalVolume(session.sets).short)"))
                 LabeledContent("Повторения", value: WorkoutMath.totalReps(session.sets).short)
                 if let end = session.finishedAt {
                     LabeledContent("Продължителност",
@@ -22,19 +22,19 @@ struct SessionSummaryView: View {
             }
 
             ForEach(session.exerciseGroups) { group in
-                Section(group.exercise?.name ?? "Упражнение") {
+                Section(group.exercise?.name ?? tr("Упражнение")) {
                     ForEach(group.sets) { set in
                         HStack {
-                            Text(set.isWarmup ? "З" : "\(set.setIndex + 1).")
+                            Text(set.isWarmup ? tr("З") : "\(set.setIndex + 1).")
                                 .foregroundStyle(.secondary)
-                            Text("\(set.weight.short) кг × \(set.repsText)\(set.rir >= 0 ? " · RIR \(set.rir)" : "")")
+                            Text(trf("%@ кг × %@", "\(set.weight.short)", "\(set.repsText)") + (set.rir >= 0 ? " · RIR \(set.rir)" : ""))
                             Spacer()
                             Text("1RM ~\(set.estimatedOneRepMax.short)")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    LabeledContent("Обем", value: "\(WorkoutMath.totalVolume(group.sets).short) кг")
+                    LabeledContent("Обем", value: trf("%@ кг", "\(WorkoutMath.totalVolume(group.sets).short)"))
                         .font(.caption)
                 }
             }

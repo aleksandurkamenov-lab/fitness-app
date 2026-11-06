@@ -6,7 +6,9 @@ enum MuscleGroup: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
+    var title: String { tr(titleBG) }
+
+    private var titleBG: String {
         switch self {
         case .chest: "Гърди"
         case .back: "Гръб"

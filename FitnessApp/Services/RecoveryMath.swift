@@ -28,9 +28,9 @@ enum RecoveryMath {
 
         var title: String {
             switch self {
-            case .normal: "в нормата"
-            case .high: "над нормата"
-            case .low: "под нормата"
+            case .normal: tr("в нормата")
+            case .high: tr("над нормата")
+            case .low: tr("под нормата")
             }
         }
     }

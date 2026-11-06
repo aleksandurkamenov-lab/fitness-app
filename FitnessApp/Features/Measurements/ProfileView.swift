@@ -39,8 +39,16 @@ private struct ProfileForm: View {
             : activities + [("Калибрирана (\(profile.activityFactor.formatted(.number.precision(.fractionLength(0...2)))))", profile.activityFactor)]
     }
 
+    @AppStorage(AppLanguage.storageKey) private var language = AppLanguage.bg.rawValue
+
     var body: some View {
         Form {
+            Section {
+                Picker("Език", selection: $language) {
+                    ForEach(AppLanguage.allCases) { Text($0.label).tag($0.rawValue) }
+                }
+            }
+
             Section("За мен") {
                 LabeledContent("Пол") {
                     Picker("Пол", selection: $profile.sex) {

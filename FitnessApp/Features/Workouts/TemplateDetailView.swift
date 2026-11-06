@@ -95,7 +95,7 @@ private struct TemplateExerciseRow: View {
                             .multilineTextAlignment(.center)
                     }
                     if let best = target.bestText {
-                        Text("Най-добър до сега: \(best)")
+                        Text(trf("Най-добър до сега: %@", "\(best)"))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -128,7 +128,7 @@ private struct TemplateExerciseRow: View {
         } label: {
             VStack(alignment: .leading) {
                 HStack(alignment: .top, spacing: 8) {
-                    Text(item.exercise?.name ?? "Изтрито упражнение")
+                    Text(item.exercise?.name ?? tr("Изтрито упражнение"))
                     if let exercise = item.exercise {
                         RenameExerciseButton(exercise: exercise)
                     }
@@ -137,7 +137,7 @@ private struct TemplateExerciseRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if !item.note.isEmpty {
-                    Text(item.note)
+                    Text(tr(item.note))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -193,7 +193,7 @@ private struct RepStepperRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(title)
+            Text(tr(title))
             Spacer()
             Text("\(value)")
                 .font(.title3.weight(.semibold))

@@ -3,9 +3,13 @@ import SwiftData
 
 @main
 struct FitnessApp: App {
+    @AppStorage(AppLanguage.storageKey) private var language = AppLanguage.bg.rawValue
+
     var body: some Scene {
         WindowGroup {
             RootTabView()
+                .environment(\.locale, (AppLanguage(rawValue: language) ?? .bg).locale)
+                .id(language)
         }
         .modelContainer(for: [
             Exercise.self,

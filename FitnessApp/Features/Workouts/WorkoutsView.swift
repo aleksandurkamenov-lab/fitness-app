@@ -25,14 +25,14 @@ struct WorkoutsView: View {
                             } label: {
                                 VStack(alignment: .leading) {
                                     Text(template.name).font(.headline)
-                                    Text("\(template.items.count) упражнения")
+                                    Text(trf("%@ упражнения", "\(template.items.count)"))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
                             }
                         }
                     } header: {
-                        Text("\(current.name) · седмица \(current.currentWeek) от \(current.weekCount)")
+                        Text(trf("%@ · седмица %@ от %@", "\(current.name)", "\(current.currentWeek)", "\(current.weekCount)"))
                     }
                 } else {
                     Section {
@@ -75,7 +75,7 @@ struct WorkoutsView: View {
 
                 Section {
                 } footer: {
-                    Text("Версия v98")
+                    Text("Версия v99")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -100,22 +100,22 @@ struct SessionRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(session.title).font(.headline)
-            Text("\(session.date.formatted(date: .abbreviated, time: .shortened)) · седмица \(session.week)")
+            Text(trf("%@ · седмица %@", "\(session.date.formatted(date: .abbreviated, time: .shortened))", "\(session.week)"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             ForEach(session.exerciseGroups) { group in
                 let done = group.sets.filter(\.isWorkSet)
                 if !done.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(group.exercise?.name ?? "Упражнение")
+                        Text(group.exercise?.name ?? tr("Упражнение"))
                             .font(.caption.weight(.semibold))
-                        Text(done.map { "\($0.weight.short) кг × \($0.repsText)" }.joined(separator: "  ·  "))
+                        Text(done.map { trf("%@ кг × %@", "\($0.weight.short)", "\($0.repsText)") }.joined(separator: "  ·  "))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            Text("Обем \(WorkoutMath.totalVolume(session.sets).short) кг · \(WorkoutMath.totalReps(session.sets).short) повт.")
+            Text(trf("Обем %@ кг · %@ повт.", "\(WorkoutMath.totalVolume(session.sets).short)", "\(WorkoutMath.totalReps(session.sets).short)"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -132,7 +132,7 @@ private struct NewMesocycleSheet: View {
         NavigationStack {
             Form {
                 TextField("Име", text: $name)
-                Stepper("Седмици: \(weeks)", value: $weeks, in: 1...12)
+                Stepper(trf("Седмици: %@", "\(weeks)"), value: $weeks, in: 1...12)
                 Text("Ще създам 4 тренировки: Upper 1, Lower 1, Upper 2, Lower 2. Можеш да ги преименуваш и да добавиш упражнения.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -177,7 +177,7 @@ struct MesocycleListView: View {
                     } label: {
                         VStack(alignment: .leading) {
                             Text(meso.name).font(.headline)
-                            Text("Седмица \(meso.currentWeek) от \(meso.weekCount) · \(meso.templates.count) тренировки")
+                            Text(trf("Седмица %@ от %@ · %@ тренировки", "\(meso.currentWeek)", "\(meso.weekCount)", "\(meso.templates.count)"))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

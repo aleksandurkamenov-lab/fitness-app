@@ -145,10 +145,10 @@ struct ActivityStatsCard: View {
                 let lastDay = calendar.date(byAdding: .day, value: -1, to: week.end) ?? week.end
                 let isCurrent = week.start == weekStart(.now)
                 HStack {
-                    Text("\(week.start.formatted(.dateTime.day().month(.twoDigits))) – \(lastDay.formatted(.dateTime.day().month(.twoDigits)))" + (isCurrent ? " (тази)" : ""))
+                    Text("\(week.start.formatted(.dateTime.day().month(.twoDigits))) – \(lastDay.formatted(.dateTime.day().month(.twoDigits)))" + (isCurrent ? " " + tr("(тази)") : ""))
                         .font(.callout)
                     Spacer()
-                    Text("силови \(week.strength) · кардио \(week.cardio)").font(.callout.bold())
+                    Text(trf("силови %@ · кардио %@", "\(week.strength)", "\(week.cardio)")).font(.callout.bold())
                     Image(systemName: week.strength >= 4 ? "checkmark.circle.fill" : week.strength >= 3 ? "checkmark.circle" : isCurrent ? "clock" : "xmark.circle")
                         .foregroundStyle(week.strength >= 3 ? Color.green : isCurrent ? Color.secondary : Color.red)
                 }
@@ -218,10 +218,10 @@ struct ActivityStatsCard: View {
 
     private func tile(_ title: String, _ value: String, _ icon: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label(title, systemImage: icon)
+            Label(tr(title), systemImage: icon)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(value).font(.title2.bold())
+            Text(tr(value)).font(.title2.bold())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
@@ -332,11 +332,11 @@ struct MuscleBalanceView: View {
                 HStack {
                     Circle().fill(status.color).frame(width: 10, height: 10)
                     VStack(alignment: .leading) {
-                        Text(item.muscle.title)
-                        Text(status.text).font(.caption).foregroundStyle(.secondary)
+                        Text(tr(item.muscle.title))
+                        Text(tr(status.text)).font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Text("\(item.weekSets.short) серии/7д").font(.caption).foregroundStyle(.secondary)
+                    Text(trf("%@ серии/7д", "\(item.weekSets.short)")).font(.caption).foregroundStyle(.secondary)
                 }
             }
         } header: {
@@ -349,7 +349,7 @@ struct MuscleBalanceView: View {
     private func status(for last: Date?) -> (text: String, color: Color) {
         guard let last else { return ("Още не е тренирана", .gray) }
         let hours = Date.now.timeIntervalSince(last) / 3600
-        let ago = hours < 48 ? "преди \(Int(hours)) ч" : "преди \(Int(hours / 24)) дни"
+        let ago = hours < 48 ? trf("преди %@ ч", "\(Int(hours))") : trf("преди %@ дни", "\(Int(hours / 24))")
         switch hours {
         case ..<48: return (ago, .red)
         case ..<72: return (ago, .orange)
@@ -401,7 +401,7 @@ struct TrainingDaysView: View {
                 .buttonStyle(.borderless)
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 6) {
                     ForEach(["пн", "вт", "ср", "чт", "пт", "сб", "нд"], id: \.self) { name in
-                        Text(name).font(.caption2).foregroundStyle(.secondary)
+                        Text(tr(name)).font(.caption2).foregroundStyle(.secondary)
                     }
                     ForEach(Array(cells.enumerated()), id: \.offset) { _, day in
                         if let day {
@@ -417,7 +417,7 @@ struct TrainingDaysView: View {
                 }
                 .font(.caption)
             } footer: {
-                Text("Силови: \(monthDays.map { strength[$0] ?? 0 }.reduce(0, +)) · Кардио: \(monthDays.map { cardio[$0] ?? 0 }.reduce(0, +))")
+                Text(trf("Силови: %@ · Кардио: %@", "\(monthDays.map { strength[$0] ?? 0 }.reduce(0, +))", "\(monthDays.map { cardio[$0] ?? 0 }.reduce(0, +))"))
             }
             Section {
                 ForEach(monthDays.reversed(), id: \.self) { day in
@@ -425,11 +425,11 @@ struct TrainingDaysView: View {
                         Text(day.formatted(.dateTime.weekday(.abbreviated).day().month(.twoDigits)))
                         Spacer()
                         if let count = strength[day], count > 0 {
-                            Label("Силова\(count > 1 ? " ×\(count)" : "")", systemImage: "figure.strengthtraining.traditional")
+                            Label(tr("Силова") + (count > 1 ? " ×\(count)" : ""), systemImage: "figure.strengthtraining.traditional")
                                 .foregroundStyle(.green)
                         }
                         if let count = cardio[day], count > 0 {
-                            Label("Кардио\(count > 1 ? " ×\(count)" : "")", systemImage: "figure.run")
+                            Label(tr("Кардио") + (count > 1 ? " ×\(count)" : ""), systemImage: "figure.run")
                                 .foregroundStyle(.orange)
                         }
                     }

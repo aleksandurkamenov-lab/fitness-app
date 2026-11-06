@@ -38,7 +38,7 @@ struct PlateCalculatorView: View {
                     }
                     Picker("Щанга", selection: $barWeight) {
                         ForEach([20.0, 15.0, 10.0, 0.0], id: \.self) { bar in
-                            Text(bar == 0 ? "без щанга" : "\(bar.short) кг").tag(bar)
+                            Text(bar == 0 ? tr("без щанга") : trf("%@ кг", "\(bar.short)")).tag(bar)
                         }
                     }
                 }
@@ -49,16 +49,16 @@ struct PlateCalculatorView: View {
                         Text("Въведи тежест.")
                             .foregroundStyle(.secondary)
                     } else if weight < barWeight {
-                        Text("Целта е под теглото на щангата (\(barWeight.short) кг).")
+                        Text(trf("Целта е под теглото на щангата (%@ кг).", "\(barWeight.short)"))
                             .foregroundStyle(.orange)
                     } else if weight == barWeight {
-                        Text(barWeight > 0 ? "Само щангата." : "Без щанга.")
+                        Text(tr(barWeight > 0 ? "Само щангата." : "Без щанга."))
                             .foregroundStyle(.secondary)
                     } else {
                         Text(result.plates.map(\.short).joined(separator: " + "))
                             .font(.title2.weight(.bold))
                         if result.remainder > 0.01 {
-                            Text("Не се получава точно: липсват \((result.remainder * 2).short) кг общо.")
+                            Text(trf("Не се получава точно: липсват %@ кг общо.", "\((result.remainder * 2).short)"))
                                 .font(.footnote)
                                 .foregroundStyle(.orange)
                         }
