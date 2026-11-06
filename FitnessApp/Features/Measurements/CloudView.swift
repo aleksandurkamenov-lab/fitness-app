@@ -14,6 +14,8 @@ struct CloudView: View {
     @State private var me: CloudProfile?
     @State private var clients: [CloudProfile] = []
     @State private var coachCode = ""
+    @FocusState private var focus: LoginField?
+    private enum LoginField { case email, password, name }
 
     var body: some View {
         Form {
@@ -23,10 +25,26 @@ struct CloudView: View {
                 Section {
                     TextField("Имейл", text: $email)
                         .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.emailAddress)
+                        .textContentType(.username)
+                        .focused($focus, equals: .email)
+                        .submitLabel(.next)
+                        .onSubmit { focus = .password }
                     SecureField("Парола (поне 6 знака)", text: $password)
+                        .textContentType(.password)
+                        .focused($focus, equals: .password)
+                        .submitLabel(.next)
+                        .onSubmit { focus = .name }
+                        .contentShape(Rectangle())
+                        .onTapGesture { focus = .password }
                     TextField("Име (само при регистрация)", text: $name)
-                    Button("Влез") { run { try await cloud.signIn(email: email.trimmed, password: password) } }
+                        .focused($focus, equals: .name)
+                        .submitLabel(.done)
+                    Button("Влез") {
+                        if let problem = loginProblem() { message = problem; return }
+                        run { try await cloud.signIn(email: email.trimmed, password: password) }
+                    }
                     Button("Регистрирай се") {
+                        if let problem = loginProblem() { message = problem; return }
                         run { try await cloud.signUp(email: email.trimmed, password: password, name: name) }
                     }
                 } header: {
@@ -105,6 +123,13 @@ struct CloudView: View {
         } header: {
             Text("Моите клиенти")
         }
+    }
+
+    private func loginProblem() -> String? {
+        let e = email.trimmed
+        if !e.contains("@") || !e.contains(".") { return "Въведи валиден имейл (напр. ime@gmail.com)." }
+        if password.count < 6 { return "Паролата трябва да е поне 6 знака." }
+        return nil
     }
 
     private func run(_ work: @escaping () async throws -> Void) {

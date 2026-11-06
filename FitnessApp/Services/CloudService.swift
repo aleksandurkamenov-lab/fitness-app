@@ -141,6 +141,23 @@ final class CloudService {
         guard (200..<300).contains(code) else {
             if code == 401 { throw CloudError.notSignedIn }
             let text = String(data: data, encoding: .utf8) ?? ""
+            if path.hasPrefix("/auth/v1") {
+                if text.contains("invalid_credentials") {
+                    throw CloudError.server("Грешен имейл или парола. Ако още нямаш акаунт, натисни „Регистрирай се“.")
+                }
+                if text.contains("user_already_exists") || text.contains("already registered") {
+                    throw CloudError.server("Този имейл вече има акаунт. Натисни „Влез“.")
+                }
+                if text.contains("weak_password") {
+                    throw CloudError.server("Паролата е твърде слаба или къса (поне 6 знака).")
+                }
+                if text.contains("validation_failed") || text.contains("email_address_invalid") {
+                    throw CloudError.server("Невалиден имейл.")
+                }
+                if code == 429 || text.contains("rate_limit") {
+                    throw CloudError.server("Твърде много опити. Опитай пак след малко.")
+                }
+            }
             throw CloudError.server("Грешка \(code): \(text.prefix(200))")
         }
         return data
