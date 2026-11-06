@@ -4,7 +4,7 @@ import SwiftData
 /// Днес: сън, възстановяване и натоварване от Apple Health, в духа на WHOOP.
 struct TodayView: View {
     @Environment(\.modelContext) private var context
-    @State private var health = HealthService()
+    @State private var health = HealthService.shared
     @State private var whoop = WhoopService.shared
     @State private var healthFood: [Date: NutritionDay] = [:]
     /// Кога за последно е зареждано всичко; връщане към таба скоро след това не презарежда.

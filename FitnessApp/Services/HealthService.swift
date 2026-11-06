@@ -47,6 +47,9 @@ struct NutritionDay {
 
 @Observable
 final class HealthService {
+    /// Общ екземпляр за таб Днес: данните остават при смяна на езика.
+    static let shared = HealthService()
+
     private let store = HKHealthStore()
     var snapshot: HealthSnapshot?
     var isLoading = false
