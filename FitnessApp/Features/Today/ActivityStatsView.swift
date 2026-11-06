@@ -160,6 +160,8 @@ struct ActivityStatsCard: View {
                     let names = weekWorkoutNames(from: week.start, to: week.end)
                     if !names.isEmpty {
                         Text(names).font(.caption).foregroundStyle(.secondary)
+                    } else if week.strength + week.cardio > 0 {
+                        Text("Имената идват след опресняване: плъзни надолу в Днес.").font(.caption2).foregroundStyle(.secondary)
                     }
                 }
                 .padding(.vertical, 2)
