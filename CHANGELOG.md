@@ -110,3 +110,4 @@ Every change to the app is a numbered version. The current version is shown at t
 - v106: Workout-days heatmap GitHub-style: 7/30/90 days/12 months filter, month and weekday labels, horizontal scroll, tap a day to see its workouts; only strength days are green
 - v107: Tapping a day in the workout-days map also lists WHOOP/Apple Health workouts by name and minutes (e.g. Running · 32 min)
 - v108: Weekly list covers the last 30 days: "Week 02.11 – 08.11", Strength ×N · Cardio ×N and a 7-day strip (green strength, blue cardio, half/half when both)
+- v109: App Store readiness: in-app account deletion (Cloud screen, deletes account and all cloud data), Legal section in Profile (privacy policy, terms/GDPR, Apple EULA, support, health disclaimer, Open Food Facts attribution)

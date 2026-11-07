@@ -629,3 +629,15 @@
 "Седмица %@ – %@" = "Week %@ – %@";
 "Силова ×%@ · Кардио ×%@" = "Strength ×%@ · Cardio ×%@";
 "Имената идват след опресняване: плъзни надолу в Днес." = "Names appear after a refresh: pull down on Today.";
+"Изтрий акаунта" = "Delete account";
+"Да изтрия ли акаунта и всички данни в облака?" = "Delete your account and all cloud data?";
+"Изтрий завинаги" = "Delete permanently";
+"Това не може да се върне. Данните на телефона остават." = "This cannot be undone. Data on your phone stays.";
+"Акаунтът и данните в облака са изтрити." = "Your account and cloud data were deleted.";
+"Изтрива акаунта, профила и качените данни от облака. Треньорът спира да ги вижда." = "Deletes your account, profile and uploaded cloud data. Your coach can no longer see them.";
+"Политика за поверителност" = "Privacy Policy";
+"Условия за ползване и GDPR" = "Terms of Use and GDPR";
+"Лицензионно споразумение (Apple EULA)" = "License Agreement (Apple EULA)";
+"Поддръжка: aleksandurkamenov@gmail.com" = "Support: aleksandurkamenov@gmail.com";
+"Правна информация" = "Legal";
+"BabanFit не е медицинско изделие и не дава медицински съвет. Калкулаторите и оценките са ориентировъчни. Данни за храни: Open Food Facts (ODbL). WHOOP, Polar и Apple Health са марки на съответните компании." = "BabanFit is not a medical device and gives no medical advice. Calculators and scores are estimates. Food data: Open Food Facts (ODbL). WHOOP, Polar and Apple Health are trademarks of their respective companies.";

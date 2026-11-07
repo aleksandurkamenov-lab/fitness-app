@@ -105,6 +105,14 @@ final class CloudService {
         email = ""
     }
 
+    /// Изтрива акаунта и всички данни в облака (изисква се от Apple), после излиза.
+    func deleteAccount() async throws {
+        _ = try await authed("/rest/v1/rpc/delete_my_account", method: "POST", body: [String: String]())
+        signOut()
+        lastUpload = nil
+        UserDefaults.standard.removeObject(forKey: "cloud.lastUpload")
+    }
+
     private func store(_ data: Data, email: String) throws {
         let auth = try JSONDecoder().decode(AuthResponse.self, from: data)
         guard let access = auth.access_token, let refresh = auth.refresh_token, let user = auth.user else {

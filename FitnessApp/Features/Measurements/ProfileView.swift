@@ -150,8 +150,14 @@ private struct ProfileForm: View {
             }
 
             Section {
+                Link("Политика за поверителност", destination: LegalLinks.privacy)
+                Link("Условия за ползване и GDPR", destination: LegalLinks.terms)
+                Link("Лицензионно споразумение (Apple EULA)", destination: LegalLinks.eula)
+                Link("Поддръжка: aleksandurkamenov@gmail.com", destination: LegalLinks.support)
+            } header: {
+                Text("Правна информация")
             } footer: {
-                Text("Калкулаторите са ориентировъчни и не са медицински съвет.")
+                Text("BabanFit не е медицинско изделие и не дава медицински съвет. Калкулаторите и оценките са ориентировъчни. Данни за храни: Open Food Facts (ODbL). WHOOP, Polar и Apple Health са марки на съответните компании.")
             }
         }
     }
@@ -420,4 +426,12 @@ struct KeyboardDoneModifier: ViewModifier {
 
 extension View {
     func keyboardDoneButton() -> some View { modifier(KeyboardDoneModifier()) }
+}
+
+/// Линкове към правните документи (изискват се от App Store).
+enum LegalLinks {
+    static let privacy = URL(string: "https://claude.ai/artifact/Q2XY45eEfU3pUNcyKDKt1T")!
+    static let terms = URL(string: "https://claude.ai/artifact/1zFGfakSEKGd46E3ZjeoZk")!
+    static let eula = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
+    static let support = URL(string: "mailto:aleksandurkamenov@gmail.com")!
 }

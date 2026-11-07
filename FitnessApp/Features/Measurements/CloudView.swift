@@ -14,6 +14,7 @@ struct CloudView: View {
     @State private var me: CloudProfile?
     @State private var clients: [CloudProfile] = []
     @State private var coachCode = ""
+    @State private var confirmingDelete = false
     @FocusState private var focus: LoginField?
     private enum LoginField { case email, password, name }
 
@@ -81,6 +82,25 @@ struct CloudView: View {
             Text("Акаунт")
         } footer: {
             Text("Качват се тегло, мерки, тренировки, дневни калории/макроси и показатели от WHOOP/Health (последните 90–365 дни). Снимките не се качват.")
+        }
+
+        Section {
+            Button("Изтрий акаунта", role: .destructive) { confirmingDelete = true }
+                .confirmationDialog("Да изтрия ли акаунта и всички данни в облака?", isPresented: $confirmingDelete, titleVisibility: .visible) {
+                    Button("Изтрий завинаги", role: .destructive) {
+                        run {
+                            try await cloud.deleteAccount()
+                            me = nil
+                            clients = []
+                            message = "Акаунтът и данните в облака са изтрити."
+                        }
+                    }
+                    Button("Отказ", role: .cancel) {}
+                } message: {
+                    Text("Това не може да се върне. Данните на телефона остават.")
+                }
+        } footer: {
+            Text("Изтрива акаунта, профила и качените данни от облака. Треньорът спира да ги вижда.")
         }
 
         if let me {
